@@ -354,8 +354,24 @@ function useAutoNews() {
 
   useEffect(() => {
     const fetchNews = async () => {
+      const CACHE_KEY = 'cardpoint_news_cache_v2';
+      const CACHE_EXPIRY = 15 * 60 * 1000; // 15 minutos
+
       try {
-        setLoadingAuto(true);
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          try {
+            const parsedCache = JSON.parse(cached);
+            setAutoNews(parsedCache.data);
+            setLoadingAuto(false);
+            if (Date.now() - parsedCache.timestamp < CACHE_EXPIRY) {
+              return; // Caché muy reciente, no hacer fetch
+            }
+          } catch(e) { console.error("Cache read error"); }
+        } else {
+          setLoadingAuto(true);
+        }
+
         const [resAlpha, resPoke] = await Promise.allSettled([
           fetch('https://api.rss2json.com/v1/api.json?rss_url=https://pokemonalpha.es/feed/'),
           fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.pokemillon.com/blogs/noticias.atom')
@@ -367,7 +383,15 @@ function useAutoNews() {
               const data = await res.value.json();
               if (data.status === 'ok') {
                 return data.items.slice(0, limit).map((item, idx) => {
-                  let imgUrl = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop';
+                  const fallbackImages = [
+                    'https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=600&auto=format&fit=crop',
+                    'https://images.unsplash.com/photo-1605901309584-818e25960b8f?q=80&w=600&auto=format&fit=crop',
+                    'https://images.unsplash.com/photo-1542779283-429988ce3cb0?q=80&w=600&auto=format&fit=crop',
+                    'https://images.unsplash.com/photo-1620336655055-088d06e36bf0?q=80&w=600&auto=format&fit=crop',
+                    'https://images.unsplash.com/photo-1590955256434-601eaf1e3bce?q=80&w=600&auto=format&fit=crop'
+                  ];
+                  let imgUrl = fallbackImages[(idx + (sourceName === 'Pokemillon' ? 2 : 0)) % fallbackImages.length];
+                  
                   if (item.thumbnail) {
                     imgUrl = item.thumbnail;
                   } else if (item.content) {
@@ -442,6 +466,10 @@ function useAutoNews() {
         }
         
         setAutoNews(uniqueArticles);
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          timestamp: Date.now(),
+          data: uniqueArticles
+        }));
       } catch (err) {
         console.error('Error fetching auto news:', err);
       } finally {
