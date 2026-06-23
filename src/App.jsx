@@ -820,7 +820,6 @@ export default function App() {
                 { id: 'catalog', label: 'En Stock' },
                 { id: 'news', label: 'Noticias' },
                 { id: 'tournaments', label: 'Torneos' },
-                { id: 'how-to-buy', label: 'Nosotros' },
               ].map((item) => {
                 const isActive = currentTab === item.id && !selectedNews;
                 return (
