@@ -279,6 +279,42 @@ const PLACEHOLDER_CARDS = [
 
 // (Datos de Torneos y Noticias ahora vienen de Supabase via hooks)
 
+// Banners del hero slideshow
+const HERO_BANNERS = [
+  {
+    id: 1,
+    type: 'ui',
+    tag: 'Tienda de singles Pokémon TCG en Concepción',
+    title: 'Tu tienda TCG',
+    titleAccent: 'de confianza',
+    description: 'Especialistas en cartas sueltas de Pokémon TCG en Concepción. Encuentra tus cartas favoritas y completa tu colección con confianza y seguridad.',
+    cta: 'Ver stock en venta',
+    tab: 'catalog',
+    images: [
+      'https://images.pokemontcg.io/swsh12pt5/GG44_hires.png',
+      'https://images.pokemontcg.io/sv4f/234_hires.png',
+      'https://images.pokemontcg.io/sv3pt5/173_hires.png',
+    ],
+    bgFrom: '#0052FF',
+    bgTo: '#3b82f6',
+  },
+  {
+    id: 2,
+    type: 'image',
+    imageUrl: 'https://images.unsplash.com/photo-1605901309584-818e25960b8f?q=80&w=1200&auto=format&fit=crop',
+  },
+  {
+    id: 3,
+    type: 'image',
+    imageUrl: 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?q=80&w=1200&auto=format&fit=crop',
+  },
+  {
+    id: 4,
+    type: 'image',
+    imageUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1200&auto=format&fit=crop',
+  },
+];
+
 export default function App() {
   const [currentTab, setCurrentTab] = useState('home'); // 'home', 'catalog', 'news', 'tournaments', 'database', 'how-to-buy'
   const [theme, setTheme] = useState('light');
@@ -329,9 +365,12 @@ export default function App() {
     if (!newsLoading) setNewsList(dbNews);
   }, [dbNews, newsLoading]);
 
-  // Control de Animación de Carrusel Continuo
+  // Control de Animación de Carrusel Continuo (cartas)
   const carruselRef = useRef(null);
   const [isPaused, setIsPaused] = useState(false);
+
+  // Hero banner slideshow
+  const [heroBannerIdx, setHeroBannerIdx] = useState(0);
 
   // Triplicamos stock para el carrusel infinito seamless
   const carouselCards = useMemo(() => {
@@ -347,7 +386,20 @@ export default function App() {
     }
   }, [theme]);
 
-  // Inicialización del carrusel en el centro
+  // Hero banner auto-avance suave
+  useEffect(() => {
+    if (currentTab !== 'home') return;
+    const interval = setInterval(() => {
+      setHeroBannerIdx(prev => (prev + 1) % HERO_BANNERS.length);
+    }, 12000); // 12 segundos para lectura pausada
+    return () => clearInterval(interval);
+  }, [currentTab]);
+
+  const goBanner = (idx) => {
+    setHeroBannerIdx(idx);
+  };
+
+  // Inicialización del carrusel de cartas en el centro
   useEffect(() => {
     if (currentTab !== 'home') return;
     const el = carruselRef.current;
@@ -553,12 +605,9 @@ export default function App() {
                 { id: 'catalog', label: 'En Stock' },
                 { id: 'news', label: 'Noticias' },
                 { id: 'tournaments', label: 'Torneos' },
-                { id: 'database', label: 'Base de Datos' },
                 { id: 'how-to-buy', label: 'Nosotros' },
               ].map((item) => {
                 const isActive = currentTab === item.id && !selectedNews;
-                const isDatabase = item.id === 'database';
-                
                 return (
                   <button
                     key={item.id}
@@ -568,28 +617,13 @@ export default function App() {
                       setIsAddingNews(false);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className={`px-3 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 cursor-pointer relative ${
-                      isDatabase 
-                        ? isActive
-                          ? 'text-emerald-500 font-black bg-emerald-500/10 border border-emerald-500/30 shadow-sm'
-                          : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 dark:bg-emerald-950/15 border border-emerald-500/20 hover:bg-emerald-500/10'
-                        : isActive 
-                          ? 'text-[#0052FF] font-black bg-[#0052FF]/10' 
-                          : 'text-slate-600 dark:text-slate-300 hover:text-[#0052FF] dark:hover:text-[#0052FF]'
+                    className={`px-3 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+                      isActive 
+                        ? 'text-[#0052FF] font-black bg-[#0052FF]/10' 
+                        : 'text-slate-600 dark:text-slate-300 hover:text-[#0052FF] dark:hover:text-[#0052FF]'
                     }`}
                   >
-                    {isDatabase && (
-                      <>
-                        <Database size={13} className="text-emerald-500 animate-pulse" />
-                        <span>{item.label}</span>
-                        {/* Pequeño punto indicador verde pulsante */}
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </span>
-                      </>
-                    )}
-                    {!isDatabase && item.label}
+                    {item.label}
                   </button>
                 );
               })}
@@ -646,7 +680,7 @@ export default function App() {
         {[
           { id: 'home', label: 'Inicio', icon: Sparkles },
           { id: 'catalog', label: 'Stock', icon: Layers },
-          { id: 'database', label: 'Buscador', icon: Database, isSpecial: true },
+          { id: 'news', label: 'Noticias', icon: BookOpen },
           { id: 'tournaments', label: 'Torneos', icon: MapPin },
         ].map((item) => {
           const Icon = item.icon;
@@ -660,22 +694,12 @@ export default function App() {
                 setIsAddingNews(false);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`flex flex-col items-center gap-1 px-3 transition-all cursor-pointer relative ${
-                item.isSpecial
-                  ? isActive
-                    ? 'text-emerald-500 font-bold scale-105'
-                    : 'text-emerald-600 dark:text-emerald-400'
-                  : isActive 
-                    ? 'text-[#0052FF] font-bold scale-105' 
-                    : 'text-slate-400 dark:text-slate-500 text-xs'
+              className={`flex flex-col items-center gap-1 px-3 transition-all cursor-pointer ${
+                isActive 
+                  ? 'text-[#0052FF] font-bold scale-105' 
+                  : 'text-slate-400 dark:text-slate-500 text-xs'
               }`}
             >
-              {item.isSpecial && (
-                <span className="absolute -top-1.5 -right-1 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-              )}
               <Icon size={18} />
               <span className="text-[10px]">{item.label}</span>
             </button>
@@ -690,93 +714,106 @@ export default function App() {
         {currentTab === 'home' && !selectedNews && (
           <div className="space-y-16">
             
-            {/* HERO BANNER */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center pt-4 pb-8">
+            {/* HERO BANNER SLIDESHOW */}
+            <div className="relative w-full rounded-[2rem] overflow-hidden bg-slate-900 shadow-2xl" style={{ minHeight: '380px' }}>
               
-              {/* Columna Izquierda Texto Hero */}
-              <div className="lg:col-span-6 space-y-6">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 text-[10px] font-bold text-[#0052FF] uppercase tracking-wide">
-                  <Sparkles size={11} /> ¡Conectados a la base de datos oficial de Pokémon Company!
-                </div>
-
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-tight text-slate-900 dark:text-white">
-                  Tu tienda TCG <br />
-                  <span className="text-[#0052FF]">de confianza</span>
-                </h1>
+              {/* Contenedor de Slides con Opacidad Cruzada (Crossfade suave) */}
+              {HERO_BANNERS.map((b, i) => {
+                const isActive = i === heroBannerIdx;
                 
-                <p className="text-base text-slate-500 dark:text-slate-400 leading-relaxed max-w-lg">
-                  Especialistas en cartas sueltas de Pokémon TCG en Concepción. Encuentra tus cartas favoritas y completa tu colección con confianza y seguridad.
-                </p>
-
-                <div className="flex flex-wrap gap-3 pt-2">
-                  <button
-                    onClick={() => setCurrentTab('catalog')}
-                    className="bg-[#0052FF] hover:bg-blue-700 text-white font-bold px-7 py-3.5 rounded-xl shadow-lg shadow-blue-600/10 transition-all flex items-center gap-2 text-sm sm:text-base cursor-pointer"
+                return (
+                  <div
+                    key={b.id}
+                    className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
                   >
-                    Ver stock en venta
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
+                    {b.type === 'ui' ? (
+                      /* SLIDE TIPO UI (Primer banner con CTA) */
+                      <div className="relative w-full h-full flex items-center">
+                        {/* Fondo con gradiente */}
+                        <div
+                          className="absolute inset-0"
+                          style={{ background: `linear-gradient(135deg, ${b.bgFrom} 0%, ${b.bgTo} 100%)` }}
+                        />
+                        {/* Estrellitas decorativas */}
+                        <div className="absolute top-6 left-8 text-white/15 text-4xl font-black select-none">★</div>
+                        <div className="absolute bottom-10 left-16 text-white/10 text-2xl font-black select-none">★</div>
+                        <div className="absolute top-10 right-[45%] text-white/10 text-xl select-none">✦</div>
 
-                {/* 3 Micro-banners horizontales de confianza del Hero */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-slate-100 dark:border-slate-900">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center text-[#0052FF] flex-shrink-0">
-                      <Shield size={18} />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">Cartas 100% Originales</h4>
-                      <p className="text-[10px] text-slate-400">Garantizamos autenticidad</p>
-                    </div>
+                        {/* Contenido */}
+                        <div className="relative z-20 grid grid-cols-1 lg:grid-cols-2 gap-6 items-center px-8 sm:px-12 py-10 w-full">
+                          {/* Texto */}
+                          <div className="space-y-5">
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-[10px] font-bold text-white uppercase tracking-wide">
+                              <Sparkles size={10} /> {b.tag}
+                            </div>
+                            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white drop-shadow-sm">
+                              {b.title} <span className="text-white/80">{b.titleAccent}</span>
+                            </h1>
+                            <p className="text-sm text-white/80 leading-relaxed max-w-md drop-shadow-sm">{b.description}</p>
+                            <button
+                              onClick={() => {
+                                if (b.tab) { setCurrentTab(b.tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+                              }}
+                              className="inline-flex items-center gap-2 bg-white text-slate-900 font-bold px-7 py-3.5 rounded-xl shadow-xl hover:bg-slate-50 transition-all text-sm cursor-pointer hover:-translate-y-0.5"
+                            >
+                              {b.cta} <ChevronRight size={16} />
+                            </button>
+                          </div>
+
+                          {/* Imágenes de cartas en abanico */}
+                          <div className="hidden lg:flex items-center justify-center relative h-[260px]">
+                            <img src={b.images[2]} alt="carta" className="absolute w-[130px] rounded-xl shadow-2xl border border-white/20 rotate-[-20deg] -translate-x-28 translate-y-8 opacity-80" />
+                            <img src={b.images[0]} alt="carta" className="absolute w-[145px] rounded-xl shadow-2xl border border-white/30 rotate-[12deg] translate-x-20 translate-y-10" />
+                            <img src={b.images[1]} alt="carta" className="absolute w-[155px] rounded-xl shadow-2xl border border-white/40 -rotate-5 z-10" />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* SLIDE TIPO IMAGEN (Full Bleed) */
+                      <div className="relative w-full h-full">
+                        <img 
+                          src={b.imageUrl} 
+                          alt="Banner promocional" 
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                        {/* Gradiente oscuro sutil encima para que las flechas y puntos se vean siempre bien */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center text-[#0052FF] flex-shrink-0">
-                      <Truck size={18} />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">Envíos a todo Chile</h4>
-                      <p className="text-[10px] text-slate-400">Rápidos y seguros</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center text-[#0052FF] flex-shrink-0">
-                      <Instagram size={18} className="text-pink-500" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">Atención personalizada</h4>
-                      <p className="text-[10px] text-slate-400">Por Instagram</p>
-                    </div>
-                  </div>
-                </div>
+                );
+              })}
+
+              {/* Controles de Navegación (Siempre encima de los slides) */}
+              <button
+                onClick={() => goBanner((heroBannerIdx - 1 + HERO_BANNERS.length) % HERO_BANNERS.length)}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md border border-white/10"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button
+                onClick={() => goBanner((heroBannerIdx + 1) % HERO_BANNERS.length)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md border border-white/10"
+              >
+                <ChevronRight size={20} />
+              </button>
+
+              {/* Dots indicadores */}
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2.5 z-30">
+                {HERO_BANNERS.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => goBanner(i)}
+                    className={`rounded-full transition-all duration-300 cursor-pointer shadow-sm ${
+                      i === heroBannerIdx
+                        ? 'w-8 h-2.5 bg-white'
+                        : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'
+                    }`}
+                  />
+                ))}
               </div>
-
-              {/* Columna Derecha Imagen de Cartas en Abanico */}
-              <div className="lg:col-span-6 relative flex justify-center lg:justify-end">
-                <div className="relative w-full max-w-md h-[340px] sm:h-[400px] rounded-[40px] bg-gradient-to-br from-[#0052FF] via-blue-500 to-indigo-700 overflow-hidden shadow-2xl flex items-center justify-center">
-                  <div className="absolute top-8 left-8 text-white/20 text-3xl font-black">★</div>
-                  <div className="absolute bottom-12 right-12 text-white/20 text-4xl font-black">★</div>
-
-                  <div className="relative w-full h-full flex items-center justify-center scale-95 sm:scale-100">
-                    <img 
-                      src="https://images.pokemontcg.io/swsh12pt5/GG44_hires.png"
-                      alt="Mewtwo V"
-                      className="absolute w-[150px] sm:w-[175px] rounded-lg shadow-2xl transform rotate-[15deg] translate-x-20 translate-y-12 z-10 border border-white/20"
-                    />
-                    <img 
-                      src="https://images.pokemontcg.io/sv4f/234_hires.png" 
-                      alt="Charizard ex"
-                      className="absolute w-[155px] sm:w-[185px] rounded-lg shadow-2xl transform -rotate-6 -translate-x-8 -translate-y-4 z-20 border border-white/30"
-                    />
-                    <img 
-                      src="https://images.pokemontcg.io/sv3pt5/173_hires.png"
-                      alt="Pikachu"
-                      className="absolute w-[140px] sm:w-[165px] rounded-lg shadow-2xl transform rotate-[-22deg] -translate-x-28 translate-y-12 z-15 border border-white/10"
-                    />
-                  </div>
-                </div>
-              </div>
-
             </div>
+
 
             {/* SECCIÓN CARTAS POKÉMON CON MOVIMIENTO SEAMLESS INFINITO */}
             <div className="space-y-6">
