@@ -405,40 +405,6 @@ export default function App() {
   const path = location.pathname.replace('/', '');
   const currentTab = path === '' ? 'home' : path;
 
-  // SEO Dinámico según la ruta
-  let pageTitle = "Cardpoint | Tienda de Singles TCG";
-  let pageDesc = "Tienda especializada en compra y venta de cartas sueltas de Pokémon TCG en Concepción, Chile.";
-  
-  switch(currentTab) {
-    case 'catalog':
-      pageTitle = "Catálogo de Cartas | Cardpoint";
-      pageDesc = "Revisa nuestro stock real actualizado de cartas Pokémon TCG. Singles, full arts y cartas raras listas para envío a todo Chile.";
-      break;
-    case 'news':
-      pageTitle = "Noticias TCG | Cardpoint";
-      if (selectedNews) {
-        pageTitle = `${selectedNews.title} | Cardpoint`;
-        pageDesc = selectedNews.summary;
-      } else {
-        pageDesc = "Entérate de las últimas novedades, aperturas y noticias de la comunidad Pokémon TCG.";
-      }
-      break;
-    case 'tournaments':
-      pageTitle = "Torneos Locales | Cardpoint";
-      pageDesc = "Inscríbete en nuestros próximos torneos de Pokémon TCG en Concepción. Próximos eventos y fechas.";
-      break;
-    case 'database':
-      pageTitle = "Base de Datos Pokémon | Cardpoint";
-      pageDesc = "Busca cartas en la base de datos oficial de Pokémon TCG. Consulta precios de mercado y disponibilidad.";
-      break;
-    case 'how-to-buy':
-      pageTitle = "¿Cómo Comprar? | Cardpoint";
-      pageDesc = "Aprende cómo comprar tus cartas de forma segura. Métodos de pago y envíos mediante Starken a todo Chile.";
-      break;
-  }
-  
-  useSEO(pageTitle, pageDesc);
-
   // Helper to replace old setCurrentTab
   const setCurrentTab = (tab) => {
     if (tab === 'home') navigate('/');
@@ -475,6 +441,40 @@ export default function App() {
   const [newNewsImage, setNewNewsImage] = useState('https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop');
 
   const { autoNews, loadingAuto } = usePokemillonNews();
+
+  // SEO Dinámico según la ruta
+  let pageTitle = "Cardpoint | Tienda de Singles TCG";
+  let pageDesc = "Tienda especializada en compra y venta de cartas sueltas de Pokémon TCG en Concepción, Chile.";
+  
+  switch(currentTab) {
+    case 'catalog':
+      pageTitle = "Catálogo de Cartas | Cardpoint";
+      pageDesc = "Revisa nuestro stock real actualizado de cartas Pokémon TCG. Singles, full arts y cartas raras listas para envío a todo Chile.";
+      break;
+    case 'news':
+      pageTitle = "Noticias TCG | Cardpoint";
+      if (selectedNews) {
+        pageTitle = `${selectedNews.title} | Cardpoint`;
+        pageDesc = selectedNews.summary;
+      } else {
+        pageDesc = "Entérate de las últimas novedades, aperturas y noticias de la comunidad Pokémon TCG.";
+      }
+      break;
+    case 'tournaments':
+      pageTitle = "Torneos Locales | Cardpoint";
+      pageDesc = "Inscríbete en nuestros próximos torneos de Pokémon TCG en Concepción. Próximos eventos y fechas.";
+      break;
+    case 'database':
+      pageTitle = "Base de Datos Pokémon | Cardpoint";
+      pageDesc = "Busca cartas en la base de datos oficial de Pokémon TCG. Consulta precios de mercado y disponibilidad.";
+      break;
+    case 'how-to-buy':
+      pageTitle = "¿Cómo Comprar? | Cardpoint";
+      pageDesc = "Aprende cómo comprar tus cartas de forma segura. Métodos de pago y envíos mediante Starken a todo Chile.";
+      break;
+  }
+  
+  useSEO(pageTitle, pageDesc);
 
   // ==========================================
   // ESTADOS DE LA BASE DE DATOS DE CARTAS (REAL-TIME API!)
