@@ -6,7 +6,7 @@ function useAutoNews() {
 
   useEffect(() => {
     const fetchNews = async () => {
-      const CACHE_KEY = 'cardpoint_news_cache_v3';
+      const CACHE_KEY = 'cardpoint_news_cache_v4';
       const CACHE_EXPIRY = 15 * 60 * 1000; // 15 minutos
 
       try {
@@ -36,10 +36,7 @@ function useAutoNews() {
                 return data.items.slice(0, limit).map((item, idx) => {
                   const fallbackImages = [
                     'https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=600&auto=format&fit=crop', // Pikachu neon
-                    'https://images.unsplash.com/photo-1605901309584-818e25960b8f?q=80&w=600&auto=format&fit=crop', // Pokemon cards
-                    'https://images.unsplash.com/photo-1620336655055-088d06e36bf0?q=80&w=600&auto=format&fit=crop', // Pokeballs
-                    'https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=600&auto=format&fit=crop', // Pikachu figure
-                    'https://images.unsplash.com/photo-1640499900704-b00dd6a1103a?q=80&w=600&auto=format&fit=crop'  // Pokemon plush
+                    'https://images.unsplash.com/photo-1620336655055-088d06e36bf0?q=80&w=600&auto=format&fit=crop'  // Pokeballs
                   ];
                   let imgUrl = fallbackImages[idx % fallbackImages.length];
                   

@@ -701,11 +701,13 @@ export default function App() {
             key={currentAdIndex}
             className="max-w-7xl mx-auto flex items-center justify-between gap-4 animate-fade-in"
           >
-            <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex-shrink-0">
+            <span className="hidden md:block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex-shrink-0">
               Anuncio Patrocinado
             </span>
-            <div className="flex-grow text-center text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate px-2">
-              {currentAd.text}
+            <div className="flex-grow overflow-hidden px-2 relative h-full flex items-center">
+              <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap animate-marquee md:animate-none md:truncate">
+                {currentAd.text}
+              </div>
             </div>
             {currentAd.link && (
               <a
