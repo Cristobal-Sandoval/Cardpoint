@@ -20,6 +20,7 @@ const IcoCheck      = () => <Icon d="M20 6 9 17l-5-5" />;
 const IcoEye        = () => <Icon d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />;
 const IcoEyeOff     = () => <Icon d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22" />;
 const IcoImage      = () => <Icon d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21" />;
+const IcoMegaphone  = () => <Icon d="m3 11 18-5v12L3 14v-3zM11.6 16.8a3 3 0 1 1-5.8-1.6" />;
 
 // ── RARITY OPTIONS ───────────────────────────────────────────────────────────
 const RARITIES = ['Común', 'Poco Común', 'Rara', 'Doble Rara', 'Ultra Rara', 'Ilustración Rara', 'Especial Ilustración Rara', 'Ultra Rara Secreta', 'Secreta Dorada', 'Hyper Rara'];
@@ -663,7 +664,89 @@ function AdminBanners({ toast }) {
 }
 
 // ============================================================
-// LOGIN PAGE
+// AD SETTINGS ADMIN SECTION
+// ============================================================
+function AdminAdSettings({ toast }) {
+  const [ad, setAd] = useState({ active: true, text: '', link: '' });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase.from('admin_settings').select('data').eq('id', 'sponsored_ad').single();
+    if (data?.data) setAd(data.data);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const saveAd = async () => {
+    setSaving(true);
+    const { error } = await supabase.from('admin_settings').upsert({ 
+      id: 'sponsored_ad', 
+      data: ad, 
+      updated_at: new Date().toISOString() 
+    });
+    setSaving(false);
+    if (error) { toast('Error al guardar: ' + error.message, 'error'); }
+    else { toast('Anuncio guardado ✓', 'success'); }
+  };
+
+  return (
+    <div className="max-w-3xl">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Anuncio Patrocinado</h1>
+          <p className="text-slate-400 text-sm mt-1">Configura el texto y enlace de la barra superior pública.</p>
+        </div>
+        <button onClick={saveAd} disabled={saving} className="flex items-center gap-2 bg-[#0052FF] hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-900/30 disabled:opacity-50">
+          {saving ? 'Guardando...' : 'Guardar Cambios'}
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center h-48 text-slate-500">Cargando ajustes...</div>
+      ) : (
+        <div className="bg-white/3 border border-white/8 rounded-2xl p-6 space-y-6">
+          <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+            <div>
+              <div className="font-bold text-white mb-1">Estado del Anuncio</div>
+              <div className="text-sm text-slate-400">Si lo desactivas, la barra superior desaparecerá.</div>
+            </div>
+            <button 
+              onClick={() => setAd({...ad, active: !ad.active})}
+              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${ad.active ? 'bg-green-500' : 'bg-slate-700'}`}
+            >
+              <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${ad.active ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+
+          <Field label="Texto del Anuncio">
+            <input
+              className={inputCls}
+              value={ad.text}
+              onChange={e => setAd({ ...ad, text: e.target.value })}
+              placeholder="Ej: ¡Aprovecha un 15% de descuento!"
+            />
+          </Field>
+
+          <Field label="Enlace al hacer clic (URL)">
+            <input
+              className={inputCls}
+              type="url"
+              value={ad.link}
+              onChange={e => setAd({ ...ad, link: e.target.value })}
+              placeholder="Ej: https://tutiendapartner.com"
+            />
+          </Field>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// ADMIN LOGIN
 // ============================================================
 function AdminLogin({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -799,6 +882,7 @@ export default function AdminApp() {
     { id: 'news', label: 'Noticias', icon: <IcoNews /> },
     { id: 'tournaments', label: 'Torneos', icon: <IcoTrophy /> },
     { id: 'banners', label: 'Banners', icon: <IcoImage /> },
+    { id: 'ad', label: 'Anuncio', icon: <IcoMegaphone /> },
   ];
 
   return (
@@ -884,6 +968,7 @@ export default function AdminApp() {
           {activeSection === 'news'        && <AdminNews toast={showToast} />}
           {activeSection === 'tournaments' && <AdminTournaments toast={showToast} />}
           {activeSection === 'banners'     && <AdminBanners toast={showToast} />}
+          {activeSection === 'ad'          && <AdminAdSettings toast={showToast} />}
         </div>
       </main>
 

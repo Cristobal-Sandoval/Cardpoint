@@ -15,11 +15,12 @@ export function useAdmin() {
         // Ignorar el error en local/desarrollo si la tabla no existe aún para evitar colgar la app
         console.warn("No se pudo cargar admin_settings de Supabase:", error);
       } else if (data) {
-        const settings = { hidden_news: [], custom_banners: [], tournaments_override: [] };
+        const settings = { hidden_news: [], custom_banners: [], tournaments_override: [], sponsored_ad: null };
         data.forEach(row => {
           if (row.id === 'hidden_news') settings.hidden_news = row.data;
           if (row.id === 'custom_banners') settings.custom_banners = row.data;
           if (row.id === 'tournaments_override') settings.tournaments_override = row.data;
+          if (row.id === 'sponsored_ad') settings.sponsored_ad = row.data;
         });
         setAdminSettings(settings);
       }

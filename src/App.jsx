@@ -531,6 +531,7 @@ export default function App() {
   const hiddenNewsIds = adminSettings.hidden_news || [];
   const localTournaments = adminSettings.tournaments_override || [];
   const customBanners = adminSettings.custom_banners || [];
+  const sponsoredAd = adminSettings.sponsored_ad || { active: true, text: '🔥 ¡Encuentra fundas y carpetas oficiales con 15% de descuento usando el código CARDPOINT15 en la tienda partner!', link: 'https://google.com/adsense' };
 
   const toggleHideNews = async (id) => {
     const next = hiddenNewsIds.includes(id) 
@@ -828,24 +829,26 @@ export default function App() {
     <div className={`min-h-screen transition-colors duration-300 font-sans pb-24 md:pb-0 ${theme === 'dark' ? 'bg-[#0a0d14] text-[#f1f5f9]' : 'bg-[#fafbfe] text-[#1e293b]'}`}>
       
       {/* 0. ESPACIO DE GOOGLE ADSENSE SUPERIOR BANNER (Leaderboard Fijo Superior para Monetización Premium) */}
-      <div className="w-full bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-2.5 px-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex-shrink-0">
-            Anuncio Patrocinado
-          </span>
-          <div className="flex-grow text-center text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate px-2">
-            🔥 ¡Encuentra fundas y carpetas oficiales con 15% de descuento usando el código CARDPOINT15 en la tienda partner!
+      {sponsoredAd.active && (
+        <div className="w-full bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-2.5 px-4">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex-shrink-0">
+              Anuncio Patrocinado
+            </span>
+            <div className="flex-grow text-center text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate px-2">
+              {sponsoredAd.text}
+            </div>
+            <a
+              href={sponsoredAd.link}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[9px] font-extrabold text-[#0052FF] hover:underline flex items-center gap-0.5 flex-shrink-0"
+            >
+              Anunciar Aquí <ExternalLink size={10} />
+            </a>
           </div>
-          <a
-            href="https://google.com/adsense"
-            target="_blank"
-            rel="noreferrer"
-            className="text-[9px] font-extrabold text-[#0052FF] hover:underline flex items-center gap-0.5 flex-shrink-0"
-          >
-            Anunciar Aquí <ExternalLink size={10} />
-          </a>
         </div>
-      </div>
+      )}
 
       {/* HEADER PRINCIPAL */}
       <header className={`sticky top-0 z-40 border-b backdrop-blur-md transition-colors ${theme === 'dark' ? 'bg-[#0f172a]/95 border-slate-800' : 'bg-white/95 border-slate-100'} shadow-sm`}>
