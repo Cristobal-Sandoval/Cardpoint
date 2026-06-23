@@ -28,7 +28,8 @@ import {
   Database,
   ExternalLink,
   Flame,
-  HelpCircle
+  HelpCircle,
+  Calendar
 } from 'lucide-react';
 
 // ==========================================
@@ -379,7 +380,7 @@ function usePokemillonNews() {
               date: item.pubDate.split(' ')[0],
               image: imgUrl,
               summary: summary,
-              content: textContent,
+              content: item.content || item.description || textContent,
               sourceUrl: item.link,
               isExternal: true
             };
@@ -435,11 +436,6 @@ export default function App() {
   // Sistema de Noticias
   const [newsList, setNewsList] = useState([]);
   const [selectedNews, setSelectedNews] = useState(null);
-  const [isAddingNews, setIsAddingNews] = useState(false);
-  const [newNewsTitle, setNewNewsTitle] = useState('');
-  const [newNewsSummary, setNewNewsSummary] = useState('');
-  const [newNewsContent, setNewNewsContent] = useState('');
-  const [newNewsImage, setNewNewsImage] = useState('https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop');
 
   const { autoNews, loadingAuto } = usePokemillonNews();
 
@@ -1414,12 +1410,20 @@ export default function App() {
                   </p>
                 </div>
 
-                <div className="prose dark:prose-invert text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  {(selectedNews.content || '').split('\n\n').map((para, i) => (
-                    <p key={i}>{para}</p>
-                  ))}
+                {selectedNews.isExternal ? (
+                  <div 
+                    className="prose dark:prose-invert text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800"
+                    dangerouslySetInnerHTML={{ __html: selectedNews.content }}
+                  />
+                ) : (
+                  <div className="prose dark:prose-invert text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    {(selectedNews.content || '').split('\n\n').map((para, i) => (
+                      <p key={i}>{para}</p>
+                    ))}
+                  </div>
+                )}
                   
-                  {selectedNews.isExternal && (
+                {selectedNews.isExternal && (
                     <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
                       <a 
                         href={selectedNews.sourceUrl} 
@@ -1434,105 +1438,20 @@ export default function App() {
                   )}
                 </div>
               </div>
-            ) : isAddingNews ? (
-              // Formulario de Nueva Noticia
-              <div className="max-w-2xl mx-auto p-6 sm:p-8 bg-white dark:bg-[#121824] rounded-3xl border border-slate-200 dark:border-slate-800 space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white">Crear Nueva Noticia</h3>
-                  <button 
-                    onClick={() => setIsAddingNews(false)}
-                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-
-                <form onSubmit={handleAddNews} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-400 uppercase">Título de la noticia</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ej. Torneo Especial de Verano 2026"
-                      value={newNewsTitle}
-                      onChange={(e) => setNewNewsTitle(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border bg-slate-50/50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-[#0052FF] text-slate-800 dark:text-white"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-400 uppercase">Resumen corto</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ej. Gran premio para el primer lugar en Concepción. ¡Inscríbete ya!"
-                      value={newNewsSummary}
-                      onChange={(e) => setNewNewsSummary(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border bg-slate-50/50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-[#0052FF] text-slate-800 dark:text-white"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-400 uppercase">URL de la imagen (Unsplash o similar)</label>
-                    <input
-                      type="text"
-                      placeholder="Ej. https://images.unsplash.com/..."
-                      value={newNewsImage}
-                      onChange={(e) => setNewNewsImage(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border bg-slate-50/50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-[#0052FF] text-slate-800 dark:text-white"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-400 uppercase">Contenido del artículo</label>
-                    <textarea
-                      required
-                      rows="6"
-                      placeholder="Escribe el artículo de noticia completo aquí. Usa doble enter para separar párrafos."
-                      value={newNewsContent}
-                      onChange={(e) => setNewNewsContent(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border bg-slate-50/50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-[#0052FF] text-slate-800 dark:text-white resize-none"
-                    ></textarea>
-                  </div>
-
-                  <div className="flex gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingNews(false)}
-                      className="w-1/2 py-3 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      className="w-1/2 py-3 bg-[#0052FF] text-white text-xs font-bold rounded-xl hover:bg-blue-700 cursor-pointer"
-                    >
-                      Publicar Noticia
-                    </button>
-                  </div>
-                </form>
-              </div>
             ) : (
-              // Listado de Noticias (Responsive, móvil-first)
+              // Listado de Noticias (Responsive, formato grande)
               <div className="space-y-8">
                 <div className="flex justify-between items-end">
                   <div>
                     <span className="text-xs font-black text-[#0052FF] uppercase tracking-widest">COMUNIDAD TCG</span>
                     <h2 className="text-3xl font-black tracking-tight mt-1 text-slate-900 dark:text-white">Últimas Noticias</h2>
                   </div>
-                  <button
-                    onClick={() => setIsAddingNews(true)}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-600/10"
-                  >
-                    <Plus size={15} />
-                    Crear Noticia
-                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {newsList.map((n) => (
                     <article key={n.id} className="group bg-white dark:bg-[#121824] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col">
-                      <div className="relative h-56 overflow-hidden">
+                      <div className="relative h-64 md:h-72 overflow-hidden">
                         <img 
                           src={n.image} 
                           alt={n.title} 
