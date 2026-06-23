@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useCards } from './hooks/useCards';
 import { useNews } from './hooks/useNews';
 import { useTournaments } from './hooks/useTournaments';
+import { useAdmin } from './hooks/useAdmin';
 import AdminPanel from './AdminPanel';
 import { 
   Search, 
@@ -525,30 +526,33 @@ export default function App() {
 
   const { autoNews, loadingAuto } = useAutoNews();
 
-  // Panel de Control State
-  const [hiddenNewsIds, setHiddenNewsIds] = useState(() => JSON.parse(localStorage.getItem('hiddenNewsIds') || '[]'));
-  const [localTournaments, setLocalTournaments] = useState(() => JSON.parse(localStorage.getItem('localTournaments') || '[]'));
+  // Panel de Control State (Global Supabase)
+  const { adminSettings, updateSetting } = useAdmin();
+  
+  const hiddenNewsIds = adminSettings.hidden_news || [];
+  const localTournaments = adminSettings.tournaments_override || [];
+  const customBanners = adminSettings.custom_banners || [];
 
-  const toggleHideNews = (id) => {
-    setHiddenNewsIds(prev => {
-      const next = prev.includes(id) ? prev.filter(nId => nId !== id) : [...prev, id];
-      localStorage.setItem('hiddenNewsIds', JSON.stringify(next));
-      return next;
-    });
+  const toggleHideNews = async (id) => {
+    const next = hiddenNewsIds.includes(id) 
+      ? hiddenNewsIds.filter(nId => nId !== id) 
+      : [...hiddenNewsIds, id];
+    await updateSetting('hidden_news', next);
   };
 
-  const updateLocalTournament = (id, data) => {
-    setLocalTournaments(prev => {
-      const existing = prev.find(t => t.id === id);
-      let next;
-      if (existing) {
-        next = prev.map(t => t.id === id ? { ...t, ...data } : t);
-      } else {
-        next = [...prev, { id, ...data }];
-      }
-      localStorage.setItem('localTournaments', JSON.stringify(next));
-      return next;
-    });
+  const updateLocalTournament = async (id, data) => {
+    const existing = localTournaments.find(t => t.id === id);
+    let next;
+    if (existing) {
+      next = localTournaments.map(t => t.id === id ? { ...t, ...data } : t);
+    } else {
+      next = [...localTournaments, { id, ...data }];
+    }
+    await updateSetting('tournaments_override', next);
+  };
+
+  const updateCustomBanners = async (next) => {
+    await updateSetting('custom_banners', next);
   };
 
   const visibleNewsList = useMemo(() => newsList.filter(n => !hiddenNewsIds.includes(n.id)), [newsList, hiddenNewsIds]);
@@ -638,14 +642,18 @@ export default function App() {
     }
   }, [theme]);
 
+  const activeBanners = useMemo(() => {
+    return customBanners && customBanners.length > 0 ? customBanners : HERO_BANNERS;
+  }, [customBanners]);
+
   // Hero banner auto-avance suave
   useEffect(() => {
     if (currentTab !== 'home') return;
     const interval = setInterval(() => {
-      setHeroBannerIdx(prev => (prev + 1) % HERO_BANNERS.length);
+      setHeroBannerIdx(prev => (prev + 1) % activeBanners.length);
     }, 12000); // 12 segundos para lectura pausada
     return () => clearInterval(interval);
-  }, [currentTab]);
+  }, [currentTab, activeBanners.length]);
 
   const goBanner = (idx) => {
     setHeroBannerIdx(idx);
@@ -969,12 +977,12 @@ export default function App() {
             <div className="relative w-full rounded-[2rem] overflow-hidden bg-slate-900 shadow-2xl" style={{ minHeight: '380px' }}>
               
               {/* Contenedor de Slides con Opacidad Cruzada (Crossfade suave) */}
-              {HERO_BANNERS.map((b, i) => {
+              {activeBanners.map((b, i) => {
                 const isActive = i === heroBannerIdx;
                 
                 return (
                   <div
-                    key={b.id}
+                    key={b.id || i}
                     className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
                   >
                     {b.type === 'ui' ? (
@@ -1021,7 +1029,10 @@ export default function App() {
                       </div>
                     ) : (
                       /* SLIDE TIPO IMAGEN (Full Bleed) */
-                      <div className="relative w-full h-full">
+                      <div 
+                        className={`relative w-full h-full ${b.linkUrl && b.linkUrl !== '#' ? 'cursor-pointer' : ''}`}
+                        onClick={() => { if(b.linkUrl && b.linkUrl !== '#') window.open(b.linkUrl, '_blank') }}
+                      >
                         <img 
                           src={b.imageUrl} 
                           alt="Banner promocional" 
@@ -1037,13 +1048,13 @@ export default function App() {
 
               {/* Controles de Navegación (Siempre encima de los slides) */}
               <button
-                onClick={() => goBanner((heroBannerIdx - 1 + HERO_BANNERS.length) % HERO_BANNERS.length)}
+                onClick={() => goBanner((heroBannerIdx - 1 + activeBanners.length) % activeBanners.length)}
                 className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md border border-white/10"
               >
                 <ChevronLeft size={20} />
               </button>
               <button
-                onClick={() => goBanner((heroBannerIdx + 1) % HERO_BANNERS.length)}
+                onClick={() => goBanner((heroBannerIdx + 1) % activeBanners.length)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md border border-white/10"
               >
                 <ChevronRight size={20} />
@@ -1051,7 +1062,7 @@ export default function App() {
 
               {/* Dots indicadores */}
               <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2.5 z-30">
-                {HERO_BANNERS.map((_, i) => (
+                {activeBanners.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => goBanner(i)}
@@ -1990,6 +2001,8 @@ export default function App() {
             tournaments={dbTournaments}
             localTournaments={localTournaments}
             updateLocalTournament={updateLocalTournament}
+            customBanners={customBanners}
+            updateCustomBanners={updateCustomBanners}
             onLogout={() => setCurrentTab('home')}
           />
         )}

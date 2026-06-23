@@ -8,6 +8,8 @@ export default function AdminPanel({
   tournaments, 
   localTournaments,
   updateLocalTournament,
+  customBanners,
+  updateCustomBanners,
   onLogout 
 }) {
   const [activeTab, setActiveTab] = useState('news');
@@ -89,6 +91,13 @@ export default function AdminPanel({
             >
               <Edit2 size={18} />
               Gestión de Torneos
+            </button>
+            <button 
+              onClick={() => setActiveTab('banners')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-colors ${activeTab === 'banners' ? 'bg-[#0052FF] text-white shadow-md' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+            >
+              <Settings size={18} />
+              Banners Principales
             </button>
           </nav>
 
@@ -193,6 +202,76 @@ export default function AdminPanel({
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'banners' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white">Banners Principales</h2>
+                <p className="text-sm text-slate-500">Añade o elimina imágenes que se mostrarán en el carrusel de inicio.</p>
+              </div>
+              <button 
+                onClick={() => {
+                  const newBanner = { id: Date.now(), type: 'image', imageUrl: 'https://via.placeholder.com/1200x600', linkUrl: '#' };
+                  updateCustomBanners([...(customBanners || []), newBanner]);
+                }}
+                className="px-4 py-2 bg-[#0052FF] text-white font-bold rounded-xl flex items-center gap-2"
+              >
+                <Plus size={16} /> Añadir Banner
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {(customBanners || []).map((b, idx) => (
+                <div key={b.id} className="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#121824] space-y-4 shadow-sm">
+                  <div className="flex justify-between items-start">
+                    <h4 className="font-black text-lg text-slate-900 dark:text-white">Banner #{idx + 1}</h4>
+                    <button 
+                      onClick={() => updateCustomBanners(customBanners.filter(cb => cb.id !== b.id))}
+                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block mb-1">URL de la Imagen</label>
+                      <input 
+                        type="text" 
+                        value={b.imageUrl || ''}
+                        onChange={(e) => {
+                          const updated = customBanners.map(cb => cb.id === b.id ? { ...cb, imageUrl: e.target.value } : cb);
+                          updateCustomBanners(updated);
+                        }}
+                        placeholder="https://..."
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-semibold focus:outline-none focus:border-[#0052FF]"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block mb-1">Enlace al hacer clic (Opcional)</label>
+                      <input 
+                        type="text" 
+                        value={b.linkUrl || ''}
+                        onChange={(e) => {
+                          const updated = customBanners.map(cb => cb.id === b.id ? { ...cb, linkUrl: e.target.value } : cb);
+                          updateCustomBanners(updated);
+                        }}
+                        placeholder="https://..."
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-semibold focus:outline-none focus:border-[#0052FF]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {(!customBanners || customBanners.length === 0) && (
+                <div className="p-8 text-center text-slate-500 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                  No hay banners personalizados. Se mostrarán los banners automáticos predeterminados.
+                </div>
+              )}
             </div>
           </div>
         )}
