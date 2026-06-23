@@ -379,6 +379,7 @@ function usePokemillonNews() {
               date: item.pubDate.split(' ')[0],
               image: imgUrl,
               summary: summary,
+              content: textContent,
               sourceUrl: item.link,
               isExternal: true
             };
@@ -1414,9 +1415,23 @@ export default function App() {
                 </div>
 
                 <div className="prose dark:prose-invert text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  {selectedNews.content.split('\n\n').map((para, i) => (
+                  {(selectedNews.content || '').split('\n\n').map((para, i) => (
                     <p key={i}>{para}</p>
                   ))}
+                  
+                  {selectedNews.isExternal && (
+                    <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
+                      <a 
+                        href={selectedNews.sourceUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-[#0052FF] text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20"
+                      >
+                        Continuar leyendo en la fuente original
+                        <ExternalLink size={16} />
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : isAddingNews ? (
