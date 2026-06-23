@@ -347,8 +347,8 @@ function useSEO(title, description) {
   }, [title, description]);
 }
 
-// Hook para obtener noticias automáticas de Pokemillon (Bypass CORS via RSS2JSON)
-function usePokemillonNews() {
+// Hook para obtener noticias automáticas de varias fuentes (Bypass CORS via RSS2JSON)
+function useAutoNews() {
   const [autoNews, setAutoNews] = useState([]);
   const [loadingAuto, setLoadingAuto] = useState(true);
 
@@ -356,37 +356,60 @@ function usePokemillonNews() {
     const fetchNews = async () => {
       try {
         setLoadingAuto(true);
-        const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.pokemillon.com/blogs/noticias.atom');
-        const data = await res.json();
+        const [resAlpha, resPoke] = await Promise.allSettled([
+          fetch('https://api.rss2json.com/v1/api.json?rss_url=https://pokemonalpha.es/feed/'),
+          fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.pokemillon.com/blogs/noticias.atom')
+        ]);
         
-        if (data.status === 'ok') {
-          const articles = data.items.slice(0, 3).map((item, idx) => {
-            let imgUrl = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop';
-            if (item.thumbnail) {
-              imgUrl = item.thumbnail;
-            } else if (item.content) {
-              const match = item.content.match(/<img[^>]+src="([^">]+)"/);
-              if (match && match[1]) imgUrl = match[1];
-            }
-            
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = item.description || item.content;
-            const textContent = tempDiv.textContent || tempDiv.innerText || '';
-            const summary = textContent.substring(0, 140).trim() + '...';
-            
-            return {
-              id: `auto-${idx}`,
-              title: item.title,
-              date: item.pubDate.split(' ')[0],
-              image: imgUrl,
-              summary: summary,
-              content: item.content || item.description || textContent,
-              sourceUrl: item.link,
-              isExternal: true
-            };
-          });
-          setAutoNews(articles);
-        }
+        const parseArticles = async (res, sourceName, limit) => {
+          if (res.status === 'fulfilled') {
+            try {
+              const data = await res.value.json();
+              if (data.status === 'ok') {
+                return data.items.slice(0, limit).map((item, idx) => {
+                  let imgUrl = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop';
+                  if (item.thumbnail) {
+                    imgUrl = item.thumbnail;
+                  } else if (item.content) {
+                    const match = item.content.match(/<img[^>]+src="([^">]+)"/);
+                    if (match && match[1]) imgUrl = match[1];
+                  }
+                  
+                  const tempDiv = document.createElement('div');
+                  tempDiv.innerHTML = item.description || item.content;
+                  const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                  const summary = textContent.substring(0, 140).trim() + '...';
+                  
+                  // Clean dates
+                  let dateStr = item.pubDate;
+                  if (dateStr.includes(' ')) dateStr = dateStr.split(' ')[0];
+                  
+                  return {
+                    id: `auto-${sourceName.replace(/\s+/g, '')}-${idx}`,
+                    title: item.title,
+                    date: dateStr,
+                    image: imgUrl,
+                    summary: summary,
+                    content: item.content || item.description || textContent,
+                    sourceUrl: item.link,
+                    sourceName: sourceName,
+                    isExternal: true
+                  };
+                });
+              }
+            } catch(e) { console.error("Error parsing feed", sourceName); }
+          }
+          return [];
+        };
+
+        const alphaArticles = await parseArticles(resAlpha, 'Pokémon Alpha', 6);
+        const pokeArticles = await parseArticles(resPoke, 'Pokemillon', 3);
+        
+        let allArticles = [...alphaArticles, ...pokeArticles];
+        // Ordenar por fecha más reciente
+        allArticles.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        setAutoNews(allArticles);
       } catch (err) {
         console.error('Error fetching auto news:', err);
       } finally {
@@ -437,7 +460,7 @@ export default function App() {
   const [newsList, setNewsList] = useState([]);
   const [selectedNews, setSelectedNews] = useState(null);
 
-  const { autoNews, loadingAuto } = usePokemillonNews();
+  const { autoNews, loadingAuto } = useAutoNews();
 
   // SEO Dinámico según la ruta
   let pageTitle = "Cardpoint | Tienda de Singles TCG";
@@ -1422,6 +1445,14 @@ export default function App() {
                     ))}
                   </div>
                 )}
+                
+                {/* Espacio para publicidad AdSense en el detalle */}
+                <div className="w-full bg-slate-50 dark:bg-[#0a0f18] border border-slate-200 dark:border-slate-800/50 rounded-xl p-4 my-8 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-xs shadow-inner">
+                  <span className="mb-2 uppercase tracking-widest font-bold text-[10px] opacity-70">Publicidad</span>
+                  <div className="w-full max-w-[728px] h-[90px] border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-lg flex items-center justify-center">
+                    Espacio para Google AdSense (728x90)
+                  </div>
+                </div>
                   
                 {selectedNews.isExternal && (
                     <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
@@ -1447,6 +1478,14 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Espacio para publicidad AdSense en listado de noticias */}
+                <div className="w-full bg-slate-50 dark:bg-[#0a0f18] border border-slate-200 dark:border-slate-800/50 rounded-xl p-4 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-xs shadow-inner">
+                  <span className="mb-2 uppercase tracking-widest font-bold text-[10px] opacity-70">Publicidad Patrocinada</span>
+                  <div className="w-full max-w-[728px] h-[90px] border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-lg flex items-center justify-center">
+                    Espacio reservado para banner Google AdSense (Horizontal)
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {newsList.map((n) => (
                     <article key={n.id} className="group bg-white dark:bg-[#121824] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col">
@@ -1458,7 +1497,7 @@ export default function App() {
                         />
                         {n.isExternal && (
                           <div className="absolute top-4 right-4 bg-[#0052FF] text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1 uppercase tracking-wider z-10">
-                            <ExternalLink size={12} /> Exclusiva
+                            <ExternalLink size={12} /> {n.sourceName || 'Exclusiva'}
                           </div>
                         )}
                         {!n.isExternal && n.date && (
