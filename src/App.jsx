@@ -3,6 +3,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useCards } from './hooks/useCards';
 import { useNews } from './hooks/useNews';
 import { useTournaments } from './hooks/useTournaments';
+import { useAutoNews } from './hooks/useAutoNews';
+import { HERO_BANNERS } from './constants/banners';
 import { useAdmin } from './hooks/useAdmin';
 import { 
   Search, 
@@ -30,7 +32,8 @@ import {
   ExternalLink,
   Flame,
   HelpCircle,
-  Calendar
+  Calendar,
+  ChevronUp
 } from 'lucide-react';
 
 // ==========================================
@@ -282,41 +285,7 @@ const PLACEHOLDER_CARDS = [
 
 // (Datos de Torneos y Noticias ahora vienen de Supabase via hooks)
 
-// Banners del hero slideshow
-const HERO_BANNERS = [
-  {
-    id: 1,
-    type: 'ui',
-    tag: 'Tienda de singles Pokémon TCG en Concepción',
-    title: 'Tu tienda TCG',
-    titleAccent: 'de confianza',
-    description: 'Especialistas en cartas sueltas de Pokémon TCG en Concepción. Encuentra tus cartas favoritas y completa tu colección con confianza y seguridad.',
-    cta: 'Ver stock en venta',
-    tab: 'catalog',
-    images: [
-      'https://images.pokemontcg.io/swsh12pt5/GG44_hires.png',
-      'https://images.pokemontcg.io/sv4f/234_hires.png',
-      'https://images.pokemontcg.io/sv3pt5/173_hires.png',
-    ],
-    bgFrom: '#0052FF',
-    bgTo: '#3b82f6',
-  },
-  {
-    id: 2,
-    type: 'image',
-    imageUrl: 'https://images.unsplash.com/photo-1605901309584-818e25960b8f?q=80&w=1200&auto=format&fit=crop',
-  },
-  {
-    id: 3,
-    type: 'image',
-    imageUrl: 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?q=80&w=1200&auto=format&fit=crop',
-  },
-  {
-    id: 4,
-    type: 'image',
-    imageUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1200&auto=format&fit=crop',
-  },
-];
+// Banners del hero slideshow ahora en src/constants/banners.js
 
 // Hook para Debounce (mejora rendimiento del buscador local)
 function useDebounce(value, delay) {
@@ -346,141 +315,6 @@ function useSEO(title, description) {
       document.head.appendChild(metaDescription);
     }
   }, [title, description]);
-}
-
-// Hook para obtener noticias automáticas de varias fuentes (Bypass CORS via RSS2JSON)
-function useAutoNews() {
-  const [autoNews, setAutoNews] = useState([]);
-  const [loadingAuto, setLoadingAuto] = useState(true);
-
-  useEffect(() => {
-    const fetchNews = async () => {
-      const CACHE_KEY = 'cardpoint_news_cache_v2';
-      const CACHE_EXPIRY = 15 * 60 * 1000; // 15 minutos
-
-      try {
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) {
-          try {
-            const parsedCache = JSON.parse(cached);
-            setAutoNews(parsedCache.data);
-            setLoadingAuto(false);
-            if (Date.now() - parsedCache.timestamp < CACHE_EXPIRY) {
-              return; // Caché muy reciente, no hacer fetch
-            }
-          } catch(e) { console.error("Cache read error"); }
-        } else {
-          setLoadingAuto(true);
-        }
-
-        const [resAlpha, resPoke] = await Promise.allSettled([
-          fetch('https://api.rss2json.com/v1/api.json?rss_url=https://pokemonalpha.es/feed/'),
-          fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.pokemillon.com/blogs/noticias.atom')
-        ]);
-        
-        const parseArticles = async (res, sourceName, limit) => {
-          if (res.status === 'fulfilled') {
-            try {
-              const data = await res.value.json();
-              if (data.status === 'ok') {
-                return data.items.slice(0, limit).map((item, idx) => {
-                  const fallbackImages = [
-                    'https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=600&auto=format&fit=crop',
-                    'https://images.unsplash.com/photo-1605901309584-818e25960b8f?q=80&w=600&auto=format&fit=crop',
-                    'https://images.unsplash.com/photo-1542779283-429988ce3cb0?q=80&w=600&auto=format&fit=crop',
-                    'https://images.unsplash.com/photo-1620336655055-088d06e36bf0?q=80&w=600&auto=format&fit=crop',
-                    'https://images.unsplash.com/photo-1590955256434-601eaf1e3bce?q=80&w=600&auto=format&fit=crop'
-                  ];
-                  let imgUrl = fallbackImages[(idx + (sourceName === 'Pokemillon' ? 2 : 0)) % fallbackImages.length];
-                  
-                  if (item.thumbnail) {
-                    imgUrl = item.thumbnail;
-                  } else if (item.content) {
-                    const match = item.content.match(/<img[^>]+src="([^">]+)"/);
-                    if (match && match[1]) imgUrl = match[1];
-                  }
-                  
-                  const tempDiv = document.createElement('div');
-                  tempDiv.innerHTML = item.description || item.content;
-                  const textContent = tempDiv.textContent || tempDiv.innerText || '';
-                  const summary = textContent.substring(0, 140).trim() + '...';
-                  
-                  // Clean dates
-                  let dateStr = item.pubDate;
-                  if (dateStr.includes(' ')) dateStr = dateStr.split(' ')[0];
-                  
-                  return {
-                    id: `auto-${sourceName.replace(/\s+/g, '')}-${idx}`,
-                    title: item.title,
-                    date: dateStr,
-                    image: imgUrl,
-                    summary: summary,
-                    content: item.content || item.description || textContent,
-                    sourceUrl: item.link,
-                    sourceName: sourceName,
-                    isExternal: true
-                  };
-                });
-              }
-            } catch(e) { console.error("Error parsing feed", sourceName); }
-          }
-          return [];
-        };
-
-        const alphaArticles = await parseArticles(resAlpha, 'Pokémon Alpha', 15);
-        const pokeArticles = await parseArticles(resPoke, 'Pokemillon', 15);
-        
-        let allArticles = [...alphaArticles, ...pokeArticles];
-        // Ordenar por fecha más reciente
-        allArticles.sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        // Eliminar duplicados basados en coincidencias de palabras clave del título
-        const uniqueArticles = [];
-        const seenKeywordsSets = [];
-
-        const extractKeywords = (title) => {
-          const stopWords = ['para', 'como', 'sobre', 'desde', 'hasta', 'este', 'esta', 'nuevo', 'nueva', 'pokemon', 'pokémon', 'cartas', 'carta', 'juego', 'coleccion', 'colección'];
-          const words = title.toLowerCase().replace(/[^\w\sñáéíóú]/g, '').split(/\s+/);
-          return new Set(words.filter(w => w.length > 3 && !stopWords.includes(w)));
-        };
-
-        for (const article of allArticles) {
-          const keywords = extractKeywords(article.title);
-          let isDuplicate = false;
-
-          for (const seenKeywords of seenKeywordsSets) {
-            let overlapCount = 0;
-            for (const kw of keywords) {
-              if (seenKeywords.has(kw)) overlapCount++;
-            }
-            // Consideramos duplicado si comparten 2 palabras clave clave o un 60% de similitud
-            if (overlapCount >= 2 || (keywords.size > 0 && overlapCount / keywords.size > 0.6)) {
-              isDuplicate = true;
-              break;
-            }
-          }
-
-          if (!isDuplicate) {
-            uniqueArticles.push(article);
-            seenKeywordsSets.push(keywords);
-          }
-        }
-        
-        setAutoNews(uniqueArticles);
-        localStorage.setItem(CACHE_KEY, JSON.stringify({
-          timestamp: Date.now(),
-          data: uniqueArticles
-        }));
-      } catch (err) {
-        console.error('Error fetching auto news:', err);
-      } finally {
-        setLoadingAuto(false);
-      }
-    };
-    fetchNews();
-  }, []);
-
-  return { autoNews, loadingAuto };
 }
 
 export default function App() {
@@ -531,8 +365,20 @@ export default function App() {
   const hiddenNewsIds = adminSettings.hidden_news || [];
   const localTournaments = adminSettings.tournaments_override || [];
   const customBanners = adminSettings.custom_banners || [];
-  const sponsoredAd = adminSettings.sponsored_ad || { active: true, text: '🔥 ¡Encuentra fundas y carpetas oficiales con 15% de descuento usando el código CARDPOINT15 en la tienda partner!', link: 'https://google.com/adsense' };
+  const rawSponsoredAd = adminSettings.sponsored_ad;
+  const sponsoredAds = Array.isArray(rawSponsoredAd) ? rawSponsoredAd : (rawSponsoredAd ? [rawSponsoredAd] : [{ active: true, text: '🔥 ¡Encuentra fundas y carpetas oficiales con 15% de descuento usando el código CARDPOINT15 en la tienda partner!', link: 'https://google.com/adsense' }]);
+  const activeAds = sponsoredAds.filter(ad => ad.active);
+  const [currentAdIndex, setCurrentAdIndex] = useState(0);
 
+  useEffect(() => {
+    if (activeAds.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentAdIndex(prev => (prev + 1) % activeAds.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [activeAds.length]);
+
+  const currentAd = activeAds[currentAdIndex] || null;
   const toggleHideNews = async (id) => {
     const next = hiddenNewsIds.includes(id) 
       ? hiddenNewsIds.filter(nId => nId !== id) 
@@ -625,6 +471,25 @@ export default function App() {
   const carruselRef = useRef(null);
   const [isPaused, setIsPaused] = useState(false);
 
+  // Scroll to Top UI State
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 400) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Hero banner slideshow
   const [heroBannerIdx, setHeroBannerIdx] = useState(0);
 
@@ -643,7 +508,8 @@ export default function App() {
   }, [theme]);
 
   const activeBanners = useMemo(() => {
-    return customBanners && customBanners.length > 0 ? customBanners : HERO_BANNERS;
+    const activeCustom = customBanners.filter(b => b.active !== false);
+    return activeCustom.length > 0 ? activeCustom : HERO_BANNERS;
   }, [customBanners]);
 
   // Hero banner auto-avance suave
@@ -826,26 +692,31 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 font-sans pb-24 md:pb-0 ${theme === 'dark' ? 'bg-[#0a0d14] text-[#f1f5f9]' : 'bg-[#fafbfe] text-[#1e293b]'}`}>
+    <div className={`min-h-screen flex flex-col transition-colors duration-300 font-sans ${theme === 'dark' ? 'bg-[#0a0d14] text-[#f1f5f9]' : 'bg-[#fafbfe] text-[#1e293b]'}`}>
       
       {/* 0. ESPACIO DE GOOGLE ADSENSE SUPERIOR BANNER (Leaderboard Fijo Superior para Monetización Premium) */}
-      {sponsoredAd.active && (
-        <div className="w-full bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-2.5 px-4">
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      {currentAd && (
+        <div className="w-full bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-2.5 px-4 overflow-hidden relative">
+          <div 
+            key={currentAdIndex}
+            className="max-w-7xl mx-auto flex items-center justify-between gap-4 animate-fade-in"
+          >
             <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex-shrink-0">
               Anuncio Patrocinado
             </span>
             <div className="flex-grow text-center text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate px-2">
-              {sponsoredAd.text}
+              {currentAd.text}
             </div>
-            <a
-              href={sponsoredAd.link}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[9px] font-extrabold text-[#0052FF] hover:underline flex items-center gap-0.5 flex-shrink-0"
-            >
-              Anunciar Aquí <ExternalLink size={10} />
-            </a>
+            {currentAd.link && (
+              <a
+                href={currentAd.link}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[9px] font-extrabold text-[#0052FF] hover:underline flex items-center gap-0.5 flex-shrink-0"
+              >
+                Más info aquí <ExternalLink size={10} />
+              </a>
+            )}
           </div>
         </div>
       )}
@@ -969,14 +840,14 @@ export default function App() {
       </div>
 
       {/* CONTENIDO PRINCIPAL DE LA PÁGINA */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* VISTA HOME */}
         {currentTab === 'home' && !selectedNews && (
           <div className="space-y-16">
             
             {/* HERO BANNER SLIDESHOW */}
-            <div className="relative w-full rounded-[2rem] overflow-hidden bg-slate-900 shadow-2xl" style={{ minHeight: '380px' }}>
+            <div className="relative w-full rounded-[2rem] overflow-hidden bg-slate-900 shadow-2xl min-h-[300px] sm:min-h-[380px]">
               
               {/* Contenedor de Slides con Opacidad Cruzada (Crossfade suave) */}
               {activeBanners.map((b, i) => {
@@ -1048,34 +919,37 @@ export default function App() {
                 );
               })}
 
-              {/* Controles de Navegación (Siempre encima de los slides) */}
-              <button
-                onClick={() => goBanner((heroBannerIdx - 1 + activeBanners.length) % activeBanners.length)}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md border border-white/10"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <button
-                onClick={() => goBanner((heroBannerIdx + 1) % activeBanners.length)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md border border-white/10"
-              >
-                <ChevronRight size={20} />
-              </button>
-
-              {/* Dots indicadores */}
-              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2.5 z-30">
-                {activeBanners.map((_, i) => (
+              {/* Controles de Navegación y Dots (Solo si hay más de 1 banner) */}
+              {activeBanners.length > 1 && (
+                <>
                   <button
-                    key={i}
-                    onClick={() => goBanner(i)}
-                    className={`rounded-full transition-all duration-300 cursor-pointer shadow-sm ${
-                      i === heroBannerIdx
-                        ? 'w-8 h-2.5 bg-white'
-                        : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'
-                    }`}
-                  />
-                ))}
-              </div>
+                    onClick={() => goBanner((heroBannerIdx - 1 + activeBanners.length) % activeBanners.length)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md border border-white/10"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    onClick={() => goBanner((heroBannerIdx + 1) % activeBanners.length)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md border border-white/10"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+
+                  <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2.5 z-30">
+                    {activeBanners.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => goBanner(i)}
+                        className={`rounded-full transition-all duration-300 cursor-pointer shadow-sm ${
+                          i === heroBannerIdx
+                            ? 'w-8 h-2.5 bg-white'
+                            : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
 
@@ -1147,6 +1021,8 @@ export default function App() {
                           <img 
                             src={card.image} 
                             alt={card.name} 
+                            loading="lazy"
+                            loading="lazy"
                             className="w-full h-full object-contain p-3.5 transform hover:scale-105 transition-transform duration-300"
                             draggable="false"
                           />
@@ -1156,6 +1032,11 @@ export default function App() {
                           <span className="absolute bottom-2.5 left-2.5 bg-purple-600/90 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow uppercase">
                             {card.idioma || 'ES'}
                           </span>
+                          {card.is_reverse && (
+                            <span className="absolute top-2.5 right-2.5 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow uppercase tracking-wide border border-white/20">
+                              REVERSE
+                            </span>
+                          )}
                         </div>
 
                         <div className="p-4 flex flex-col flex-grow justify-between">
@@ -1171,19 +1052,30 @@ export default function App() {
                           </div>
                           
                           <div className="mt-4 pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
-                            <span className="font-extrabold text-slate-900 dark:text-white text-xs">
-                              ${card.price.toLocaleString('es-CL')} CLP
-                            </span>
-                            <button
-                              onClick={() => toggleInquiry(card)}
-                              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                                isInList
-                                  ? 'bg-emerald-500 border-emerald-500 text-white'
-                                  : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                              }`}
-                            >
-                              <Check size={13} className={isInList ? 'scale-110' : 'opacity-45'} />
-                            </button>
+                            <div>
+                              {card.stock === 0 ? (
+                                <span className="font-extrabold text-red-500 text-xs">AGOTADO</span>
+                              ) : (
+                                <div className="flex flex-col">
+                                  <span className="font-extrabold text-slate-900 dark:text-white text-xs">
+                                    ${card.price.toLocaleString('es-CL')} CLP
+                                  </span>
+                                  {(card.stock || 1) > 1 && <span className="text-[9px] text-slate-400 font-medium tracking-tight">x{card.stock} disp.</span>}
+                                </div>
+                              )}
+                            </div>
+                            {(card.stock !== 0) && (
+                              <button
+                                onClick={() => toggleInquiry(card)}
+                                className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                  isInList
+                                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                }`}
+                              >
+                                <Check size={13} className={isInList ? 'scale-110' : 'opacity-45'} />
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1253,7 +1145,7 @@ export default function App() {
                       className={`flex gap-4 p-3 rounded-2xl border cursor-pointer transition-all hover:border-[#0052FF]/40 bg-white dark:bg-[#121824] border-slate-100 dark:border-slate-800`}
                     >
                       <div className="w-20 sm:w-24 aspect-[4/3] rounded-xl overflow-hidden bg-slate-105 dark:bg-slate-950 flex-shrink-0">
-                        <img src={n.image} alt={n.title} className="w-full h-full object-cover" />
+                        <img src={n.image} alt={n.title} loading="lazy" className="w-full h-full object-cover" />
                       </div>
                       <div className="space-y-1 flex-grow">
                         <span className="text-[9px] font-bold text-[#0052FF] uppercase">{n.date}</span>
@@ -1337,7 +1229,7 @@ export default function App() {
                     "https://images.pokemontcg.io/swsh12pt5/GG44_hires.png"
                   ].map((imgUrl, i) => (
                     <div key={i} className="w-12 h-16 sm:w-16 sm:h-20 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 shadow transform hover:scale-105 transition-transform duration-200 cursor-pointer">
-                      <img src={imgUrl} alt="Instagram Showcase" className="w-full h-full object-cover" />
+                      <img src={imgUrl} alt="Instagram Showcase" loading="lazy" className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>
@@ -1460,6 +1352,7 @@ export default function App() {
                             src={card.image} 
                             alt={card.name} 
                             loading="lazy"
+                            loading="lazy"
                             decoding="async"
                             className="w-full h-full object-contain p-3 sm:p-4 transform hover:scale-105 transition-transform duration-300"
                           />
@@ -1469,6 +1362,11 @@ export default function App() {
                           <span className="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow uppercase">
                             {card.idioma || 'ES'}
                           </span>
+                          {card.is_reverse && (
+                            <span className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wide border border-white/20">
+                              REVERSE
+                            </span>
+                          )}
                         </div>
 
                         <div className="p-3 sm:p-4 flex flex-col flex-grow justify-between">
@@ -1484,19 +1382,30 @@ export default function App() {
                           </div>
                           
                           <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
-                            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm">
-                              ${card.price.toLocaleString('es-CL')} CLP
-                            </span>
-                            <button
-                              onClick={() => toggleInquiry(card)}
-                              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                                isInList
-                                  ? 'bg-emerald-500 border-emerald-500 text-white'
-                                  : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                              }`}
-                            >
-                              {isInList ? <Check size={13} className="scale-110" /> : <Plus size={13} className="opacity-60" />}
-                            </button>
+                            <div>
+                              {card.stock === 0 ? (
+                                <span className="font-extrabold text-red-500 text-xs sm:text-sm">AGOTADO</span>
+                              ) : (
+                                <div className="flex flex-col">
+                                  <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm">
+                                    ${card.price.toLocaleString('es-CL')} CLP
+                                  </span>
+                                  {(card.stock || 1) > 1 && <span className="text-[8px] sm:text-[9px] text-slate-400 font-medium tracking-tight">x{card.stock} disp.</span>}
+                                </div>
+                              )}
+                            </div>
+                            {(card.stock !== 0) && (
+                              <button
+                                onClick={() => toggleInquiry(card)}
+                                className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                  isInList
+                                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                }`}
+                              >
+                                {isInList ? <Check size={13} className="scale-110" /> : <Plus size={13} className="opacity-60" />}
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1538,7 +1447,7 @@ export default function App() {
                 </button>
 
                 <div className="aspect-[21/9] rounded-3xl overflow-hidden bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                  <img src={selectedNews.image} alt={selectedNews.title} className="w-full h-full object-cover" />
+                  <img src={selectedNews.image} alt={selectedNews.title} loading="lazy" className="w-full h-full object-cover" />
                 </div>
 
                 <div className="space-y-3">
@@ -1613,6 +1522,8 @@ export default function App() {
                         <img 
                           src={n.image} 
                           alt={n.title} 
+                          loading="lazy"
+                          loading="lazy"
                           className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
                         />
                         {n.date && (
@@ -1852,6 +1763,8 @@ export default function App() {
                             <img 
                               src={card.image} 
                               alt={card.name} 
+                              loading="lazy"
+                              loading="lazy"
                               className="w-full h-full object-contain p-4 transform hover:scale-105 transition-transform duration-300"
                               loading="lazy"
                             />
@@ -2035,7 +1948,7 @@ export default function App() {
                   <div key={card.id} className="flex gap-4 p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30 items-center justify-between">
                     <div className="flex gap-3 items-center">
                       <div className="w-10 h-14 rounded bg-slate-100 dark:bg-slate-950 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                        <img src={card.image} alt={card.name} className="w-full h-full object-contain" />
+                        <img src={card.image} alt={card.name} loading="lazy" className="w-full h-full object-contain" />
                       </div>
                       <div>
                         <h4 className="font-bold text-xs text-slate-900 dark:text-white line-clamp-1">{card.name}</h4>
@@ -2136,6 +2049,7 @@ export default function App() {
               <img 
                 src={selectedCardDetail.image} 
                 alt={selectedCardDetail.name} 
+                loading="lazy"
                 className="w-full max-h-[250px] sm:max-h-[300px] md:max-h-[380px] object-contain transform hover:scale-105 transition-transform duration-300" 
               />
             </div>
@@ -2278,7 +2192,7 @@ export default function App() {
       )}
 
       {/* FOOTER */}
-      <footer className={`border-t py-12 transition-colors ${theme === 'dark' ? 'bg-[#0a0d14] border-slate-900 text-slate-400' : 'bg-[#f8fafc] border-slate-100 text-slate-500'} text-xs pb-28 md:pb-12`}>
+      <footer className={`border-t py-12 transition-colors ${theme === 'dark' ? 'bg-[#0a0d14] border-slate-900 text-slate-400' : 'bg-[#f8fafc] border-slate-100 text-slate-500'} text-xs pb-24 md:pb-12`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             <CardpointLogo className="scale-75 origin-left" showText={false} />
@@ -2301,6 +2215,17 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* FLOATING SCROLL TO TOP BUTTON */}
+      {showScrollTop && (
+        <button 
+          onClick={scrollToTop}
+          className={`fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 p-3 rounded-full bg-[#0052FF] text-white shadow-lg shadow-[#0052FF]/30 hover:bg-blue-600 hover:-translate-y-1 hover:scale-110 transition-all duration-300 animate-fade-in`}
+          aria-label="Volver arriba"
+        >
+          <ChevronUp size={24} />
+        </button>
+      )}
 
     </div>
   );

@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
+import { useAutoNews } from '../hooks/useAutoNews';
+import { useAdmin } from '../hooks/useAdmin';
+import { HERO_BANNERS } from '../constants/banners';
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 const Icon = ({ d, size = 20 }) => (
@@ -112,7 +115,7 @@ function AdminCards({ toast }) {
   const [editingCard, setEditingCard] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const emptyForm = { name: '', set: 'Escarlata y Púrpura', set_code: '', rarity: 'Rara', price: '', condition: 'NM', image: '', description: '', in_stock: true, idioma: 'Español' };
+  const emptyForm = { name: '', set: 'Escarlata y Púrpura', set_code: '', rarity: 'Rara', price: '', condition: 'NM', image: '', description: '', in_stock: true, idioma: 'Español', is_reverse: false, stock: 1 };
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [apiSearching, setApiSearching] = useState(false);
@@ -151,7 +154,7 @@ function AdminCards({ toast }) {
   useEffect(() => { load(); }, []);
 
   const openAdd = () => { setForm(emptyForm); setEditingCard(null); setApiResults([]); setShowForm(true); };
-  const openEdit = (card) => { setForm({ ...card, idioma: card.idioma || 'Español' }); setEditingCard(card); setApiResults([]); setShowForm(true); };
+  const openEdit = (card) => { setForm({ ...card, idioma: card.idioma || 'Español', is_reverse: !!card.is_reverse, stock: card.stock ?? 1 }); setEditingCard(card); setApiResults([]); setShowForm(true); };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -201,7 +204,7 @@ function AdminCards({ toast }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-white/5 border-b border-white/8">
-                {['Imagen','Nombre','Idioma','Set','Rareza','Precio','Condición','En Stock','Acciones'].map(h => (
+                {['Imagen','Nombre','Idioma','Set','Rareza','Precio','Condición','Stock','Visible','Acciones'].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -212,12 +215,16 @@ function AdminCards({ toast }) {
                   <td className="px-4 py-3">
                     <img src={card.image} alt={card.name} className="w-10 h-14 object-cover rounded-lg" onError={e => e.target.style.display='none'} />
                   </td>
-                  <td className="px-4 py-3 font-semibold text-white max-w-[160px] truncate">{card.name}</td>
+                  <td className="px-4 py-3 font-semibold text-white max-w-[160px] truncate">
+                    {card.name}
+                    {card.is_reverse && <span className="ml-2 text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30 uppercase">Reverse</span>}
+                  </td>
                   <td className="px-4 py-3"><span className="px-2 py-0.5 bg-purple-900/40 text-purple-300 text-[10px] uppercase font-bold rounded-lg border border-purple-500/20">{card.idioma || 'Español'}</span></td>
                   <td className="px-4 py-3 text-slate-400 max-w-[140px] truncate">{card.set}</td>
                   <td className="px-4 py-3 text-slate-400 text-xs max-w-[140px] truncate">{card.rarity}</td>
                   <td className="px-4 py-3 text-green-400 font-bold whitespace-nowrap">${(card.price || 0).toLocaleString('es-CL')}</td>
                   <td className="px-4 py-3"><span className="px-2 py-0.5 bg-blue-900/40 text-blue-300 text-xs rounded-lg font-bold">{card.condition}</span></td>
+                  <td className="px-4 py-3 text-slate-300 text-center font-bold">{card.stock ?? 1}</td>
                   <td className="px-4 py-3">
                     <button onClick={() => toggleStock(card)} className={`w-10 h-5 rounded-full transition-all ${card.in_stock ? 'bg-green-500' : 'bg-slate-600'}`}>
                       <div className={`w-4 h-4 bg-white rounded-full mx-0.5 transition-transform ${card.in_stock ? 'translate-x-5' : 'translate-x-0'}`} />
@@ -285,6 +292,17 @@ function AdminCards({ toast }) {
                 </select>
               </Field>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Stock (Cantidad)"><input className={inputCls} type="number" required min="0" value={form.stock} onChange={e => setForm({...form, stock: parseInt(e.target.value) || 0})} placeholder="Ej: 1" /></Field>
+              <div className="flex flex-col justify-end">
+                <label className="flex items-center gap-3 cursor-pointer select-none pb-2">
+                  <div className={`w-11 h-6 rounded-full transition-all ${form.is_reverse ? 'bg-amber-500' : 'bg-slate-600'}`} onClick={() => setForm({...form, is_reverse: !form.is_reverse})}>
+                    <div className={`w-5 h-5 bg-white rounded-full mt-0.5 transition-transform ${form.is_reverse ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-300">Es Reverse Holo</span>
+                </label>
+              </div>
+            </div>
             <Field label="Precio (CLP)"><input className={inputCls} type="number" required min="0" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="Ej: 89990" /></Field>
             <Field label="URL de Imagen"><input className={inputCls} value={form.image} onChange={e => setForm({...form, image: e.target.value})} placeholder="https://images.pokemontcg.io/..." /></Field>
             {form.image && <img src={form.image} alt="preview" className="w-20 h-28 object-contain rounded-xl border border-white/10 mx-auto" />}
@@ -318,6 +336,13 @@ function AdminCards({ toast }) {
 function AdminNews({ toast }) {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  
+  const { autoNews, loadingAuto } = useAutoNews();
+  const { adminSettings, updateSetting } = useAdmin();
+  const hiddenNewsIds = adminSettings?.hidden_news || [];
+
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -366,44 +391,98 @@ function AdminNews({ toast }) {
     load();
   };
 
+  const toggleHideAutoNews = async (id) => {
+    const next = hiddenNewsIds.includes(id) 
+      ? hiddenNewsIds.filter(nId => nId !== id) 
+      : [...hiddenNewsIds, id];
+    await updateSetting('hidden_news', next);
+  };
+
+  const combinedNews = useMemo(() => {
+    return [...news, ...autoNews].sort((a, b) => new Date(b.date || b.created_at || 0) - new Date(a.date || a.created_at || 0));
+  }, [news, autoNews]);
+
+  const totalPages = Math.ceil(combinedNews.length / itemsPerPage);
+  const paginatedNews = combinedNews.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const isFullyLoading = loading || loadingAuto;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Noticias</h1>
-          <p className="text-slate-400 text-sm mt-1">{news.length} artículos registrados</p>
+          <p className="text-slate-400 text-sm mt-1">{combinedNews.length} artículos en total ({autoNews.length} automáticos)</p>
         </div>
         <button onClick={openAdd} className="flex items-center gap-2 bg-[#0052FF] hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-900/30">
           <IcoPlus /> Nueva Noticia
         </button>
       </div>
 
-      {loading ? (
+      {isFullyLoading ? (
         <div className="flex items-center justify-center h-48 text-slate-500">Cargando noticias...</div>
       ) : (
-        <div className="space-y-3">
-          {news.map(item => (
-            <div key={item.id} className="flex items-center gap-4 bg-white/3 border border-white/8 rounded-2xl p-4 hover:bg-white/5 transition-all">
-              {item.image && <img src={item.image} alt={item.title} className="w-16 h-12 object-cover rounded-xl flex-shrink-0" />}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-white truncate">{item.title}</h3>
-                  <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${item.published ? 'bg-green-900/50 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
-                    {item.published ? 'Publicada' : 'Borrador'}
-                  </span>
+        <div className="space-y-4">
+          <div className="space-y-3">
+            {paginatedNews.map(item => (
+              <div key={item.id} className="flex items-center gap-4 bg-white/3 border border-white/8 rounded-2xl p-4 hover:bg-white/5 transition-all">
+                {item.image && <img src={item.image} alt={item.title} className="w-16 h-12 object-cover rounded-xl flex-shrink-0" />}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-white truncate">{item.title}</h3>
+                    {item.isExternal ? (
+                      <span className="flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0052FF]/20 text-[#4d8aff] border border-[#0052FF]/30">
+                        Automática
+                      </span>
+                    ) : (
+                      <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${item.published ? 'bg-green-900/50 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
+                        {item.published ? 'Publicada' : 'Borrador'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-slate-500 text-xs mt-0.5">{item.date} · {item.summary?.slice(0,80)}...</p>
                 </div>
-                <p className="text-slate-500 text-xs mt-0.5">{item.date} · {item.summary?.slice(0,80)}...</p>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {item.isExternal ? (
+                    <button onClick={() => toggleHideAutoNews(item.id)} title={hiddenNewsIds.includes(item.id) ? 'Mostrar en tienda' : 'Ocultar de tienda'} className={`p-2 rounded-lg bg-white/5 transition-all ${hiddenNewsIds.includes(item.id) ? 'text-red-400 hover:bg-red-600/20' : 'text-slate-400 hover:text-green-400 hover:bg-green-600/20'}`}>
+                      {hiddenNewsIds.includes(item.id) ? <IcoEyeOff /> : <IcoEye />}
+                    </button>
+                  ) : (
+                    <>
+                      <button onClick={() => togglePublish(item)} title={item.published ? 'Ocultar' : 'Publicar'} className="p-2 rounded-lg bg-white/5 hover:bg-yellow-600/20 text-slate-400 hover:text-yellow-400 transition-all">
+                        {item.published ? <IcoEyeOff /> : <IcoEye />}
+                      </button>
+                      <button onClick={() => openEdit(item)} className="p-2 rounded-lg bg-white/5 hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 transition-all"><IcoEdit /></button>
+                      <button onClick={() => setDeleteTarget(item)} className="p-2 rounded-lg bg-white/5 hover:bg-red-600/20 text-slate-400 hover:text-red-400 transition-all"><IcoTrash /></button>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button onClick={() => togglePublish(item)} title={item.published ? 'Ocultar' : 'Publicar'} className="p-2 rounded-lg bg-white/5 hover:bg-yellow-600/20 text-slate-400 hover:text-yellow-400 transition-all">
-                  {item.published ? <IcoEyeOff /> : <IcoEye />}
-                </button>
-                <button onClick={() => openEdit(item)} className="p-2 rounded-lg bg-white/5 hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 transition-all"><IcoEdit /></button>
-                <button onClick={() => setDeleteTarget(item)} className="p-2 rounded-lg bg-white/5 hover:bg-red-600/20 text-slate-400 hover:text-red-400 transition-all"><IcoTrash /></button>
-              </div>
+            ))}
+            {combinedNews.length === 0 && <div className="text-center py-16 text-slate-500">No hay noticias registradas aún.</div>}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 rounded-lg border border-white/10 text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-medium"
+              >
+                Anterior
+              </button>
+              <span className="text-slate-400 text-sm px-2">
+                Página {currentPage} de {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 rounded-lg border border-white/10 text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-medium"
+              >
+                Siguiente
+              </button>
             </div>
-          ))}
-          {news.length === 0 && <div className="text-center py-16 text-slate-500">No hay noticias registradas aún.</div>}
+          )}
         </div>
       )}
 
@@ -588,7 +667,7 @@ function AdminBanners({ toast }) {
   const load = async () => {
     setLoading(true);
     const { data } = await supabase.from('admin_settings').select('data').eq('id', 'custom_banners').single();
-    setBanners(data?.data || []);
+    setBanners(data?.data?.length > 0 ? data.data : HERO_BANNERS);
     setLoading(false);
   };
 
@@ -607,7 +686,7 @@ function AdminBanners({ toast }) {
   };
 
   const addBanner = () => {
-    const next = [...banners, { id: Date.now().toString(), type: 'image', imageUrl: '', linkUrl: '' }];
+    const next = [...banners, { id: Date.now().toString(), type: 'image', imageUrl: '', linkUrl: '', active: true }];
     setBanners(next);
   };
 
@@ -626,7 +705,8 @@ function AdminBanners({ toast }) {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Banners Principales</h1>
-          <p className="text-slate-400 text-sm mt-1">Configura las imágenes que se muestran en el carrusel de inicio.</p>
+          <p className="text-slate-400 text-sm mt-1">Configura las imágenes del carrusel. Si desactivas todos, se usarán los predeterminados.</p>
+          <p className="text-[#0052FF] text-xs font-semibold mt-2">Recomendación: Usa imágenes de 1920x640 px (proporción 3:1) y mantén el texto al centro.</p>
         </div>
         <button onClick={() => saveBanners(banners)} disabled={saving} className="flex items-center gap-2 bg-[#0052FF] hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-900/30 disabled:opacity-50">
           {saving ? 'Guardando...' : 'Guardar Cambios'}
@@ -641,16 +721,45 @@ function AdminBanners({ toast }) {
             <div key={b.id} className="bg-white/3 border border-white/8 rounded-2xl p-5 hover:bg-white/5 transition-all">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-white font-bold text-lg flex items-center gap-2">Banner #{idx + 1}</h3>
-                <button onClick={() => removeBanner(b.id)} className="p-2 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-600/30 transition-all"><IcoTrash /></button>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <span className={`text-xs font-bold ${b.active !== false ? 'text-green-400' : 'text-slate-500'}`}>{b.active !== false ? 'Activo' : 'Oculto'}</span>
+                    <div className={`w-9 h-5 rounded-full transition-all ${b.active !== false ? 'bg-green-500' : 'bg-slate-600'}`} onClick={() => updateBanner(b.id, 'active', b.active === false ? true : false)}>
+                      <div className={`w-3.5 h-3.5 bg-white rounded-full mt-[3px] transition-transform ${b.active !== false ? 'translate-x-5' : 'translate-x-1'}`} />
+                    </div>
+                  </label>
+                  <button onClick={() => removeBanner(b.id)} className="p-2 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-600/30 transition-all"><IcoTrash /></button>
+                </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="URL de la Imagen">
-                  <input className={inputCls} value={b.imageUrl || ''} onChange={e => updateBanner(b.id, 'imageUrl', e.target.value)} placeholder="https://..." />
-                </Field>
-                <Field label="Enlace al hacer clic (Opcional)">
-                  <input className={inputCls} value={b.linkUrl || ''} onChange={e => updateBanner(b.id, 'linkUrl', e.target.value)} placeholder="https://..." />
-                </Field>
-              </div>
+              
+              {/* VISTA PREVIA DEL BANNER */}
+              {b.type === 'ui' ? (
+                <div className="mb-4 relative w-full h-32 md:h-48 rounded-xl overflow-hidden border border-[#0052FF]/30 bg-gradient-to-br from-[#0052FF] to-blue-400 flex items-center justify-center">
+                  <span className="text-white font-bold text-xl drop-shadow-md">Tienda TCG (Banner Animado)</span>
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-black/40 backdrop-blur-sm rounded text-[10px] font-bold text-white uppercase tracking-wider">
+                    Predeterminado del sistema
+                  </div>
+                </div>
+              ) : b.imageUrl && (
+                <div className="mb-4 relative w-full h-32 md:h-48 rounded-xl overflow-hidden border border-white/10 bg-slate-900">
+                  <img src={b.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded text-[10px] font-bold text-white uppercase tracking-wider">
+                    Vista Previa (Proporción exacta)
+                  </div>
+                </div>
+              )}
+
+              {b.type !== 'ui' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field label="URL de la Imagen">
+                    <input className={inputCls} value={b.imageUrl || ''} onChange={e => updateBanner(b.id, 'imageUrl', e.target.value)} placeholder="https://..." />
+                  </Field>
+                  <Field label="Enlace al hacer clic (Opcional)">
+                    <input className={inputCls} value={b.linkUrl || ''} onChange={e => updateBanner(b.id, 'linkUrl', e.target.value)} placeholder="https://..." />
+                  </Field>
+                </div>
+              )}
             </div>
           ))}
           {banners.length === 0 && <div className="text-center py-12 text-slate-500 border border-dashed border-white/10 rounded-2xl">No hay banners personalizados. Se mostrarán los predeterminados de la aplicación.</div>}
@@ -667,39 +776,56 @@ function AdminBanners({ toast }) {
 // AD SETTINGS ADMIN SECTION
 // ============================================================
 function AdminAdSettings({ toast }) {
-  const [ad, setAd] = useState({ active: true, text: '', link: '' });
+  const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
     setLoading(true);
     const { data } = await supabase.from('admin_settings').select('data').eq('id', 'sponsored_ad').single();
-    if (data?.data) setAd(data.data);
+    if (data?.data && Array.isArray(data.data)) {
+      setAds(data.data);
+    } else if (data?.data && typeof data.data === 'object') {
+      // Migrate from single object to array
+      setAds([{ id: Date.now().toString(), ...data.data }]);
+    }
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
 
-  const saveAd = async () => {
+  const saveAds = async () => {
     setSaving(true);
     const { error } = await supabase.from('admin_settings').upsert({ 
       id: 'sponsored_ad', 
-      data: ad, 
+      data: ads, 
       updated_at: new Date().toISOString() 
     });
     setSaving(false);
     if (error) { toast('Error al guardar: ' + error.message, 'error'); }
-    else { toast('Anuncio guardado ✓', 'success'); }
+    else { toast('Anuncios guardados ✓', 'success'); }
+  };
+
+  const addAd = () => {
+    setAds([...ads, { id: Date.now().toString(), active: true, text: '', link: '' }]);
+  };
+
+  const updateAd = (id, key, val) => {
+    setAds(ads.map(a => a.id === id ? { ...a, [key]: val } : a));
+  };
+
+  const removeAd = (id) => {
+    setAds(ads.filter(a => a.id !== id));
   };
 
   return (
     <div className="max-w-3xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Anuncio Patrocinado</h1>
-          <p className="text-slate-400 text-sm mt-1">Configura el texto y enlace de la barra superior pública.</p>
+          <h1 className="text-2xl font-bold text-white">Anuncios Patrocinados</h1>
+          <p className="text-slate-400 text-sm mt-1">Configura los textos y enlaces del carrusel en la barra superior pública.</p>
         </div>
-        <button onClick={saveAd} disabled={saving} className="flex items-center gap-2 bg-[#0052FF] hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-900/30 disabled:opacity-50">
+        <button onClick={saveAds} disabled={saving} className="flex items-center gap-2 bg-[#0052FF] hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-900/30 disabled:opacity-50">
           {saving ? 'Guardando...' : 'Guardar Cambios'}
         </button>
       </div>
@@ -707,38 +833,62 @@ function AdminAdSettings({ toast }) {
       {loading ? (
         <div className="flex items-center justify-center h-48 text-slate-500">Cargando ajustes...</div>
       ) : (
-        <div className="bg-white/3 border border-white/8 rounded-2xl p-6 space-y-6">
-          <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
-            <div>
-              <div className="font-bold text-white mb-1">Estado del Anuncio</div>
-              <div className="text-sm text-slate-400">Si lo desactivas, la barra superior desaparecerá.</div>
+        <div className="space-y-4">
+          {ads.map((ad, idx) => (
+            <div key={ad.id} className="bg-white/3 border border-white/8 rounded-2xl p-6 space-y-6 relative group">
+              <button 
+                onClick={() => removeAd(ad.id)}
+                className="absolute top-4 right-4 p-2 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity bg-white/5 rounded-lg"
+                title="Eliminar anuncio"
+              >
+                <IcoTrash />
+              </button>
+              
+              <div className="font-bold text-white mb-2">Anuncio #{idx + 1}</div>
+
+              <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                <div>
+                  <div className="font-bold text-white mb-1">Estado del Anuncio</div>
+                  <div className="text-sm text-slate-400">Si lo desactivas, este anuncio no aparecerá en el carrusel.</div>
+                </div>
+                <button 
+                  onClick={() => updateAd(ad.id, 'active', !ad.active)}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${ad.active ? 'bg-green-500' : 'bg-slate-700'}`}
+                >
+                  <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${ad.active ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+
+              <Field label="Texto del Anuncio">
+                <input
+                  className={inputCls}
+                  value={ad.text}
+                  onChange={e => updateAd(ad.id, 'text', e.target.value)}
+                  placeholder="Ej: ¡Aprovecha un 15% de descuento!"
+                />
+              </Field>
+
+              <Field label="Enlace al hacer clic (URL)">
+                <input
+                  className={inputCls}
+                  type="url"
+                  value={ad.link}
+                  onChange={e => updateAd(ad.id, 'link', e.target.value)}
+                  placeholder="Ej: https://tutiendapartner.com"
+                />
+              </Field>
             </div>
-            <button 
-              onClick={() => setAd({...ad, active: !ad.active})}
-              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${ad.active ? 'bg-green-500' : 'bg-slate-700'}`}
-            >
-              <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${ad.active ? 'translate-x-6' : 'translate-x-1'}`} />
-            </button>
-          </div>
+          ))}
 
-          <Field label="Texto del Anuncio">
-            <input
-              className={inputCls}
-              value={ad.text}
-              onChange={e => setAd({ ...ad, text: e.target.value })}
-              placeholder="Ej: ¡Aprovecha un 15% de descuento!"
-            />
-          </Field>
-
-          <Field label="Enlace al hacer clic (URL)">
-            <input
-              className={inputCls}
-              type="url"
-              value={ad.link}
-              onChange={e => setAd({ ...ad, link: e.target.value })}
-              placeholder="Ej: https://tutiendapartner.com"
-            />
-          </Field>
+          <button 
+            onClick={addAd}
+            className="w-full py-4 border-2 border-dashed border-white/10 hover:border-[#0052FF]/50 hover:bg-[#0052FF]/10 rounded-2xl text-slate-400 hover:text-[#0052FF] transition-all flex flex-col items-center gap-2"
+          >
+            <div className="bg-white/5 p-2 rounded-full">
+              <span className="text-xl leading-none">+</span>
+            </div>
+            <span className="font-semibold text-sm">Añadir Nuevo Anuncio</span>
+          </button>
         </div>
       )}
     </div>
