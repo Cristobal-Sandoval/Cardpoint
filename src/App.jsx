@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useCards } from './hooks/useCards';
 import { useNews } from './hooks/useNews';
 import { useTournaments } from './hooks/useTournaments';
@@ -315,8 +316,136 @@ const HERO_BANNERS = [
   },
 ];
 
+// Hook para Debounce (mejora rendimiento del buscador local)
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
+
+// Hook para SEO Dinámico (Cambia título y descripción de meta tag por cada página)
+function useSEO(title, description) {
+  useEffect(() => {
+    document.title = title;
+    let metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', description);
+    } else {
+      metaDescription = document.createElement('meta');
+      metaDescription.name = 'description';
+      metaDescription.content = description;
+      document.head.appendChild(metaDescription);
+    }
+  }, [title, description]);
+}
+
+// Hook para obtener noticias automáticas de Pokemillon (Bypass CORS via RSS2JSON)
+function usePokemillonNews() {
+  const [autoNews, setAutoNews] = useState([]);
+  const [loadingAuto, setLoadingAuto] = useState(true);
+
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        setLoadingAuto(true);
+        const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https://www.pokemillon.com/blogs/noticias.atom');
+        const data = await res.json();
+        
+        if (data.status === 'ok') {
+          const articles = data.items.slice(0, 3).map((item, idx) => {
+            let imgUrl = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop';
+            if (item.thumbnail) {
+              imgUrl = item.thumbnail;
+            } else if (item.content) {
+              const match = item.content.match(/<img[^>]+src="([^">]+)"/);
+              if (match && match[1]) imgUrl = match[1];
+            }
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = item.description || item.content;
+            const textContent = tempDiv.textContent || tempDiv.innerText || '';
+            const summary = textContent.substring(0, 140).trim() + '...';
+            
+            return {
+              id: `auto-${idx}`,
+              title: item.title,
+              date: item.pubDate.split(' ')[0],
+              image: imgUrl,
+              summary: summary,
+              sourceUrl: item.link,
+              isExternal: true
+            };
+          });
+          setAutoNews(articles);
+        }
+      } catch (err) {
+        console.error('Error fetching auto news:', err);
+      } finally {
+        setLoadingAuto(false);
+      }
+    };
+    fetchNews();
+  }, []);
+
+  return { autoNews, loadingAuto };
+}
+
 export default function App() {
-  const [currentTab, setCurrentTab] = useState('home'); // 'home', 'catalog', 'news', 'tournaments', 'database', 'how-to-buy'
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Derive currentTab from URL path
+  const path = location.pathname.replace('/', '');
+  const currentTab = path === '' ? 'home' : path;
+
+  // SEO Dinámico según la ruta
+  let pageTitle = "Cardpoint | Tienda de Singles TCG";
+  let pageDesc = "Tienda especializada en compra y venta de cartas sueltas de Pokémon TCG en Concepción, Chile.";
+  
+  switch(currentTab) {
+    case 'catalog':
+      pageTitle = "Catálogo de Cartas | Cardpoint";
+      pageDesc = "Revisa nuestro stock real actualizado de cartas Pokémon TCG. Singles, full arts y cartas raras listas para envío a todo Chile.";
+      break;
+    case 'news':
+      pageTitle = "Noticias TCG | Cardpoint";
+      if (selectedNews) {
+        pageTitle = `${selectedNews.title} | Cardpoint`;
+        pageDesc = selectedNews.summary;
+      } else {
+        pageDesc = "Entérate de las últimas novedades, aperturas y noticias de la comunidad Pokémon TCG.";
+      }
+      break;
+    case 'tournaments':
+      pageTitle = "Torneos Locales | Cardpoint";
+      pageDesc = "Inscríbete en nuestros próximos torneos de Pokémon TCG en Concepción. Próximos eventos y fechas.";
+      break;
+    case 'database':
+      pageTitle = "Base de Datos Pokémon | Cardpoint";
+      pageDesc = "Busca cartas en la base de datos oficial de Pokémon TCG. Consulta precios de mercado y disponibilidad.";
+      break;
+    case 'how-to-buy':
+      pageTitle = "¿Cómo Comprar? | Cardpoint";
+      pageDesc = "Aprende cómo comprar tus cartas de forma segura. Métodos de pago y envíos mediante Starken a todo Chile.";
+      break;
+  }
+  
+  useSEO(pageTitle, pageDesc);
+
+  // Helper to replace old setCurrentTab
+  const setCurrentTab = (tab) => {
+    if (tab === 'home') navigate('/');
+    else navigate(`/${tab}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const [theme, setTheme] = useState('light');
 
   // ── Supabase data hooks ──────────────────────────────────────
@@ -332,6 +461,7 @@ export default function App() {
   
   // Search & Catalog Filter States (Stock)
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300); // 300ms de retraso inteligente
   const [selectedEra, setSelectedEra] = useState('Todas');
   const [sortBy, setSortBy] = useState('default');
 
@@ -343,6 +473,8 @@ export default function App() {
   const [newNewsSummary, setNewNewsSummary] = useState('');
   const [newNewsContent, setNewNewsContent] = useState('');
   const [newNewsImage, setNewNewsImage] = useState('https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop');
+
+  const { autoNews, loadingAuto } = usePokemillonNews();
 
   // ==========================================
   // ESTADOS DE LA BASE DE DATOS DE CARTAS (REAL-TIME API!)
@@ -360,10 +492,12 @@ export default function App() {
   const [selectedCardDetail, setSelectedCardDetail] = useState(null);
   const [copiedText, setCopiedText] = useState(false);
 
-  // Sync noticias desde Supabase al estado local
+  // Sync noticias desde Supabase al estado local y combinarlas con las automáticas
   useEffect(() => {
-    if (!newsLoading) setNewsList(dbNews);
-  }, [dbNews, newsLoading]);
+    if (!newsLoading && !loadingAuto) {
+      setNewsList([...autoNews, ...dbNews]);
+    }
+  }, [dbNews, autoNews, newsLoading, loadingAuto]);
 
   // Control de Animación de Carrusel Continuo (cartas)
   const carruselRef = useRef(null);
@@ -528,8 +662,8 @@ export default function App() {
 
   const filteredCards = useMemo(() => {
     return catalogCards.filter(card => {
-      const matchesSearch = card.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            card.set.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = card.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) || 
+                            card.set.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
       const matchesEra = selectedEra === 'Todas' || card.set === selectedEra;
       return matchesSearch && matchesEra;
     }).sort((a, b) => {
@@ -538,7 +672,7 @@ export default function App() {
       if (sortBy === 'name') return a.name.localeCompare(b.name);
       return 0;
     });
-  }, [catalogCards, searchQuery, selectedEra, sortBy]);
+  }, [catalogCards, debouncedSearchQuery, selectedEra, sortBy]);
 
   const totalInquiryValue = inquiryList.reduce((sum, item) => sum + item.price, 0);
 
@@ -931,11 +1065,11 @@ export default function App() {
               <GoogleAdSlot format="horizontal" />
             </div>
 
-            {/* SECCIÓN DOBLE: "¿Cómo comprar?" & "Formas de Pago" */}
+            {/* SECCIÓN: "¿Cómo comprar?" */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
               
-              {/* Bloque Izquierdo: ¿Cómo comprar? */}
-              <div className={`lg:col-span-8 p-6 sm:p-8 rounded-3xl border ${
+              {/* Bloque: ¿Cómo comprar? */}
+              <div className={`lg:col-span-12 p-6 sm:p-8 rounded-3xl border ${
                 theme === 'dark' ? 'bg-[#111827]/40 border-slate-800' : 'bg-blue-50/20 border-blue-100/50'
               }`}>
                 <h3 className="text-xl font-black text-[#0052FF] dark:text-[#0052FF] mb-6">¿Cómo comprar?</h3>
@@ -956,35 +1090,6 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* Bloque Derecho: Formas de Pago */}
-              <div className={`lg:col-span-4 p-6 sm:p-8 rounded-3xl border flex flex-col justify-between ${
-                theme === 'dark' ? 'bg-[#111827]/40 border-slate-800' : 'bg-blue-50/20 border-blue-100/50'
-              }`}>
-                <div>
-                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-wider mb-4">Formas de pago</h3>
-                  
-                  <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-[#0052FF] text-white flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/10">
-                      <Building size={20} />
-                    </div>
-                    <div className="space-y-1">
-                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">Transferencia Bancaria</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Te enviaremos los datos para realizar tu transferencia de forma segura.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setShowTransferDetails(true)}
-                  className="mt-6 w-full bg-[#0052FF] hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Coins size={14} />
-                  Ver Datos de Transferencia
-                </button>
               </div>
 
             </div>
@@ -1221,6 +1326,8 @@ export default function App() {
                           <img 
                             src={card.image} 
                             alt={card.name} 
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-contain p-3 sm:p-4 transform hover:scale-105 transition-transform duration-300"
                           />
                           <span className="absolute bottom-2 right-2 bg-[#0052FF] text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">
@@ -1409,39 +1516,58 @@ export default function App() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {newsList.map((n) => (
-                    <div 
-                      key={n.id}
-                      onClick={() => setSelectedNews(n)}
-                      className="group rounded-2xl border overflow-hidden flex flex-col justify-between cursor-pointer hover:shadow-xl hover:border-[#0052FF]/30 transition-all bg-white dark:bg-[#121824] border-slate-200 dark:border-slate-800"
-                    >
-                      <div className="aspect-[16/10] bg-slate-100 dark:bg-slate-950 overflow-hidden relative">
+                    <article key={n.id} className="group bg-white dark:bg-[#121824] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col">
+                      <div className="relative h-56 overflow-hidden">
                         <img 
                           src={n.image} 
                           alt={n.title} 
-                          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300" 
+                          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
                         />
-                        <span className="absolute top-2.5 right-2.5 bg-[#0052FF] text-white text-[9px] font-black px-2 py-0.5 rounded shadow uppercase">
-                          {n.date.split(' de ')[0]} {n.date.split(' de ')[1]?.slice(0, 3)}
-                        </span>
-                      </div>
-
-                      <div className="p-5 flex-grow flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <h4 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-[#0052FF] transition-colors leading-snug line-clamp-2">
-                            {n.title}
-                          </h4>
-                          <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed">
-                            {n.summary}
-                          </p>
-                        </div>
-
-                        <div className="mt-6 pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
-                          <span className="text-[10px] font-black text-[#0052FF] uppercase tracking-wider flex items-center gap-1">
-                            Leer Más <ChevronRight size={13} />
+                        {n.isExternal && (
+                          <div className="absolute top-4 right-4 bg-[#0052FF] text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1 uppercase tracking-wider z-10">
+                            <ExternalLink size={12} /> Exclusiva
+                          </div>
+                        )}
+                        {!n.isExternal && n.date && (
+                          <span className="absolute top-2.5 right-2.5 bg-[#0052FF] text-white text-[9px] font-black px-2 py-0.5 rounded shadow uppercase">
+                            {n.date}
                           </span>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      </div>
+                      <div className="p-6 flex flex-col flex-grow relative">
+                        <div className="flex items-center gap-2 text-xs font-bold text-[#0052FF] mb-3">
+                          <Calendar size={14} className="stroke-[2.5]" />
+                          {n.date}
+                        </div>
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white mb-3 leading-tight group-hover:text-[#0052FF] transition-colors line-clamp-2">
+                          {n.title}
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed line-clamp-3">
+                          {n.summary}
+                        </p>
+                        <div className="mt-auto pt-5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                          <span className="text-[10px] font-black text-[#0052FF] uppercase tracking-wider flex items-center gap-1">Léelo ahora</span>
+                          {n.isExternal ? (
+                            <a 
+                              href={n.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#0052FF] group-hover:text-white transition-all duration-300 cursor-pointer"
+                            >
+                              <ExternalLink size={18} className="stroke-[2.5] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                            </a>
+                          ) : (
+                            <button 
+                              onClick={() => setSelectedNews(n)}
+                              className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#0052FF] group-hover:text-white transition-all duration-300 cursor-pointer"
+                            >
+                              <ChevronRight size={20} className="stroke-[2.5] group-hover:translate-x-0.5 transition-transform" />
+                            </button>
+                          )}
                         </div>
                       </div>
-                    </div>
+                    </article>
                   ))}
                 </div>
               </div>
