@@ -1,16 +1,19 @@
-# React + Vite
+﻿# Cardpoint.cl 🃏
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Un proyecto personal desarrollado para crear una página web que complemente el perfil de Instagram oficial de [Cardpoint.cl](https://www.instagram.com/cardpoint.cl/).
 
-Currently, two official plugins are available:
+## Tecnologías Utilizadas 🛠️
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Este proyecto ha sido desarrollado con tecnologías web modernas para asegurar un excelente rendimiento y una grata experiencia de usuario:
 
-## React Compiler
+- **React**: Librería principal para la construcción de interfaces de usuario interactivas.
+- **Vite**: Herramienta de construcción (bundler) ultrarrápida.
+- **Tailwind CSS**: Framework de utilidades CSS para un diseño estilizado y responsivo.
+- **Supabase**: Backend como servicio (BaaS) utilizado para la gestión de base de datos, autenticación y almacenamiento en tiempo real.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Características Principales ✨
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **Catálogo de Cartas**: Visualización dinámica del inventario disponible.
+- **Noticias Automatizadas**: Integración con fuentes RSS (Pokémon Alpha) para mostrar la actualidad de Pokémon TCG.
+- **Panel de Control (Admin)**: Interfaz privada para gestionar los banners principales, el stock de cartas y ocultar/publicar noticias.
+- **Optimización SEO y UX**: Carga diferida de imágenes (Lazy Loading), diseño 100% responsivo y transiciones suaves en todos los dispositivos.
