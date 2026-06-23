@@ -401,7 +401,13 @@ export default function App() {
     await updateSetting('custom_banners', next);
   };
 
-  const visibleNewsList = useMemo(() => newsList.filter(n => !hiddenNewsIds.includes(n.id)), [newsList, hiddenNewsIds]);
+  // Noticias visibles: manuales primero (ya ordenadas por fecha desc desde Supabase), luego las auto
+  const visibleNewsList = useMemo(() => {
+    const filtered = newsList.filter(n => !hiddenNewsIds.includes(n.id));
+    const manual = filtered.filter(n => !n.isExternal);
+    const auto = filtered.filter(n => n.isExternal);
+    return [...manual, ...auto];
+  }, [newsList, hiddenNewsIds]);
 
   const displayTournaments = useMemo(() => {
     return dbTournaments.map(t => {
@@ -461,9 +467,10 @@ export default function App() {
   const [copiedText, setCopiedText] = useState(false);
 
   // Sync noticias desde Supabase al estado local y combinarlas con las automáticas
+  // Regla: noticias manuales (Supabase) primero, luego las autogeneradas
   useEffect(() => {
     if (!newsLoading && !loadingAuto) {
-      setNewsList([...autoNews, ...dbNews]);
+      setNewsList([...dbNews, ...autoNews]);
     }
   }, [dbNews, autoNews, newsLoading, loadingAuto]);
 
@@ -1140,7 +1147,7 @@ export default function App() {
                 </div>
 
                 <div className="space-y-4">
-                  {newsList.slice(0, 3).map((n) => (
+                  {visibleNewsList.slice(0, 3).map((n) => (
                     <div 
                       key={n.id}
                       onClick={() => { setSelectedNews(n); setCurrentTab('news'); }}
