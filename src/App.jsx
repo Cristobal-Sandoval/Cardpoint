@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useCards } from './hooks/useCards';
 import { useNews } from './hooks/useNews';
 import { useTournaments } from './hooks/useTournaments';
+import AdminPanel from './AdminPanel';
 import { 
   Search, 
   MapPin, 
@@ -492,6 +493,7 @@ export default function App() {
 
   // Helper to replace old setCurrentTab
   const setCurrentTab = (tab) => {
+    if (tab === 'news') setNewsPage(1);
     if (tab === 'home') navigate('/');
     else navigate(`/${tab}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -522,6 +524,41 @@ export default function App() {
   const [newsPage, setNewsPage] = useState(1);
 
   const { autoNews, loadingAuto } = useAutoNews();
+
+  // Panel de Control State
+  const [hiddenNewsIds, setHiddenNewsIds] = useState(() => JSON.parse(localStorage.getItem('hiddenNewsIds') || '[]'));
+  const [localTournaments, setLocalTournaments] = useState(() => JSON.parse(localStorage.getItem('localTournaments') || '[]'));
+
+  const toggleHideNews = (id) => {
+    setHiddenNewsIds(prev => {
+      const next = prev.includes(id) ? prev.filter(nId => nId !== id) : [...prev, id];
+      localStorage.setItem('hiddenNewsIds', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const updateLocalTournament = (id, data) => {
+    setLocalTournaments(prev => {
+      const existing = prev.find(t => t.id === id);
+      let next;
+      if (existing) {
+        next = prev.map(t => t.id === id ? { ...t, ...data } : t);
+      } else {
+        next = [...prev, { id, ...data }];
+      }
+      localStorage.setItem('localTournaments', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const visibleNewsList = useMemo(() => newsList.filter(n => !hiddenNewsIds.includes(n.id)), [newsList, hiddenNewsIds]);
+
+  const displayTournaments = useMemo(() => {
+    return dbTournaments.map(t => {
+      const local = localTournaments.find(lt => lt.id === t.id);
+      return local ? { ...t, ...local } : t;
+    });
+  }, [dbTournaments, localTournaments]);
 
   // SEO Dinámico según la ruta
   let pageTitle = "Cardpoint | Tienda de Singles TCG";
@@ -1228,7 +1265,7 @@ export default function App() {
                 </div>
 
                 <div className="space-y-4">
-                  {dbTournaments.map((t) => (
+                  {displayTournaments.map((t) => (
                     <div 
                       key={t.id}
                       className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${
@@ -1547,7 +1584,7 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {newsList.slice((newsPage - 1) * 10, newsPage * 10).map((n) => (
+                  {visibleNewsList.slice((newsPage - 1) * 10, newsPage * 10).map((n) => (
                     <article 
                       key={n.id} 
                       onClick={() => { setSelectedNews(n); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
@@ -1589,7 +1626,7 @@ export default function App() {
                 </div>
 
                 {/* Controles de Paginación */}
-                {Math.ceil(newsList.length / 10) > 1 && (
+                {Math.ceil(visibleNewsList.length / 10) > 1 && (
                   <div className="flex justify-center items-center gap-2 mt-12 pt-8 border-t border-slate-100 dark:border-slate-800">
                     <button 
                       onClick={() => {
@@ -1602,7 +1639,7 @@ export default function App() {
                       <ChevronLeft size={18} />
                     </button>
                     
-                    {Array.from({ length: Math.ceil(newsList.length / 10) }, (_, i) => i + 1).map(page => (
+                    {Array.from({ length: Math.ceil(visibleNewsList.length / 10) }, (_, i) => i + 1).map(page => (
                       <button
                         key={page}
                         onClick={() => {
@@ -1621,10 +1658,10 @@ export default function App() {
 
                     <button 
                       onClick={() => {
-                        setNewsPage(p => Math.min(Math.ceil(newsList.length / 10), p + 1));
+                        setNewsPage(p => Math.min(Math.ceil(visibleNewsList.length / 10), p + 1));
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      disabled={newsPage === Math.ceil(newsList.length / 10)}
+                      disabled={newsPage === Math.ceil(visibleNewsList.length / 10)}
                       className="w-10 h-10 flex items-center justify-center rounded-xl font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                     >
                       <ChevronRight size={18} />
@@ -1647,10 +1684,10 @@ export default function App() {
 
             {/* Grid de Torneos (Responsive, móvil-first) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {dbTournaments.length === 0 && !tournamentsLoading && (
+              {displayTournaments.length === 0 && !tournamentsLoading && (
                 <p className="text-slate-400 col-span-3 text-center py-8">No hay torneos programados por el momento.</p>
               )}
-              {dbTournaments.map((t, idx) => (
+              {displayTournaments.map((t, idx) => (
                 <div 
                   key={t.id}
                   className={`flex flex-col justify-between p-6 rounded-3xl border transition-all hover:shadow-xl bg-white dark:bg-[#121824] ${
@@ -1944,6 +1981,18 @@ export default function App() {
           </div>
         )}
 
+        {/* VISTA ADMIN PANEL */}
+        {currentTab === 'admin' && (
+          <AdminPanel 
+            newsList={newsList}
+            hiddenNewsIds={hiddenNewsIds}
+            toggleHideNews={toggleHideNews}
+            tournaments={dbTournaments}
+            localTournaments={localTournaments}
+            updateLocalTournament={updateLocalTournament}
+            onLogout={() => setCurrentTab('home')}
+          />
+        )}
       </main>
 
       {/* ==========================================
