@@ -1437,7 +1437,6 @@ export default function App() {
                     </div>
                   )}
                 </div>
-              </div>
             ) : (
               // Listado de Noticias (Responsive, formato grande)
               <div className="space-y-8">
