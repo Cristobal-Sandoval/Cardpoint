@@ -402,8 +402,8 @@ function useAutoNews() {
           return [];
         };
 
-        const alphaArticles = await parseArticles(resAlpha, 'Pokémon Alpha', 6);
-        const pokeArticles = await parseArticles(resPoke, 'Pokemillon', 3);
+        const alphaArticles = await parseArticles(resAlpha, 'Pokémon Alpha', 15);
+        const pokeArticles = await parseArticles(resPoke, 'Pokemillon', 15);
         
         let allArticles = [...alphaArticles, ...pokeArticles];
         // Ordenar por fecha más reciente
@@ -459,6 +459,7 @@ export default function App() {
   // Sistema de Noticias
   const [newsList, setNewsList] = useState([]);
   const [selectedNews, setSelectedNews] = useState(null);
+  const [newsPage, setNewsPage] = useState(1);
 
   const { autoNews, loadingAuto } = useAutoNews();
 
@@ -1487,7 +1488,7 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {newsList.map((n) => (
+                  {newsList.slice((newsPage - 1) * 10, newsPage * 10).map((n) => (
                     <article key={n.id} className="group bg-white dark:bg-[#121824] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col">
                       <div className="relative h-64 md:h-72 overflow-hidden">
                         <img 
@@ -1542,6 +1543,50 @@ export default function App() {
                     </article>
                   ))}
                 </div>
+
+                {/* Controles de Paginación */}
+                {Math.ceil(newsList.length / 10) > 1 && (
+                  <div className="flex justify-center items-center gap-2 mt-12 pt-8 border-t border-slate-100 dark:border-slate-800">
+                    <button 
+                      onClick={() => {
+                        setNewsPage(p => Math.max(1, p - 1));
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      disabled={newsPage === 1}
+                      className="w-10 h-10 flex items-center justify-center rounded-xl font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    
+                    {Array.from({ length: Math.ceil(newsList.length / 10) }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        onClick={() => {
+                          setNewsPage(page);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className={`w-10 h-10 flex items-center justify-center rounded-xl font-bold text-sm transition-all cursor-pointer ${
+                          newsPage === page 
+                            ? 'bg-[#0052FF] text-white shadow-lg shadow-blue-500/30 scale-110' 
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+
+                    <button 
+                      onClick={() => {
+                        setNewsPage(p => Math.min(Math.ceil(newsList.length / 10), p + 1));
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      disabled={newsPage === Math.ceil(newsList.length / 10)}
+                      className="w-10 h-10 flex items-center justify-center rounded-xl font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
