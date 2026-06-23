@@ -1495,7 +1495,7 @@ export default function App() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 px-6 py-3 bg-[#0052FF] text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20"
                       >
-                        Continuar leyendo en la fuente original
+                        Fuente: {selectedNews.sourceName || 'Página Original'}
                         <ExternalLink size={16} />
                       </a>
                     </div>
@@ -1521,20 +1521,19 @@ export default function App() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {newsList.slice((newsPage - 1) * 10, newsPage * 10).map((n) => (
-                    <article key={n.id} className="group bg-white dark:bg-[#121824] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col">
+                    <article 
+                      key={n.id} 
+                      onClick={() => { setSelectedNews(n); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                      className="group bg-white dark:bg-[#121824] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer"
+                    >
                       <div className="relative h-64 md:h-72 overflow-hidden">
                         <img 
                           src={n.image} 
                           alt={n.title} 
                           className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
                         />
-                        {n.isExternal && (
-                          <div className="absolute top-4 right-4 bg-[#0052FF] text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1 uppercase tracking-wider z-10">
-                            <ExternalLink size={12} /> {n.sourceName || 'Exclusiva'}
-                          </div>
-                        )}
-                        {!n.isExternal && n.date && (
-                          <span className="absolute top-2.5 right-2.5 bg-[#0052FF] text-white text-[9px] font-black px-2 py-0.5 rounded shadow uppercase">
+                        {n.date && (
+                          <span className="absolute top-2.5 right-2.5 bg-[#0052FF] text-white text-[9px] font-black px-2 py-0.5 rounded shadow uppercase z-10">
                             {n.date}
                           </span>
                         )}
@@ -1553,23 +1552,9 @@ export default function App() {
                         </p>
                         <div className="mt-auto pt-5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                           <span className="text-[10px] font-black text-[#0052FF] uppercase tracking-wider flex items-center gap-1">Léelo ahora</span>
-                          {n.isExternal ? (
-                            <a 
-                              href={n.sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#0052FF] group-hover:text-white transition-all duration-300 cursor-pointer"
-                            >
-                              <ExternalLink size={18} className="stroke-[2.5] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                            </a>
-                          ) : (
-                            <button 
-                              onClick={() => setSelectedNews(n)}
-                              className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#0052FF] group-hover:text-white transition-all duration-300 cursor-pointer"
-                            >
-                              <ChevronRight size={20} className="stroke-[2.5] group-hover:translate-x-0.5 transition-transform" />
-                            </button>
-                          )}
+                          <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#0052FF] group-hover:text-white transition-all duration-300">
+                            <ChevronRight size={20} className="stroke-[2.5] group-hover:translate-x-0.5 transition-transform" />
+                          </div>
                         </div>
                       </div>
                     </article>
