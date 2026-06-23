@@ -25,6 +25,7 @@ const IcoImage      = () => <Icon d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2
 const RARITIES = ['Común', 'Poco Común', 'Rara', 'Doble Rara', 'Ultra Rara', 'Ilustración Rara', 'Especial Ilustración Rara', 'Ultra Rara Secreta', 'Secreta Dorada', 'Hyper Rara'];
 const ERAS = ['Escarlata y Púrpura', 'Espada y Escudo', 'SM - Sol y Luna', 'XY', 'Black & White', 'Otras'];
 const CONDITIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
+const LANGUAGES = ['Español', 'Inglés', 'Japonés', 'Otro'];
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const today = () => new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -110,9 +111,34 @@ function AdminCards({ toast }) {
   const [editingCard, setEditingCard] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const emptyForm = { name: '', set: 'Escarlata y Púrpura', set_code: '', rarity: 'Rara', price: '', condition: 'NM', image: '', description: '', in_stock: true };
+  const emptyForm = { name: '', set: 'Escarlata y Púrpura', set_code: '', rarity: 'Rara', price: '', condition: 'NM', image: '', description: '', in_stock: true, idioma: 'Español' };
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [apiSearching, setApiSearching] = useState(false);
+  const [apiResults, setApiResults] = useState([]);
+
+  const handleApiSearch = async () => {
+    if (!form.name) return;
+    setApiSearching(true);
+    try {
+      const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"${form.name}"`);
+      const data = await res.json();
+      setApiResults(data.data || []);
+    } catch (err) {
+      toast('Error buscando en API', 'error');
+    }
+    setApiSearching(false);
+  };
+
+  const selectApiResult = (card) => {
+    setForm(prev => ({
+      ...prev,
+      image: card.images?.large || card.images?.small || '',
+      set_code: card.set?.id || '',
+      rarity: card.rarity || prev.rarity
+    }));
+    setApiResults([]);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -123,8 +149,8 @@ function AdminCards({ toast }) {
 
   useEffect(() => { load(); }, []);
 
-  const openAdd = () => { setForm(emptyForm); setEditingCard(null); setShowForm(true); };
-  const openEdit = (card) => { setForm({ ...card }); setEditingCard(card); setShowForm(true); };
+  const openAdd = () => { setForm(emptyForm); setEditingCard(null); setApiResults([]); setShowForm(true); };
+  const openEdit = (card) => { setForm({ ...card, idioma: card.idioma || 'Español' }); setEditingCard(card); setApiResults([]); setShowForm(true); };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -174,7 +200,7 @@ function AdminCards({ toast }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-white/5 border-b border-white/8">
-                {['Imagen','Nombre','Set','Rareza','Precio','Condición','En Stock','Acciones'].map(h => (
+                {['Imagen','Nombre','Idioma','Set','Rareza','Precio','Condición','En Stock','Acciones'].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -186,6 +212,7 @@ function AdminCards({ toast }) {
                     <img src={card.image} alt={card.name} className="w-10 h-14 object-cover rounded-lg" onError={e => e.target.style.display='none'} />
                   </td>
                   <td className="px-4 py-3 font-semibold text-white max-w-[160px] truncate">{card.name}</td>
+                  <td className="px-4 py-3"><span className="px-2 py-0.5 bg-purple-900/40 text-purple-300 text-[10px] uppercase font-bold rounded-lg border border-purple-500/20">{card.idioma || 'Español'}</span></td>
                   <td className="px-4 py-3 text-slate-400 max-w-[140px] truncate">{card.set}</td>
                   <td className="px-4 py-3 text-slate-400 text-xs max-w-[140px] truncate">{card.rarity}</td>
                   <td className="px-4 py-3 text-green-400 font-bold whitespace-nowrap">${(card.price || 0).toLocaleString('es-CL')}</td>
@@ -212,8 +239,32 @@ function AdminCards({ toast }) {
       {showForm && (
         <Modal title={editingCard ? 'Editar Carta' : 'Nueva Carta'} onClose={() => setShowForm(false)}>
           <form onSubmit={handleSave} className="space-y-4">
-            <Field label="Nombre"><input className={inputCls} required value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Ej: Charizard ex" /></Field>
-            <div className="grid grid-cols-2 gap-3">
+            <Field label="Nombre">
+              <div className="flex gap-2">
+                <input className={inputCls} required value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Ej: Charizard ex" />
+                <button type="button" onClick={handleApiSearch} disabled={apiSearching || !form.name} className="px-4 py-2 bg-[#0052FF]/20 hover:bg-[#0052FF]/40 text-[#4d8aff] rounded-xl text-sm font-bold transition-all border border-[#0052FF]/30 disabled:opacity-50 whitespace-nowrap flex items-center gap-2">
+                  {apiSearching ? 'Buscando...' : 'Buscar Imagen'}
+                </button>
+              </div>
+              {apiResults.length > 0 && (
+                <div className="mt-2 p-3 bg-black/40 rounded-xl border border-white/10 max-h-[240px] overflow-y-auto grid grid-cols-4 gap-2 shadow-inner">
+                  {apiResults.map(res => (
+                    <div key={res.id} onClick={() => selectApiResult(res)} className="cursor-pointer hover:scale-105 transition-transform relative group">
+                      <img src={res.images?.small} alt={res.name} className="w-full rounded-lg shadow-md border border-white/5" />
+                      <div className="absolute inset-0 bg-[#0052FF]/20 opacity-0 group-hover:opacity-100 rounded-lg transition-opacity flex items-center justify-center">
+                        <IcoCheck />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Field>
+            <div className="grid grid-cols-3 gap-3">
+              <Field label="Idioma">
+                <select className={selectCls} value={form.idioma} onChange={e => setForm({...form, idioma: e.target.value})}>
+                  {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </Field>
               <Field label="Era / Set">
                 <select className={selectCls} value={form.set} onChange={e => setForm({...form, set: e.target.value})}>
                   {ERAS.map(e => <option key={e} value={e}>{e}</option>)}

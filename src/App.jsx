@@ -1150,6 +1150,9 @@ export default function App() {
                           <span className="absolute bottom-2.5 right-2.5 bg-[#0052FF] text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow">
                             {card.condition}
                           </span>
+                          <span className="absolute bottom-2.5 left-2.5 bg-purple-600/90 text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow uppercase">
+                            {card.idioma || 'ES'}
+                          </span>
                         </div>
 
                         <div className="p-4 flex flex-col flex-grow justify-between">
@@ -1459,6 +1462,9 @@ export default function App() {
                           />
                           <span className="absolute bottom-2 right-2 bg-[#0052FF] text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">
                             {card.condition}
+                          </span>
+                          <span className="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow uppercase">
+                            {card.idioma || 'ES'}
                           </span>
                         </div>
 
@@ -2031,7 +2037,7 @@ export default function App() {
                       <div>
                         <h4 className="font-bold text-xs text-slate-900 dark:text-white line-clamp-1">{card.name}</h4>
                         <span className="text-[9px] text-[#0052FF] font-medium">{card.set}</span>
-                        <span className="block text-[8px] text-slate-400">{card.condition}</span>
+                        <span className="block text-[8px] text-slate-400">{card.condition} • {card.idioma || 'ES'}</span>
                       </div>
                     </div>
                     
