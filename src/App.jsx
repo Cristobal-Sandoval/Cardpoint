@@ -409,7 +409,39 @@ function useAutoNews() {
         // Ordenar por fecha más reciente
         allArticles.sort((a, b) => new Date(b.date) - new Date(a.date));
         
-        setAutoNews(allArticles);
+        // Eliminar duplicados basados en coincidencias de palabras clave del título
+        const uniqueArticles = [];
+        const seenKeywordsSets = [];
+
+        const extractKeywords = (title) => {
+          const stopWords = ['para', 'como', 'sobre', 'desde', 'hasta', 'este', 'esta', 'nuevo', 'nueva', 'pokemon', 'pokémon', 'cartas', 'carta', 'juego', 'coleccion', 'colección'];
+          const words = title.toLowerCase().replace(/[^\w\sñáéíóú]/g, '').split(/\s+/);
+          return new Set(words.filter(w => w.length > 3 && !stopWords.includes(w)));
+        };
+
+        for (const article of allArticles) {
+          const keywords = extractKeywords(article.title);
+          let isDuplicate = false;
+
+          for (const seenKeywords of seenKeywordsSets) {
+            let overlapCount = 0;
+            for (const kw of keywords) {
+              if (seenKeywords.has(kw)) overlapCount++;
+            }
+            // Consideramos duplicado si comparten 2 palabras clave clave o un 60% de similitud
+            if (overlapCount >= 2 || (keywords.size > 0 && overlapCount / keywords.size > 0.6)) {
+              isDuplicate = true;
+              break;
+            }
+          }
+
+          if (!isDuplicate) {
+            uniqueArticles.push(article);
+            seenKeywordsSets.push(keywords);
+          }
+        }
+        
+        setAutoNews(uniqueArticles);
       } catch (err) {
         console.error('Error fetching auto news:', err);
       } finally {
@@ -1474,8 +1506,8 @@ export default function App() {
               <div className="space-y-8">
                 <div className="flex justify-between items-end">
                   <div>
-                    <span className="text-xs font-black text-[#0052FF] uppercase tracking-widest">COMUNIDAD TCG</span>
-                    <h2 className="text-3xl font-black tracking-tight mt-1 text-slate-900 dark:text-white">Últimas Noticias</h2>
+                    <span className="text-xs font-black text-[#0052FF] uppercase tracking-widest">MUNDO POKÉMON</span>
+                    <h2 className="text-3xl font-black tracking-tight mt-1 text-slate-900 dark:text-white">Noticias Pokémon</h2>
                   </div>
                 </div>
 
