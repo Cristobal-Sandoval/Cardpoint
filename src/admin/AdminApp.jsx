@@ -19,6 +19,7 @@ const IcoX          = () => <Icon d="M18 6 6 18M6 6l12 12" />;
 const IcoCheck      = () => <Icon d="M20 6 9 17l-5-5" />;
 const IcoEye        = () => <Icon d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />;
 const IcoEyeOff     = () => <Icon d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22" />;
+const IcoImage      = () => <Icon d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21" />;
 
 // ── RARITY OPTIONS ───────────────────────────────────────────────────────────
 const RARITIES = ['Común', 'Poco Común', 'Rara', 'Doble Rara', 'Ultra Rara', 'Ilustración Rara', 'Especial Ilustración Rara', 'Ultra Rara Secreta', 'Secreta Dorada', 'Hyper Rara'];
@@ -525,6 +526,92 @@ function AdminTournaments({ toast }) {
 }
 
 // ============================================================
+// BANNERS ADMIN SECTION
+// ============================================================
+function AdminBanners({ toast }) {
+  const [banners, setBanners] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase.from('admin_settings').select('data').eq('id', 'custom_banners').single();
+    setBanners(data?.data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const saveBanners = async (newBanners) => {
+    setSaving(true);
+    const { error } = await supabase.from('admin_settings').upsert({ 
+      id: 'custom_banners', 
+      data: newBanners, 
+      updated_at: new Date().toISOString() 
+    });
+    setSaving(false);
+    if (error) { toast('Error: ' + error.message, 'error'); }
+    else { toast('Banners guardados ✓', 'success'); setBanners(newBanners); }
+  };
+
+  const addBanner = () => {
+    const next = [...banners, { id: Date.now().toString(), type: 'image', imageUrl: '', linkUrl: '' }];
+    setBanners(next);
+  };
+
+  const updateBanner = (id, key, val) => {
+    const next = banners.map(b => b.id === id ? { ...b, [key]: val } : b);
+    setBanners(next);
+  };
+
+  const removeBanner = (id) => {
+    const next = banners.filter(b => b.id !== id);
+    setBanners(next);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Banners Principales</h1>
+          <p className="text-slate-400 text-sm mt-1">Configura las imágenes que se muestran en el carrusel de inicio.</p>
+        </div>
+        <button onClick={() => saveBanners(banners)} disabled={saving} className="flex items-center gap-2 bg-[#0052FF] hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-900/30 disabled:opacity-50">
+          {saving ? 'Guardando...' : 'Guardar Cambios'}
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center h-48 text-slate-500">Cargando banners...</div>
+      ) : (
+        <div className="space-y-4">
+          {banners.map((b, idx) => (
+            <div key={b.id} className="bg-white/3 border border-white/8 rounded-2xl p-5 hover:bg-white/5 transition-all">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-white font-bold text-lg flex items-center gap-2">Banner #{idx + 1}</h3>
+                <button onClick={() => removeBanner(b.id)} className="p-2 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-600/30 transition-all"><IcoTrash /></button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="URL de la Imagen">
+                  <input className={inputCls} value={b.imageUrl || ''} onChange={e => updateBanner(b.id, 'imageUrl', e.target.value)} placeholder="https://..." />
+                </Field>
+                <Field label="Enlace al hacer clic (Opcional)">
+                  <input className={inputCls} value={b.linkUrl || ''} onChange={e => updateBanner(b.id, 'linkUrl', e.target.value)} placeholder="https://..." />
+                </Field>
+              </div>
+            </div>
+          ))}
+          {banners.length === 0 && <div className="text-center py-12 text-slate-500 border border-dashed border-white/10 rounded-2xl">No hay banners personalizados. Se mostrarán los predeterminados de la aplicación.</div>}
+          <button onClick={addBanner} className="w-full mt-4 py-3 rounded-xl border border-dashed border-[#0052FF]/50 text-[#0052FF] hover:bg-[#0052FF]/10 font-bold transition-all text-sm">
+            + Añadir Nuevo Banner
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
 // LOGIN PAGE
 // ============================================================
 function AdminLogin({ onLogin }) {
@@ -660,6 +747,7 @@ export default function AdminApp() {
     { id: 'cards', label: 'Cartas', icon: <IcoCards /> },
     { id: 'news', label: 'Noticias', icon: <IcoNews /> },
     { id: 'tournaments', label: 'Torneos', icon: <IcoTrophy /> },
+    { id: 'banners', label: 'Banners', icon: <IcoImage /> },
   ];
 
   return (
@@ -744,6 +832,7 @@ export default function AdminApp() {
           {activeSection === 'cards'       && <AdminCards toast={showToast} />}
           {activeSection === 'news'        && <AdminNews toast={showToast} />}
           {activeSection === 'tournaments' && <AdminTournaments toast={showToast} />}
+          {activeSection === 'banners'     && <AdminBanners toast={showToast} />}
         </div>
       </main>
 

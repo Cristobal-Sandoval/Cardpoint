@@ -4,7 +4,6 @@ import { useCards } from './hooks/useCards';
 import { useNews } from './hooks/useNews';
 import { useTournaments } from './hooks/useTournaments';
 import { useAdmin } from './hooks/useAdmin';
-import AdminPanel from './AdminPanel';
 import { 
   Search, 
   MapPin, 
@@ -1992,20 +1991,7 @@ export default function App() {
           </div>
         )}
 
-        {/* VISTA ADMIN PANEL */}
-        {currentTab === 'admin' && (
-          <AdminPanel 
-            newsList={newsList}
-            hiddenNewsIds={hiddenNewsIds}
-            toggleHideNews={toggleHideNews}
-            tournaments={dbTournaments}
-            localTournaments={localTournaments}
-            updateLocalTournament={updateLocalTournament}
-            customBanners={customBanners}
-            updateCustomBanners={updateCustomBanners}
-            onLogout={() => setCurrentTab('home')}
-          />
-        )}
+
       </main>
 
       {/* ==========================================
