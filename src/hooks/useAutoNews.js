@@ -11,7 +11,8 @@ const TCGNEWS_FALLBACK_NEWS = [
     "content": "<p class=\"noti-p\"><strong>Pokémon TCG Pocket sumará una nueva expansión antes de cerrar junio.</strong> The Pokémon Company International anunció <strong>Maravillas Cotidianas (</strong><strong>Everyday Wonders)</strong>, colección que llegará al juego móvil el <strong>lunes 29 de junio de 2026 a las 21:00 horas de Chile continental</strong>.</p><p class=\"noti-p\">La expansión estará protagonizada por Pokémon como <strong>Pikachu, Piplup, Snorlax, Greedent y Sylveon</strong>, con una propuesta visual centrada en ilustraciones coloridas, tiernas y más relajadas dentro del universo de Pokémon.</p>",
     "sourceUrl": "https://www.tcgnews.cl/noticia/pokemon-tcg-pocket-maravillas-cotidianas-la-expansion-donde-los-pokemon-descansan-y-disfrutan",
     "sourceName": "Noticias TCG",
-    "isExternal": true
+    "isExternal": true,
+    "hasFullContent": true
   },
   {
     "id": "tcgnews-fallback-1",
@@ -22,7 +23,8 @@ const TCGNEWS_FALLBACK_NEWS = [
     "content": "<p class=\"noti-p\"><strong>El Team Rocket sabe aparecer justo cuando parecía que la conversación iba por otro lado.</strong> Esta vez no fue por una carta revelada ni por un anuncio oficial de The Pokémon Company, sino por un nuevo registro de marca en Japón que comenzó a generar preguntas entre jugadores y coleccionistas.</p>",
     "sourceUrl": "https://www.tcgnews.cl/noticia/un-nuevo-registro-en-japon-vuelve-a-poner-al-team-rocket-en-el-radar-de-pokemon",
     "sourceName": "Noticias TCG",
-    "isExternal": true
+    "isExternal": true,
+    "hasFullContent": true
   },
   {
     "id": "tcgnews-fallback-2",
@@ -33,7 +35,8 @@ const TCGNEWS_FALLBACK_NEWS = [
     "content": "<p class=\"noti-p\">Pokémon sorprendió a la comunidad con un nuevo adelanto oficial publicado a través de sus canales en X y YouTube. El video tiene como protagonista a <strong>Mega Rayquaza</strong>, uno de los Pokémon más reconocidos de la franquicia y una figura clave dentro de la historia de las Mega Evoluciones.</p>",
     "sourceUrl": "https://www.tcgnews.cl/noticia/mega-rayquaza-lidera-el-adelanto-de-nuevas-expansiones-de-pokemon-tcg",
     "sourceName": "Noticias TCG",
-    "isExternal": true
+    "isExternal": true,
+    "hasFullContent": true
   }
 ];
 
@@ -47,7 +50,8 @@ const POKEMON_FALLBACK_NEWS = [
     "content": "<p class=\"noti-p\"><strong>¡La espera para la nueva expansión de JCC Pokémon Pocket está por terminar!</strong> The Pokémon Company International ha anunciado oficialmente el lanzamiento de <em>Maravillas Cotidianas (Everyday Wonders)</em>, la última expansión para el aclamado juego de cartas digitales.</p><p class=\"noti-p\">Esta colección está diseñada especialmente para celebrar la vida diaria de los Pokémon, con ilustraciones llenas de color y calidez. Encontrarás a tus Pokémon favoritos en situaciones cotidianas, descansando, jugando y compartiendo con su entorno.</p><p class=\"noti-p\">Entre las cartas más destacadas se encuentran Pikachu descansando bajo una hoja, Snorlax durmiendo plácidamente en un prado, y un adorable Sylveon disfrutando de la tarde. La expansión estará disponible a nivel mundial a partir del lunes 29 de junio de 2026.</p>",
     "sourceUrl": "https://www.pokemon.com/el/noticias/jcc-pokemon-pocket-la-expansion-maravillas-cotidianas-llegara-muy-pronto",
     "sourceName": "Pokémon Oficial",
-    "isExternal": true
+    "isExternal": true,
+    "hasFullContent": true
   },
   {
     "id": "pokemon-fallback-1",
@@ -58,7 +62,8 @@ const POKEMON_FALLBACK_NEWS = [
     "content": "<p class=\"noti-p\"><strong>El evento del año en el mundo competitivo de Pokémon está a punto de comenzar.</strong> Se han publicado los cronogramas oficiales tanto para el Pokémon World Championships 2026 como para el festival interactivo PokémonXP, que se celebrará de forma paralela para todos los fanáticos y asistentes.</p><p class=\"noti-p\">Durante cinco días, los mejores jugadores del mundo se enfrentarán en las categorías de JCC Pokémon, Pokémon VGC, Pokémon GO y Pokémon UNITE. Las transmisiones oficiales contarán con comentarios en español y recompensas exclusivas en el juego para los espectadores.</p><p class=\"noti-p\">Además, en PokémonXP los visitantes podrán disfrutar de zonas de fotos, combates amistosos, venta de mercancía exclusiva del Pokémon Center y la oportunidad de conocer a emblemáticos creadores de contenido de la comunidad internacional.</p>",
     "sourceUrl": "https://www.pokemon.com/el/noticias/consulta-la-programacion-diaria-de-pokemonxp-y-del-mundial",
     "sourceName": "Pokémon Oficial",
-    "isExternal": true
+    "isExternal": true,
+    "hasFullContent": true
   },
   {
     "id": "pokemon-fallback-2",
@@ -69,7 +74,8 @@ const POKEMON_FALLBACK_NEWS = [
     "content": "<p class=\"noti-p\"><strong>Prepara tus Poké Balls y mira hacia el cielo.</strong> Pokémon GO ha dado inicio al evento especial \"Taxi Volador\", que pondrá el foco en Squawkabilly y otros Pokémon de tipo Volador provenientes de diversas regiones.</p><p class=\"noti-p\">Durante este evento, Squawkabilly aparecerá con mayor frecuencia en estado salvaje, incluyendo sus diferentes formas de plumaje. Los entrenadores podrán completar tareas de investigación de campo exclusivas para ganar encuentros con Pokémon como Skarmory, Pidgeot y Noibat.</p><p class=\"noti-p\">Además, el Equipo GO Rocket intentará arruinar la fiesta. Los reclutas utilizarán Pokémon oscuros de tipo Volador, y los líderes Cliff, Sierra y Arlo tendrán nuevos equipos listos para desafiarte. ¡No dejes pasar la oportunidad de rescatar a estos poderosos Pokémon oscuros!</p>",
     "sourceUrl": "https://www.pokemon.com/el/news/squawkabilly-se-luce-en-el-evento-taxi-volador-de-pokemon-go",
     "sourceName": "Pokémon Oficial",
-    "isExternal": true
+    "isExternal": true,
+    "hasFullContent": true
   }
 ];
 
@@ -83,7 +89,8 @@ const POKEMONALPHA_FALLBACK_NEWS = [
     "content": "<p class=\"noti-p\"><strong>Una nueva y encantadora animación en stop-motion viene en camino.</strong> The Pokémon Company, en colaboración con el legendario estudio Aardman Animations (creadores de <em>Wallace y Gromit</em> y <em>Pollitos en Fuga</em>), ha revelado la portada y nuevos detalles de su próximo proyecto conjunto.</p><p class=\"noti-p\">Titulado <em>Historias Pokémon: Las Desventuras de Sirfetch’d y Pichu</em>, este corto animado narrará la cómica y accidentada relación entre un Sirfetch'd sumamente orgulloso y caballeroso, y un travieso Pichu que no para de meterse en problemas.</p><p class=\"noti-p\">La producción utiliza técnicas tradicionales de stop-motion con marionetas de arcilla y resina meticulosamente esculpidas a mano. Los creadores han destacado que el corto no tendrá diálogos hablados, confiando todo el humor y la emoción en la expresividad visual clásica de Aardman y la personalidad única de ambos Pokémon.</p>",
     "sourceUrl": "https://pokemonalpha.es/2026/06/desventuras-sirfetchd-pichu-portada/",
     "sourceName": "Pokémon Alpha",
-    "isExternal": true
+    "isExternal": true,
+    "hasFullContent": true
   },
   {
     "id": "pokemonalpha-fallback-1",
@@ -94,7 +101,8 @@ const POKEMONALPHA_FALLBACK_NEWS = [
     "content": "<p class=\"noti-p\"><strong>¡El verano está en su punto máximo y Pokémon GO lo sabe!</strong> Niantic ha revelado la hoja de ruta completa para el mes de julio de 2026, repleta de Días de la Comunidad, eventos temáticos de incursiones y bonus especiales para todos los jugadores.</p><p class=\"noti-p\">El Día de la Comunidad de este mes estará protagonizado por un Pokémon muy solicitado por los entrenadores, ofreciendo un movimiento exclusivo sumamente útil para el juego competitivo en la Liga Combate GO. Además, se activará un bonus de triple experiencia por captura durante las tres horas del evento.</p><p class=\"noti-p\">En el apartado de incursiones de cinco estrellas, contaremos con el regreso de varios Pokémon Legendarios en su variante variocolor (shiny), así como horas de incursiones todos los miércoles del mes. Los fines de semana se reservarán para incursiones oscuras especiales que pondrán a prueba la estrategia de los grupos locales.</p>",
     "sourceUrl": "https://pokemonalpha.es/2026/06/novedades-julio-2026-pokemon-go/",
     "sourceName": "Pokémon Alpha",
-    "isExternal": true
+    "isExternal": true,
+    "hasFullContent": true
   },
   {
     "id": "pokemonalpha-fallback-2",
@@ -105,7 +113,8 @@ const POKEMONALPHA_FALLBACK_NEWS = [
     "content": "<p class=\"noti-p\"><strong>Mantente al día con todo lo que ocurre esta semana en el juego móvil de Niantic.</strong> Te traemos nuestro resumen semanal detallado para que no te pierdas ningún evento, hora destacada ni rotación de jefes de incursión entre el 22 y el 28 de junio.</p><p class=\"noti-p\">La Hora del Pokémon Destacado de este martes presentará una gran oportunidad para acumular caramelos y polvo estelar con un multiplicador de transferencia. Asimismo, el miércoles por la tarde se activará la Hora de Incursiones con jefes legendarios de tipo dragón y volador.</p><p class=\"noti-p\">Hacia el fin de semana, se espera el inicio de un mini-evento temático enfocado en tareas de exploración y eclosión de huevos, ideal para salir a caminar con tus amigos de la comunidad local. ¡Prepara tus incubadoras y asegura espacio en tu almacenamiento de Pokémon!</p>",
     "sourceUrl": "https://pokemonalpha.es/2026/06/resumen-semanal-pokemon-go-22-28-junio-2026/",
     "sourceName": "Pokémon Alpha",
-    "isExternal": true
+    "isExternal": true,
+    "hasFullContent": true
   }
 ];
 

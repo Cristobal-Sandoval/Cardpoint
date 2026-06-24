@@ -423,121 +423,127 @@ export default function App() {
     let isMounted = true;
     const fetchFullContent = async () => {
       setLoadingFullContent(true);
-      const PROXIES = [
-        (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-        (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-        (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
-      ];
+      try {
+        const PROXIES = [
+          (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+          (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+          (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+        ];
 
-      const fetchWithTimeout = async (url, ms = 6000) => {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), ms);
-        try {
-          const res = await fetch(url, { signal: controller.signal });
-          clearTimeout(id);
-          return res;
-        } catch (e) {
-          clearTimeout(id);
-          throw e;
-        }
-      };
-
-      let success = false;
-      let html = '';
-
-      for (const makeUrl of PROXIES) {
-        try {
-          const proxyUrl = makeUrl(selectedNews.sourceUrl);
-          const res = await fetchWithTimeout(proxyUrl, 6000);
-          if (!res.ok) continue;
-
-          const contentType = res.headers.get('content-type') || '';
-          if (contentType.includes('application/json')) {
-            const json = await res.json();
-            html = json.contents || json.data || '';
-          } else {
-            html = await res.text();
+        const fetchWithTimeout = async (url, ms = 3000) => {
+          const controller = new AbortController();
+          const id = setTimeout(() => controller.abort(), ms);
+          try {
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(id);
+            return res;
+          } catch (e) {
+            clearTimeout(id);
+            throw e;
           }
+        };
 
-          if (html) {
-            success = true;
-            break;
-          }
-        } catch (e) {
-          console.warn("Error fetching full content proxy:", e);
-        }
-      }
+        let success = false;
+        let html = '';
 
-      if (!isMounted) return;
+        for (const makeUrl of PROXIES) {
+          try {
+            const proxyUrl = makeUrl(selectedNews.sourceUrl);
+            const res = await fetchWithTimeout(proxyUrl, 3000);
+            if (!res.ok) continue;
 
-      if (success && html) {
-        try {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(html, 'text/html');
-          let paragraphs = [];
-
-          if (selectedNews.sourceName === 'Pokémon Oficial') {
-            const article = doc.querySelector('article') || doc.querySelector('.news-detail') || doc.querySelector('.news-article') || doc.querySelector('main');
-            if (article) {
-              paragraphs = Array.from(article.querySelectorAll('p, h2, h3'));
-            }
-          } else if (selectedNews.sourceName === 'Pokémon Alpha') {
-            const contentDiv = doc.querySelector('.entry-content') || doc.querySelector('.post-content') || doc.querySelector('article') || doc.querySelector('main');
-            if (contentDiv) {
-              paragraphs = Array.from(contentDiv.querySelectorAll('p, h2, h3'));
-            }
-          } else if (selectedNews.sourceName === 'Noticias TCG') {
-            const tcgPs = doc.querySelectorAll('p.noti-p');
-            if (tcgPs && tcgPs.length > 0) {
-              paragraphs = Array.from(tcgPs);
+            const contentType = res.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+              const json = await res.json();
+              html = json.contents || json.data || '';
             } else {
-              const container = doc.querySelector('.noti-body') || doc.querySelector('article') || doc.querySelector('main');
-              if (container) {
-                paragraphs = Array.from(container.querySelectorAll('p, h2, h3'));
+              html = await res.text();
+            }
+
+            if (html) {
+              success = true;
+              break;
+            }
+          } catch (e) {
+            console.warn("Error fetching full content proxy:", e);
+          }
+        }
+
+        if (!isMounted) return;
+
+        if (success && html) {
+          try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            let paragraphs = [];
+
+            if (selectedNews.sourceName === 'Pokémon Oficial') {
+              const article = doc.querySelector('article') || doc.querySelector('.news-detail') || doc.querySelector('.news-article') || doc.querySelector('main');
+              if (article) {
+                paragraphs = Array.from(article.querySelectorAll('p, h2, h3'));
+              }
+            } else if (selectedNews.sourceName === 'Pokémon Alpha') {
+              const contentDiv = doc.querySelector('.entry-content') || doc.querySelector('.post-content') || doc.querySelector('article') || doc.querySelector('main');
+              if (contentDiv) {
+                paragraphs = Array.from(contentDiv.querySelectorAll('p, h2, h3'));
+              }
+            } else if (selectedNews.sourceName === 'Noticias TCG') {
+              const tcgPs = doc.querySelectorAll('p.noti-p');
+              if (tcgPs && tcgPs.length > 0) {
+                paragraphs = Array.from(tcgPs);
+              } else {
+                const container = doc.querySelector('.noti-body') || doc.querySelector('article') || doc.querySelector('main');
+                if (container) {
+                  paragraphs = Array.from(container.querySelectorAll('p, h2, h3'));
+                }
               }
             }
-          }
 
-          if (paragraphs.length === 0) {
-            const main = doc.querySelector('article') || doc.querySelector('main') || doc.body;
-            if (main) paragraphs = Array.from(main.querySelectorAll('p'));
-          }
+            if (paragraphs.length === 0) {
+              const main = doc.querySelector('article') || doc.querySelector('main') || doc.body;
+              if (main) paragraphs = Array.from(main.querySelectorAll('p'));
+            }
 
-          const cleanParas = paragraphs
-            .map(el => {
-              const text = el.textContent?.trim() || '';
-              if (text.length < 10) return null;
-              if (el.tagName.startsWith('H')) {
-                return `<h3 class="text-lg font-black text-slate-900 dark:text-white mt-6 mb-3">${text}</h3>`;
-              }
-              return `<p class="text-sm text-slate-650 dark:text-slate-350 leading-relaxed mb-4">${text}</p>`;
-            })
-            .filter(Boolean)
-            .join('');
+            const cleanParas = paragraphs
+              .map(el => {
+                const text = el.textContent?.trim() || '';
+                if (text.length < 10) return null;
+                if (el.tagName && el.tagName.startsWith('H')) {
+                  return `<h3 class="text-lg font-black text-slate-900 dark:text-white mt-6 mb-3">${text}</h3>`;
+                }
+                return `<p class="text-sm text-slate-650 dark:text-slate-350 leading-relaxed mb-4">${text}</p>`;
+              })
+              .filter(Boolean)
+              .join('');
 
-          if (cleanParas && cleanParas.length > 100) {
-            setSelectedNews(prev => {
-              if (prev && prev.id === selectedNews.id) {
-                return { ...prev, content: cleanParas, hasFullContent: true };
-              }
-              return prev;
-            });
-            setLoadingFullContent(false);
-            return;
+            if (cleanParas && cleanParas.length > 100) {
+              setSelectedNews(prev => {
+                if (prev && prev.id === selectedNews.id) {
+                  return { ...prev, content: cleanParas, hasFullContent: true };
+                }
+                return prev;
+              });
+              return;
+            }
+          } catch (parseErr) {
+            console.error("Error parsing news content:", parseErr);
           }
-        } catch (parseErr) {
-          console.error("Error parsing news content:", parseErr);
+        }
+
+        // Caer suavemente al contenido pre-cargado de fallback (ya enriquecido en useAutoNews)
+        setSelectedNews(prev => {
+          if (prev && prev.id === selectedNews.id) {
+            return { ...prev, hasFullContent: true };
+          }
+          return prev;
+        });
+      } catch (err) {
+        console.error("Critical error in fetchFullContent:", err);
+      } finally {
+        if (isMounted) {
+          setLoadingFullContent(false);
         }
       }
-
-      // Caer suavemente al contenido pre-cargado de fallback (ya enriquecido en useAutoNews)
-      setSelectedNews(prev => {
-        if (prev && prev.id === selectedNews.id) {
-          return { ...prev, hasFullContent: true };
-        }
-        return prev;
-      });
-      setLoadingFullContent(false);
     };
 
     fetchFullContent();
