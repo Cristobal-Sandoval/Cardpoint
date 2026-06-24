@@ -120,17 +120,36 @@ function AdminCards({ toast }) {
   const [saving, setSaving] = useState(false);
   const [apiSearching, setApiSearching] = useState(false);
   const [apiResults, setApiResults] = useState([]);
+  const [apiSearchError, setApiSearchError] = useState(null); // null | 'no_results' | 'timeout' | 'error'
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const handleApiSearch = async () => {
     if (!form.name) return;
     setApiSearching(true);
+    setApiResults([]);
+    setApiSearchError(null);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
     try {
-      const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"${form.name}"`);
+      const res = await fetch(
+        `https://api.pokemontcg.io/v2/cards?q=name:"${form.name}"&pageSize=20`,
+        { signal: controller.signal }
+      );
+      clearTimeout(timeout);
       const data = await res.json();
-      setApiResults(data.data || []);
+      const results = data.data || [];
+      if (results.length === 0) {
+        setApiSearchError('no_results');
+      } else {
+        setApiResults(results);
+      }
     } catch (err) {
-      toast('Error buscando en API', 'error');
+      clearTimeout(timeout);
+      if (err.name === 'AbortError') {
+        setApiSearchError('timeout');
+      } else {
+        setApiSearchError('error');
+      }
     }
     setApiSearching(false);
   };
@@ -297,8 +316,35 @@ function AdminCards({ toast }) {
                       <div className="absolute inset-0 bg-[#0052FF]/20 opacity-0 group-hover:opacity-100 rounded-lg transition-opacity flex items-center justify-center">
                         <IcoCheck />
                       </div>
+                      <p className="text-[9px] text-slate-400 text-center mt-1 truncate">{res.set?.name}</p>
                     </div>
                   ))}
+                </div>
+              )}
+              {/* Error / No results panel */}
+              {apiSearchError && (
+                <div className="mt-2 p-3 bg-amber-900/20 rounded-xl border border-amber-500/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-amber-400 text-xs font-bold">
+                      {apiSearchError === 'timeout' && '⏱️ La búsqueda tardó demasiado (sin respuesta)'}
+                      {apiSearchError === 'no_results' && '🔍 No se encontraron cartas con ese nombre'}
+                      {apiSearchError === 'error' && '⚠️ Error al conectar con la API'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleApiSearch}
+                      className="text-[10px] px-2 py-1 bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 rounded-lg font-bold transition-all border border-amber-500/30"
+                    >
+                      🔄 Reintentar
+                    </button>
+                  </div>
+                  <div className="text-[10px] text-slate-400 space-y-1">
+                    <p className="font-semibold text-slate-300">💡 Sugerencias:</p>
+                    <p>• Usa el nombre en <strong className="text-white">inglés</strong>: "Starmie" en vez de "Mega Starmie"</p>
+                    <p>• Prueba sin "Mega", "ex", "V" o "VMAX" al buscar</p>
+                    <p>• Revisa la ortografía exacta del nombre</p>
+                    <p>• Si no aparece, pega la URL de imagen directamente abajo</p>
+                  </div>
                 </div>
               )}
             </Field>
