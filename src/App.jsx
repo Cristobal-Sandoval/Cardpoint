@@ -493,6 +493,14 @@ export default function App() {
     setIsImageZoomed(false);
   }, [selectedCardDetail]);
 
+  // Reset sub-state views and modals when changing tabs
+  useEffect(() => {
+    if (currentTab !== 'news') {
+      setSelectedNews(null);
+    }
+    setSelectedCardDetail(null);
+  }, [currentTab]);
+
   // Control de Animación de Carrusel Continuo (cartas)
   const carruselRef = useRef(null);
   const [isPaused, setIsPaused] = useState(false);
