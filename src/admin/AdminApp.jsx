@@ -115,7 +115,7 @@ function AdminCards({ toast }) {
   const [editingCard, setEditingCard] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const emptyForm = { name: '', set: 'Escarlata y Púrpura', set_code: '', rarity: 'Rara', price: '', condition: 'NM', image: '', description: '', in_stock: true, idioma: 'Español', is_reverse: false, stock: 1 };
+  const emptyForm = { name: '', set: 'Escarlata y Púrpura', set_code: '', rarity: 'Rara', price: '', condition: 'NM', image: '', real_photo: '', description: '', in_stock: true, idioma: 'Español', is_reverse: false, stock: 1 };
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [apiSearching, setApiSearching] = useState(false);
@@ -304,8 +304,20 @@ function AdminCards({ toast }) {
               </div>
             </div>
             <Field label="Precio (CLP)"><input className={inputCls} type="number" required min="0" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="Ej: 89990" /></Field>
-            <Field label="URL de Imagen"><input className={inputCls} value={form.image} onChange={e => setForm({...form, image: e.target.value})} placeholder="https://images.pokemontcg.io/..." /></Field>
+            <Field label="URL de Imagen (API / Oficial)">
+              <input className={inputCls} value={form.image} onChange={e => setForm({...form, image: e.target.value})} placeholder="https://images.pokemontcg.io/..." />
+            </Field>
             {form.image && <img src={form.image} alt="preview" className="w-20 h-28 object-contain rounded-xl border border-white/10 mx-auto" />}
+            <Field label="📸 Foto Real de tu Carta (URL)">
+              <input className={inputCls} value={form.real_photo || ''} onChange={e => setForm({...form, real_photo: e.target.value})} placeholder="https://... (foto de tu carta real, opcional)" />
+              <p className="text-[10px] text-slate-500 mt-1">Sube la foto a un servicio como Imgur.com y pega el enlace directo aquí.</p>
+            </Field>
+            {form.real_photo && (
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Vista previa: Foto Real</span>
+                <img src={form.real_photo} alt="preview real" className="w-20 h-28 object-cover rounded-xl border-2 border-green-500/40 mx-auto shadow-lg" />
+              </div>
+            )}
             <Field label="Descripción"><textarea className={`${inputCls} resize-none`} rows={3} value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Descripción de la carta..." /></Field>
             <label className="flex items-center gap-3 cursor-pointer select-none">
               <div className={`w-11 h-6 rounded-full transition-all ${form.in_stock ? 'bg-[#0052FF]' : 'bg-slate-600'}`} onClick={() => setForm({...form, in_stock: !form.in_stock})}>

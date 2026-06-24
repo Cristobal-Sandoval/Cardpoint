@@ -464,6 +464,7 @@ export default function App() {
   const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [showTransferDetails, setShowTransferDetails] = useState(false);
   const [selectedCardDetail, setSelectedCardDetail] = useState(null);
+  const [showRealPhoto, setShowRealPhoto] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
 
   // Sync noticias desde Supabase al estado local y combinarlas con las automáticas
@@ -1025,7 +1026,7 @@ export default function App() {
                       >
                         <div 
                           className="relative aspect-[3/4] bg-slate-50 dark:bg-slate-950 overflow-hidden cursor-pointer" 
-                          onClick={() => setSelectedCardDetail(card)}
+                          onClick={() => { setSelectedCardDetail(card); setShowRealPhoto(false); }}
                         >
                           <img 
                             src={card.image} 
@@ -2065,13 +2066,34 @@ export default function App() {
           <div className="relative w-full max-w-2xl bg-white dark:bg-[#121824] rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl z-10 flex flex-col md:flex-row animate-scale-up max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-y-visible no-scrollbar">
             
             {/* Imagen Izquierda */}
-            <div className="md:w-1/2 bg-slate-50 dark:bg-slate-950 p-6 flex items-center justify-center border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800">
+            <div className="md:w-1/2 bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center gap-4 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800">
               <img 
-                src={selectedCardDetail.image} 
+                src={showRealPhoto && selectedCardDetail.real_photo ? selectedCardDetail.real_photo : selectedCardDetail.image} 
                 alt={selectedCardDetail.name} 
                 loading="lazy"
-                className="w-full max-h-[250px] sm:max-h-[300px] md:max-h-[380px] object-contain transform hover:scale-105 transition-transform duration-300" 
+                className="w-full max-h-[250px] sm:max-h-[300px] md:max-h-[360px] object-contain transform hover:scale-105 transition-transform duration-300" 
               />
+              {/* Toggle button: only show if real_photo exists */}
+              {selectedCardDetail.real_photo && (
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 rounded-xl p-1">
+                  <button
+                    onClick={() => setShowRealPhoto(false)}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                      !showRealPhoto ? 'bg-white dark:bg-slate-700 text-[#0052FF] shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    🎨 Arte Oficial
+                  </button>
+                  <button
+                    onClick={() => setShowRealPhoto(true)}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                      showRealPhoto ? 'bg-white dark:bg-slate-700 text-green-500 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    📸 Foto Real
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Detalles Derecha */}
