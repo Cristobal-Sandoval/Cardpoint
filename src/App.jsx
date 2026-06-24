@@ -1869,7 +1869,7 @@ export default function App() {
                 </div>
 
                 {/* Controles de Paginación */}
-                {Math.ceil(visibleNewsList.length / 6) > 1 && (
+                {visibleNewsList.length > 0 && (
                   <div className="flex justify-center items-center gap-2 mt-12 pt-8 border-t border-slate-100 dark:border-slate-800">
                     <button 
                       onClick={() => {

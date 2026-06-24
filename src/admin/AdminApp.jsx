@@ -597,7 +597,7 @@ function AdminNews({ toast }) {
             {combinedNews.length === 0 && <div className="text-center py-16 text-slate-500">No hay noticias registradas aún.</div>}
           </div>
 
-          {totalPages > 1 && (
+          {totalPages > 0 && (
             <div className="flex items-center justify-center gap-1.5 mt-6 pt-6 border-t border-white/5">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
