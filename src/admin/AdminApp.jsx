@@ -466,6 +466,15 @@ function AdminNews({ toast }) {
   const { autoNews, loadingAuto } = useAutoNews();
   const { adminSettings, updateSetting } = useAdmin();
   const hiddenNewsIds = adminSettings?.hidden_news || [];
+  const newsSources = adminSettings?.news_sources || { pokemon: true, pokemonalpha: true, tcgnews: true, autogenerate: true };
+
+  const handleToggleSource = async (key) => {
+    const nextSources = {
+      ...newsSources,
+      [key]: !newsSources[key]
+    };
+    await updateSetting('news_sources', nextSources);
+  };
 
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -610,6 +619,101 @@ function AdminNews({ toast }) {
         </div>
       )}
 
+      {/* Configuración de Fuentes de Noticias */}
+      <div className="mt-8 bg-white/3 border border-white/8 rounded-3xl p-6 space-y-4">
+        <div>
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            ⚙️ Configuración de Noticias Autogeneradas
+          </h2>
+          <p className="text-slate-400 text-xs mt-1">
+            Elige qué portales externos se utilizarán para alimentar la sección de noticias de la tienda de forma automática.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          {/* Master Toggle */}
+          <div className="md:col-span-2 flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-2xl">
+            <div>
+              <span className="text-sm font-semibold text-white block">Habilitar Noticias Autogeneradas</span>
+              <span className="text-xs text-slate-500 block">Si se desactiva, solo se mostrarán las noticias manuales que crees aquí.</span>
+            </div>
+            <button 
+              onClick={() => handleToggleSource('autogenerate')} 
+              className={`w-11 h-6 rounded-full transition-all relative flex items-center cursor-pointer ${
+                newsSources.autogenerate ? 'bg-[#0052FF]' : 'bg-slate-600'
+              }`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                newsSources.autogenerate ? 'translate-x-5.5' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+
+          {/* Source 1: Pokemon.com */}
+          <div className={`flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-2xl transition-opacity ${
+            !newsSources.autogenerate ? 'opacity-40 pointer-events-none' : ''
+          }`}>
+            <div>
+              <span className="text-sm font-semibold text-white block">Pokémon.com (Oficial)</span>
+              <span className="text-xs text-slate-500 block">https://www.pokemon.com/el/noticias</span>
+            </div>
+            <button 
+              disabled={!newsSources.autogenerate}
+              onClick={() => handleToggleSource('pokemon')} 
+              className={`w-11 h-6 rounded-full transition-all relative flex items-center cursor-pointer ${
+                newsSources.pokemon ? 'bg-[#0052FF]' : 'bg-slate-600'
+              }`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                newsSources.pokemon ? 'translate-x-5.5' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+
+          {/* Source 2: PokemonAlpha */}
+          <div className={`flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-2xl transition-opacity ${
+            !newsSources.autogenerate ? 'opacity-40 pointer-events-none' : ''
+          }`}>
+            <div>
+              <span className="text-sm font-semibold text-white block">Pokémon Alpha</span>
+              <span className="text-xs text-slate-500 block">https://pokemonalpha.es</span>
+            </div>
+            <button 
+              disabled={!newsSources.autogenerate}
+              onClick={() => handleToggleSource('pokemonalpha')} 
+              className={`w-11 h-6 rounded-full transition-all relative flex items-center cursor-pointer ${
+                newsSources.pokemonalpha ? 'bg-[#0052FF]' : 'bg-slate-600'
+              }`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                newsSources.pokemonalpha ? 'translate-x-5.5' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+
+          {/* Source 3: TCGNews.cl */}
+          <div className={`flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-2xl transition-opacity ${
+            !newsSources.autogenerate ? 'opacity-40 pointer-events-none' : ''
+          }`}>
+            <div>
+              <span className="text-sm font-semibold text-white block">TCGNews (Chile)</span>
+              <span className="text-xs text-slate-500 block">https://www.tcgnews.cl</span>
+            </div>
+            <button 
+              disabled={!newsSources.autogenerate}
+              onClick={() => handleToggleSource('tcgnews')} 
+              className={`w-11 h-6 rounded-full transition-all relative flex items-center cursor-pointer ${
+                newsSources.tcgnews ? 'bg-[#0052FF]' : 'bg-slate-600'
+              }`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                newsSources.tcgnews ? 'translate-x-5.5' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {showForm && (
         <Modal title={editingItem ? 'Editar Noticia' : 'Nueva Noticia'} onClose={() => setShowForm(false)}>
           <form onSubmit={handleSave} className="space-y-4">
@@ -648,13 +752,59 @@ function AdminTournaments({ toast }) {
   const [editingItem, setEditingItem] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const emptyForm = { day: '', month: 'ENE', title: '', format: 'Estándar', location: 'Concepción, Chile', time: '15:00 hrs', entry_fee: '$5.000', status: 'Inscripciones Abiertas' };
+  const emptyForm = { 
+    day: '', 
+    month: 'ENE', 
+    title: '', 
+    format: 'Estándar', 
+    location: 'Concepción, Chile', 
+    time: '15:00 hrs', 
+    entry_fee: '$5.000', 
+    status: 'Inscripciones Abiertas',
+    is_recurring: false,
+    recurring_days: '',
+    registration_link: '',
+    specific_date: ''
+  };
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
   const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+  const WEEK_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
   const FORMATS = ['Estándar', 'Expandido', 'Libre', 'Draft'];
   const STATUSES = ['Inscripciones Abiertas', 'Próximamente', 'Lleno', 'Finalizado'];
+
+  const handleSpecificDateChange = (val) => {
+    if (val) {
+      const parts = val.split('-'); // YYYY-MM-DD
+      if (parts.length === 3) {
+        const dayStr = String(parseInt(parts[2], 10)); // ej: "05" -> "5"
+        const monthIndex = parseInt(parts[1], 10) - 1;
+        const monthStr = MONTHS[monthIndex] || 'ENE';
+        setForm(prev => ({
+          ...prev,
+          specific_date: val,
+          day: dayStr,
+          month: monthStr
+        }));
+        return;
+      }
+    }
+    setForm(prev => ({ ...prev, specific_date: val }));
+  };
+
+  const handleRecurringDayChange = (day, checked) => {
+    const currentDays = form.recurring_days ? form.recurring_days.split(',') : [];
+    let nextDays;
+    if (checked) {
+      nextDays = [...currentDays, day];
+    } else {
+      nextDays = currentDays.filter(d => d !== day);
+    }
+    // Mantener orden lógico de la semana
+    const sortedDays = WEEK_DAYS.filter(d => nextDays.includes(d));
+    setForm(prev => ({ ...prev, recurring_days: sortedDays.join(',') }));
+  };
 
   const load = async () => {
     setLoading(true);
@@ -716,16 +866,30 @@ function AdminTournaments({ toast }) {
         <div className="space-y-3">
           {tournaments.map(t => (
             <div key={t.id} className="flex items-center gap-4 bg-white/3 border border-white/8 rounded-2xl p-4 hover:bg-white/5 transition-all">
-              <div className="w-14 h-14 rounded-xl bg-[#0052FF]/10 border border-[#0052FF]/30 flex flex-col items-center justify-center flex-shrink-0">
-                <span className="text-xl font-black text-white leading-none">{t.day}</span>
-                <span className="text-[10px] font-bold text-[#0052FF] uppercase">{t.month}</span>
+              <div className="w-14 h-14 rounded-xl bg-[#0052FF]/10 border border-[#0052FF]/30 flex flex-col items-center justify-center flex-shrink-0 text-center">
+                {t.is_recurring ? (
+                  <>
+                    <span className="text-lg font-black text-white leading-none">🔄</span>
+                    <span className="text-[8px] font-black text-[#0052FF] uppercase mt-0.5">Recur</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xl font-black text-white leading-none">{t.day}</span>
+                    <span className="text-[10px] font-bold text-[#0052FF] uppercase">{t.month}</span>
+                  </>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-semibold text-white">{t.title}</h3>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusColor(t.status)}`}>{t.status}</span>
                 </div>
-                <p className="text-slate-400 text-xs mt-0.5">{t.format} · {t.location} · {t.time} · {t.entry_fee}</p>
+                <p className="text-slate-400 text-xs mt-0.5">
+                  {t.is_recurring ? `Repite: ${t.recurring_days || 'Sin días'}` : `Fecha: ${t.specific_date || (t.day + ' ' + t.month)}`} · {t.format} · {t.location} · {t.time} · {t.entry_fee}
+                </p>
+                {t.registration_link && (
+                  <p className="text-[10px] text-slate-500 truncate mt-0.5">Inscripción: {t.registration_link}</p>
+                )}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button onClick={() => openEdit(t)} className="p-2 rounded-lg bg-white/5 hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 transition-all"><IcoEdit /></button>
@@ -741,14 +905,54 @@ function AdminTournaments({ toast }) {
         <Modal title={editingItem ? 'Editar Torneo' : 'Nuevo Torneo'} onClose={() => setShowForm(false)}>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Día"><input className={inputCls} required value={form.day} onChange={e => setForm({...form, day: e.target.value})} placeholder="Ej: 25" maxLength={2} /></Field>
-              <Field label="Mes">
-                <select className={selectCls} value={form.month} onChange={e => setForm({...form, month: e.target.value})}>
-                  {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+              <Field label="Tipo de Torneo">
+                <select className={selectCls} value={form.is_recurring ? 'recurring' : 'manual'} onChange={e => setForm({...form, is_recurring: e.target.value === 'recurring'})}>
+                  <option value="manual">Manual (Fecha Única)</option>
+                  <option value="recurring">Recurrente (Semanal)</option>
                 </select>
               </Field>
+              <Field label="Nombre del Torneo">
+                <input className={inputCls} required value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Ej: Copa CardPoint" />
+              </Field>
             </div>
-            <Field label="Nombre del Torneo"><input className={inputCls} required value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Ej: Copa CardPoint" /></Field>
+
+            {form.is_recurring ? (
+              <Field label="Días de la Semana (Repetición)">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                  {WEEK_DAYS.map(d => {
+                    const isChecked = (form.recurring_days || '').split(',').includes(d);
+                    return (
+                      <label key={d} className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked} 
+                          onChange={e => handleRecurringDayChange(d, e.target.checked)}
+                          className="rounded border-white/10 bg-white/5 text-[#0052FF] focus:ring-0 w-4 h-4 cursor-pointer"
+                        />
+                        <span>{d}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </Field>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Fecha del Torneo">
+                  <input 
+                    type="date" 
+                    className={inputCls} 
+                    required={!form.is_recurring}
+                    value={form.specific_date || ''} 
+                    onChange={e => handleSpecificDateChange(e.target.value)} 
+                  />
+                </Field>
+                <div className="grid grid-cols-2 gap-2 opacity-60 pointer-events-none">
+                  <Field label="Día"><input className={inputCls} readOnly value={form.day} placeholder="Auto" /></Field>
+                  <Field label="Mes"><input className={selectCls} readOnly value={form.month} placeholder="Auto" /></Field>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <Field label="Formato">
                 <select className={selectCls} value={form.format} onChange={e => setForm({...form, format: e.target.value})}>
@@ -757,7 +961,11 @@ function AdminTournaments({ toast }) {
               </Field>
               <Field label="Horario"><input className={inputCls} value={form.time} onChange={e => setForm({...form, time: e.target.value})} placeholder="15:00 hrs" /></Field>
             </div>
+            
             <Field label="Ubicación"><input className={inputCls} value={form.location} onChange={e => setForm({...form, location: e.target.value})} placeholder="Concepción, Chile" /></Field>
+            
+            <Field label="Enlace de Inscripción (Instagram / URL)"><input className={inputCls} value={form.registration_link || ''} onChange={e => setForm({...form, registration_link: e.target.value})} placeholder="Ej: https://instagram.com/cuchostore.cl" /></Field>
+
             <div className="grid grid-cols-2 gap-3">
               <Field label="Inscripción"><input className={inputCls} value={form.entry_fee} onChange={e => setForm({...form, entry_fee: e.target.value})} placeholder="$5.000" /></Field>
               <Field label="Estado">

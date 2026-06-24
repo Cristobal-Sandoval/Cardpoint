@@ -422,10 +422,96 @@ export default function App() {
   }, [newsList, hiddenNewsIds]);
 
   const displayTournaments = useMemo(() => {
-    return dbTournaments.map(t => {
+    const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    
+    // Aplicar overrides locales de adminSettings si existen
+    const baseTournaments = dbTournaments.map(t => {
       const local = localTournaments.find(lt => lt.id === t.id);
       return local ? { ...t, ...local } : t;
     });
+
+    let list = [];
+    
+    baseTournaments.forEach(t => {
+      // 1. Torneos Recurrentes
+      if (t.is_recurring) {
+        const weekDaysMap = {
+          'lunes': 1, 'martes': 2, 'miércoles': 3, 'miercoles': 3, 'jueves': 4,
+          'jueves': 4, 'viernes': 5, 'sábado': 6, 'sabado': 6, 'domingo': 0
+        };
+        const targetDays = (t.recurring_days || '').toLowerCase().split(',').map(d => d.trim());
+        const targetDOWs = targetDays.map(d => weekDaysMap[d]).filter(d => d !== undefined);
+        
+        // Generar ocurrencias en los próximos 30 días
+        for (let i = 0; i < 30; i++) {
+          const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+          const dow = date.getDay();
+          
+          if (targetDOWs.includes(dow)) {
+            // Si es hoy, comprobar si el torneo ya pasó
+            if (i === 0 && t.time) {
+              const timeMatch = t.time.match(/(\d+)[:.](\d+)/);
+              if (timeMatch) {
+                const hour = parseInt(timeMatch[1], 10);
+                const min = parseInt(timeMatch[2], 10);
+                const tournamentTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, min);
+                if (now > tournamentTime) {
+                  continue; 
+                }
+              }
+            }
+            
+            list.push({
+              ...t,
+              id: `${t.id}-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`,
+              day: String(date.getDate()),
+              month: MONTHS[date.getMonth()],
+              dateObj: date,
+              dateTime: date.getTime()
+            });
+          }
+        }
+      } 
+      // 2. Torneos Manuales
+      else {
+        let tDate = null;
+        if (t.specific_date) {
+          tDate = new Date(t.specific_date + 'T23:59:59');
+        } else if (t.day && t.month) {
+          // Legacy: Asumir año actual para ordenación
+          const monthIndex = MONTHS.indexOf(t.month.toUpperCase());
+          if (monthIndex !== -1) {
+            tDate = new Date(now.getFullYear(), monthIndex, parseInt(t.day, 10), 23, 59, 59);
+            if (tDate.getTime() < todayStart) {
+              tDate.setFullYear(now.getFullYear() + 1); // Traspasar al prox año
+            }
+          }
+        }
+        
+        if (tDate && tDate.getTime() >= todayStart) {
+          let displayDay = t.day;
+          let displayMonth = t.month;
+          if (t.specific_date) {
+            const dateVal = new Date(t.specific_date + 'T00:00:00');
+            displayDay = String(dateVal.getDate());
+            displayMonth = MONTHS[dateVal.getMonth()];
+          }
+          list.push({
+            ...t,
+            day: displayDay,
+            month: displayMonth,
+            dateObj: tDate,
+            dateTime: tDate.getTime()
+          });
+        }
+      }
+    });
+    
+    // Ordenar de más cercano a más lejano
+    list.sort((a, b) => a.dateTime - b.dateTime);
+    return list;
   }, [dbTournaments, localTournaments]);
 
   // SEO Dinámico según la ruta
@@ -1728,12 +1814,12 @@ export default function App() {
                   </div>
 
                   <a
-                    href="https://instagram.com/cardpoint.cl"
+                    href={t.registration_link || "https://instagram.com/cardpoint.cl"}
                     target="_blank"
                     rel="noreferrer"
                     className="mt-6 w-full text-center bg-[#0052FF] hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/10 cursor-pointer"
                   >
-                    <span>Inscribirse por Instagram</span>
+                    <span>{t.registration_link ? 'Inscribirse aquí' : 'Inscribirse por Instagram'}</span>
                     <ExternalLink size={13} />
                   </a>
                 </div>
