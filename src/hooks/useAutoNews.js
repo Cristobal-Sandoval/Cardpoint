@@ -171,7 +171,7 @@ export function useAutoNews() {
 
   useEffect(() => {
     const fetchAllNews = async () => {
-      const CACHE_KEY = 'cardpoint_news_multi_v1';
+      const CACHE_KEY = 'cardpoint_news_multi_v2';
       const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutos
 
       // 1. Cargar preferencias de fuentes desde Supabase
