@@ -1215,30 +1215,41 @@ export default function App() {
             </div>
 
             {/* BANNER DE INSTAGRAM INTERACTIVO */}
-            <div className={`p-6 sm:p-8 rounded-3xl border overflow-hidden relative ${
+            <div className={`p-4 sm:p-6 rounded-3xl border overflow-hidden relative ${
               theme === 'dark' ? 'bg-gradient-to-r from-blue-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-blue-50/40 via-white to-blue-50/20 border-blue-100/40'
             }`}>
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
                 
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/10 flex-shrink-0">
-                    <Instagram size={22} />
+                {/* Info */}
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/10 flex-shrink-0">
+                    <Instagram size={20} />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-lg text-slate-900 dark:text-white">Síguenos en Instagram</h3>
-                    <p className="text-sm font-black text-[#0052FF]">@cardpoint.cl</p>
+                    <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white leading-tight">Síguenos en Instagram</h3>
+                    <p className="text-xs sm:text-sm font-black text-[#0052FF]">@cardpoint.cl</p>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {[
+                {/* Stock cards showcase */}
+                <div className="flex gap-2 justify-center flex-wrap">
+                  {(dbCards.filter(c => c.image).slice(0, 4)).map((card, i) => (
+                    <div
+                      key={card.id || i}
+                      onClick={() => { setCurrentTab('catalog'); setSelectedNews(null); }}
+                      className="w-12 h-16 sm:w-16 sm:h-20 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 shadow transform hover:scale-105 hover:-translate-y-1 transition-all duration-200 cursor-pointer"
+                    >
+                      <img src={card.image} alt={card.name || 'Carta en stock'} loading="lazy" className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                  {/* Fallback si no hay cartas aún */}
+                  {dbCards.filter(c => c.image).length === 0 && [
                     "https://images.pokemontcg.io/sv4f/233_hires.png",
                     "https://images.pokemontcg.io/sv3pt5/173_hires.png",
                     "https://images.pokemontcg.io/sv4f/234_hires.png",
-                    "https://images.pokemontcg.io/swsh12pt5/GG44_hires.png"
                   ].map((imgUrl, i) => (
-                    <div key={i} className="w-12 h-16 sm:w-16 sm:h-20 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 shadow transform hover:scale-105 transition-transform duration-200 cursor-pointer">
-                      <img src={imgUrl} alt="Instagram Showcase" loading="lazy" className="w-full h-full object-cover" />
+                    <div key={i} className="w-12 h-16 sm:w-16 sm:h-20 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 shadow">
+                      <img src={imgUrl} alt="Carta" loading="lazy" className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>
@@ -1247,7 +1258,7 @@ export default function App() {
                   href="https://instagram.com/cardpoint.cl"
                   target="_blank"
                   rel="noreferrer"
-                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg transition-all flex items-center gap-2 text-xs sm:text-sm cursor-pointer"
+                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl shadow-lg transition-all flex items-center gap-2 text-xs sm:text-sm cursor-pointer flex-shrink-0"
                 >
                   <Instagram size={16} />
                   Ir a Instagram
