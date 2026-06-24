@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
-export // Hook para obtener noticias automÃ¡ticas de varias fuentes (Bypass CORS via RSS2JSON)
+
+// Hook para obtener noticias TCG de tcgnews.cl (via proxy CORS)
 function useAutoNews() {
   const [autoNews, setAutoNews] = useState([]);
   const [loadingAuto, setLoadingAuto] = useState(true);
 
   useEffect(() => {
     const fetchNews = async () => {
-      const CACHE_KEY = 'cardpoint_news_cache_v5';
-      const CACHE_EXPIRY = 15 * 60 * 1000; // 15 minutos
+      const CACHE_KEY = 'cardpoint_news_tcg_v2';
+      const CACHE_EXPIRY = 20 * 60 * 1000; // 20 minutos
 
       try {
+        // Check cache first
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
           try {
@@ -17,119 +19,90 @@ function useAutoNews() {
             setAutoNews(parsedCache.data);
             setLoadingAuto(false);
             if (Date.now() - parsedCache.timestamp < CACHE_EXPIRY) {
-              return; // CachÃ© muy reciente, no hacer fetch
+              return; // Cache reciente, no hacer fetch
             }
-          } catch(e) { console.error("Cache read error"); }
+          } catch(e) { /* cache corrupta, seguir */ }
         } else {
           setLoadingAuto(true);
         }
 
-        const [resAlpha] = await Promise.allSettled([
-          fetch('https://api.rss2json.com/v1/api.json?rss_url=https://pokemonalpha.es/feed/')
-        ]);
-        
-        const parseArticles = async (res, sourceName, limit) => {
-          if (res.status === 'fulfilled') {
-            try {
-              const data = await res.value.json();
-              if (data.status === 'ok') {
-                return data.items.slice(0, limit).map((item, idx) => {
-                  const fallbackImages = [
-                    'https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=600&auto=format&fit=crop' // Pikachu neon
-                  ];
-                  let imgUrl = fallbackImages[idx % fallbackImages.length];
-                  
-                  if (item.thumbnail) {
-                    imgUrl = item.thumbnail;
-                  } else if (item.content) {
-                    const imgMatch = item.content.match(/<img[^>]+src="([^">]+)"/);
-                    const ytMatch = item.content.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
-                    
-                    if (imgMatch && imgMatch[1]) {
-                      imgUrl = imgMatch[1];
-                    } else if (ytMatch && ytMatch[1]) {
-                      imgUrl = `https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg`;
-                    }
-                  }
-                  
-                  const tempDiv = document.createElement('div');
-                  tempDiv.innerHTML = item.description || item.content;
-                  const textContent = tempDiv.textContent || tempDiv.innerText || '';
-                  const summary = textContent.substring(0, 140).trim() + '...';
-                  
-                  // Clean dates
-                  let dateStr = item.pubDate;
-                  if (dateStr.includes(' ')) dateStr = dateStr.split(' ')[0];
-                  
-                  return {
-                    id: `auto-${sourceName.replace(/\s+/g, '')}-${idx}`,
-                    title: item.title,
-                    date: dateStr,
-                    image: imgUrl,
-                    summary: summary,
-                    content: item.content || item.description || textContent,
-                    sourceUrl: item.link,
-                    sourceName: sourceName,
-                    isExternal: true
-                  };
-                });
-              }
-            } catch(e) { console.error("Error parsing feed", sourceName); }
-          }
-          return [];
-        };
+        // Fetch via allorigins CORS proxy
+        const TARGET_URL = 'https://www.tcgnews.cl/buscador/categoria/pokemon-tcg';
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(TARGET_URL)}`;
 
-        const articlesAlpha = await parseArticles(resAlpha, 'Pokémon Alpha', 10);
+        const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
+        const json = await res.json();
+        const html = json.contents || '';
 
-        const allArticles = [...articlesAlpha];
-        // Ordenar por fecha mÃ¡s reciente
-        allArticles.sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        // Eliminar duplicados basados en coincidencias de palabras clave del tÃ­tulo
-        const uniqueArticles = [];
-        const seenKeywordsSets = [];
+        if (!html) throw new Error('No se pudo obtener contenido de TCGNews');
 
-        const extractKeywords = (title) => {
-          const stopWords = ['para', 'como', 'sobre', 'desde', 'hasta', 'este', 'esta', 'nuevo', 'nueva', 'pokemon', 'pokÃ©mon', 'cartas', 'carta', 'juego', 'coleccion', 'colecciÃ³n'];
-          const words = title.toLowerCase().replace(/[^\w\sÃ±Ã¡Ã©Ã­Ã³Ãº]/g, '').split(/\s+/);
-          return new Set(words.filter(w => w.length > 3 && !stopWords.includes(w)));
-        };
+        // Parse articles from HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
 
-        for (const article of allArticles) {
-          const keywords = extractKeywords(article.title);
-          let isDuplicate = false;
+        const articleDivs = doc.querySelectorAll('.grid_noti_resumen2');
+        const articles = [];
+        let idx = 0;
 
-          for (const seenKeywords of seenKeywordsSets) {
-            let overlapCount = 0;
-            for (const kw of keywords) {
-              if (seenKeywords.has(kw)) overlapCount++;
-            }
-            // Consideramos duplicado si comparten 2 palabras clave clave o un 60% de similitud
-            if (overlapCount >= 2 || (keywords.size > 0 && overlapCount / keywords.size > 0.6)) {
-              isDuplicate = true;
-              break;
-            }
+        for (const div of articleDivs) {
+          const linkEl   = div.querySelector('a.tit_noti_resumen3');
+          const imgEl    = div.querySelector('img.img_noti_resumen');
+          const sumEl    = div.querySelector('.txt_noti_resumen2');
+          const dateEl   = div.querySelector('.fecha_noti_resumen2');
+
+          if (!linkEl) continue;
+
+          const title   = linkEl.textContent?.trim() || '';
+          const url     = linkEl.getAttribute('href') || '';
+          const imgSrc  = imgEl?.getAttribute('src') || '';
+          const summary = sumEl?.textContent?.trim() || '';
+          const dateRaw = dateEl?.textContent?.trim() || '';
+
+          // Convert "Hace X días/horas" to approximate ISO date
+          const dateMatch = dateRaw.match(/Hace\s+(\d+)\s+(hora|horas|día|días|semana|semanas)/i);
+          let date = new Date();
+          if (dateMatch) {
+            const n = parseInt(dateMatch[1]);
+            const unit = dateMatch[2].toLowerCase();
+            if (unit.startsWith('hora'))   date = new Date(Date.now() - n * 3600000);
+            if (unit.startsWith('día'))    date = new Date(Date.now() - n * 86400000);
+            if (unit.startsWith('semana')) date = new Date(Date.now() - n * 604800000);
           }
 
-          if (!isDuplicate) {
-            uniqueArticles.push(article);
-            seenKeywordsSets.push(keywords);
-          }
+          articles.push({
+            id: `tcgnews-${idx++}`,
+            title,
+            date: date.toISOString().split('T')[0],
+            image: imgSrc.startsWith('http') ? imgSrc : `https://www.tcgnews.cl${imgSrc}`,
+            summary: summary || title,
+            content: summary,
+            sourceUrl: url.startsWith('http') ? url : `https://www.tcgnews.cl${url}`,
+            sourceName: 'Noticias TCG',
+            isExternal: true
+          });
         }
-        
-        setAutoNews(uniqueArticles);
-        localStorage.setItem(CACHE_KEY, JSON.stringify({
-          timestamp: Date.now(),
-          data: uniqueArticles
-        }));
+
+        if (articles.length > 0) {
+          setAutoNews(articles);
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            timestamp: Date.now(),
+            data: articles
+          }));
+        }
+
       } catch (err) {
-        console.error('Error fetching auto news:', err);
+        console.error('Error fetching TCGNews:', err);
+        // On error, keep any cached data we already set
       } finally {
         setLoadingAuto(false);
       }
     };
+
     fetchNews();
   }, []);
 
   return { autoNews, loadingAuto };
 }
+
+export default useAutoNews;
+export { useAutoNews };

@@ -710,7 +710,13 @@ export default function App() {
               Anuncio Patrocinado
             </span>
             <div className="flex-1 overflow-hidden">
-              <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 animate-marquee">
+              <div
+                className="text-[10px] font-bold text-slate-500 dark:text-slate-400 animate-marquee"
+                onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
+                onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
+                onTouchStart={e => e.currentTarget.style.animationPlayState = 'paused'}
+                onTouchEnd={e => e.currentTarget.style.animationPlayState = 'running'}
+              >
                 {currentAd.text}
                 {currentAd.link && (
                   <a href={currentAd.link} target="_blank" rel="noreferrer"
@@ -2257,6 +2263,7 @@ export default function App() {
             <div>
               <p className="font-bold text-slate-800 dark:text-slate-200">CardPoint.cl</p>
               <p className="text-[10px] text-slate-400">© 2026 Cardpoint. Todos los derechos reservados.</p>
+              <p className="text-[9px] text-slate-500 mt-0.5">Hecho con 🐱</p>
             </div>
           </div>
 
