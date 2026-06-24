@@ -704,29 +704,22 @@ export default function App() {
       
       {/* 0. ESPACIO DE GOOGLE ADSENSE SUPERIOR BANNER (Leaderboard Fijo Superior para Monetización Premium) */}
       {currentAd && (
-        <div className="w-full bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-2.5 px-4 overflow-hidden relative">
-          <div 
-            key={currentAdIndex}
-            className="max-w-7xl mx-auto flex items-center justify-between gap-4 animate-fade-in"
-          >
-            <span className="hidden md:block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex-shrink-0">
+        <div className="w-full bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-2.5 overflow-hidden relative">
+          <div key={currentAdIndex} className="flex items-center gap-3">
+            <span className="hidden md:block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex-shrink-0 pl-4">
               Anuncio Patrocinado
             </span>
-            <div className="flex-grow overflow-hidden px-2 relative h-full flex items-center">
-              <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap animate-marquee md:animate-none md:truncate">
+            <div className="flex-1 overflow-hidden">
+              <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 animate-marquee">
                 {currentAd.text}
+                {currentAd.link && (
+                  <a href={currentAd.link} target="_blank" rel="noreferrer"
+                    className="ml-4 text-[#0052FF] font-extrabold hover:underline inline-flex items-center gap-0.5">
+                    Más info <ExternalLink size={9} />
+                  </a>
+                )}
               </div>
             </div>
-            {currentAd.link && (
-              <a
-                href={currentAd.link}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[9px] font-extrabold text-[#0052FF] hover:underline flex items-center gap-0.5 flex-shrink-0"
-              >
-                Más info aquí <ExternalLink size={10} />
-              </a>
-            )}
           </div>
         </div>
       )}
@@ -2100,36 +2093,59 @@ export default function App() {
             <div className="md:w-1/2 p-6 flex flex-col justify-between space-y-6">
               <div className="space-y-4">
                 <div className="flex items-start justify-between">
-                  <div>
+                  <div className="flex-1 min-w-0 pr-2">
                     <span className="text-[10px] font-black text-[#0052FF] uppercase tracking-wider">{selectedCardDetail.set}</span>
-                    <h3 className="font-black text-2xl text-slate-900 dark:text-white leading-tight">{selectedCardDetail.name}</h3>
-                    <p className="text-[11px] text-slate-400 mt-1">{selectedCardDetail.rarity}</p>
+                    <h3 className="font-black text-xl sm:text-2xl text-slate-900 dark:text-white leading-tight">{selectedCardDetail.name}</h3>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                      <span className="text-[10px] text-slate-400">{selectedCardDetail.rarity}</span>
+                      {(selectedCardDetail.idioma || selectedCardDetail.language) && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 uppercase">
+                          {selectedCardDetail.idioma || selectedCardDetail.language}
+                        </span>
+                      )}
+                      {selectedCardDetail.is_reverse && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 uppercase">
+                          ✨ Reverse Holo
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button 
                     onClick={() => setSelectedCardDetail(null)}
-                    className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer"
+                    className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer flex-shrink-0"
                   >
                     <X size={18} />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 border-y border-slate-100 dark:border-slate-800 py-3 text-xs">
+                <div className="grid grid-cols-3 gap-3 border-y border-slate-100 dark:border-slate-800 py-3 text-xs">
                   <div>
-                    <span className="text-slate-400 block text-[9px] uppercase font-bold">Estado</span>
+                    <span className="text-slate-400 block text-[9px] uppercase font-bold mb-0.5">Estado</span>
                     <span className="font-extrabold text-slate-800 dark:text-white text-sm">{selectedCardDetail.condition}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block text-[9px] uppercase font-bold">Código Set</span>
-                    <span className="font-extrabold text-[#0052FF] text-sm uppercase">{selectedCardDetail.setCode}</span>
+                    <span className="text-slate-400 block text-[9px] uppercase font-bold mb-0.5">Código Set</span>
+                    <span className="font-extrabold text-[#0052FF] text-sm uppercase">
+                      {selectedCardDetail.set_code || selectedCardDetail.setCode || '—'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[9px] uppercase font-bold mb-0.5">Stock</span>
+                    <span className="font-extrabold text-slate-800 dark:text-white text-sm">{selectedCardDetail.stock ?? 1} disponible{(selectedCardDetail.stock ?? 1) !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Descripción de la carta</span>
-                  <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
-                    {selectedCardDetail.description}
-                  </p>
-                </div>
+                {selectedCardDetail.description ? (
+                  <div className="space-y-1">
+                    <span className="text-slate-400 block text-[9px] uppercase font-bold">Descripción</span>
+                    <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">{selectedCardDetail.description}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <span className="text-slate-400 block text-[9px] uppercase font-bold">Descripción</span>
+                    <p className="text-xs text-slate-400 italic">Sin descripción adicional.</p>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -2247,7 +2263,6 @@ export default function App() {
           <div className="flex gap-6 font-bold text-slate-650 dark:text-slate-300">
             <button onClick={() => { setCurrentTab('home'); setSelectedNews(null); }} className="hover:text-[#0052FF] cursor-pointer">Inicio</button>
             <button onClick={() => { setCurrentTab('catalog'); setSelectedNews(null); }} className="hover:text-[#0052FF] cursor-pointer">En Stock</button>
-            <button onClick={() => { setCurrentTab('database'); setSelectedNews(null); }} className="hover:text-[#0052FF] cursor-pointer">Buscador TCG</button>
             <button onClick={() => { setCurrentTab('how-to-buy'); setSelectedNews(null); }} className="hover:text-[#0052FF] cursor-pointer">Nosotros</button>
           </div>
 
