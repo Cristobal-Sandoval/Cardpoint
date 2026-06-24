@@ -370,13 +370,25 @@ export default function App() {
   const activeAds = sponsoredAds.filter(ad => ad.active);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
 
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     if (activeAds.length <= 1) return;
+    const duration = isMobile ? 24000 : 30000;
     const interval = setInterval(() => {
       setCurrentAdIndex(prev => (prev + 1) % activeAds.length);
-    }, 5000);
+    }, duration);
     return () => clearInterval(interval);
-  }, [activeAds.length]);
+  }, [activeAds.length, isMobile]);
 
   const currentAd = activeAds[currentAdIndex] || null;
   const toggleHideNews = async (id) => {
