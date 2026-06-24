@@ -17,12 +17,12 @@
 }
 
 @keyframes scrollText {
-  from { transform: translateX(100vw); }
-  to   { transform: translateX(-100%); }
+  from { left: 100%;  }
+  to   { left: -100%; }
 }
 .animate-marquee {
   white-space: nowrap;
-  left: 0;
+  position: absolute;
   animation: scrollText 24s linear infinite;
 }
 .animate-marquee:hover,

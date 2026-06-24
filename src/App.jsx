@@ -467,13 +467,13 @@ export default function App() {
   const [showRealPhoto, setShowRealPhoto] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
 
-  // Sync noticias desde Supabase al estado local y combinarlas con las automáticas
-  // Regla: noticias manuales (Supabase) primero, luego las autogeneradas
+  // Sync noticias: mostrar las de Supabase apenas cargan, agregar auto-noticias después
   useEffect(() => {
-    if (!newsLoading && !loadingAuto) {
+    if (!newsLoading) {
+      // Siempre mostrar noticias de Supabase + lo que haya de auto (aunque sea [])  
       setNewsList([...dbNews, ...autoNews]);
     }
-  }, [dbNews, autoNews, newsLoading, loadingAuto]);
+  }, [dbNews, autoNews, newsLoading]);
 
   // Control de Animación de Carrusel Continuo (cartas)
   const carruselRef = useRef(null);
@@ -706,32 +706,34 @@ export default function App() {
       {currentAd && (
         <div
           key={currentAdIndex}
-          className="w-full bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 overflow-hidden relative"
+          className="w-full bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center"
           style={{ height: '34px' }}
         >
           {/* Label fijo izquierda */}
-          <span className="hidden md:flex absolute left-4 top-0 h-full items-center text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest z-10 pointer-events-none">
+          <span className="hidden md:flex flex-shrink-0 pl-4 pr-3 text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
             Anuncio Patrocinado
           </span>
 
-          {/* Texto animado — recorre todo el ancho de pantalla */}
-          <div
-            className="animate-marquee text-[10px] font-bold text-slate-500 dark:text-slate-400 absolute top-0 h-full flex items-center"
-            onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
-            onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
-            onTouchStart={e => { e.currentTarget.style.animationPlayState = 'paused'; }}
-            onTouchEnd={e => { e.currentTarget.style.animationPlayState = 'running'; }}
-          >
-            {currentAd.text}
+          {/* Zona de scroll — el texto se recorta aquí */}
+          <div className="flex-1 overflow-hidden relative" style={{ height: '100%' }}>
+            <div
+              className="animate-marquee text-[10px] font-bold text-slate-500 dark:text-slate-400 absolute top-0 h-full flex items-center"
+              onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
+              onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
+              onTouchStart={e => { e.currentTarget.style.animationPlayState = 'paused'; }}
+              onTouchEnd={e => { e.currentTarget.style.animationPlayState = 'running'; }}
+            >
+              {currentAd.text}
+            </div>
           </div>
 
-          {/* Más info fijo derecha */}
+          {/* Más info fijo derecha — fuera de la zona de scroll */}
           {currentAd.link && (
             <a
               href={currentAd.link}
               target="_blank"
               rel="noreferrer"
-              className="absolute right-4 top-0 h-full hidden md:flex items-center text-[9px] font-extrabold text-[#0052FF] hover:underline gap-0.5 z-10"
+              className="hidden md:flex flex-shrink-0 px-4 items-center h-full text-[9px] font-extrabold text-[#0052FF] hover:underline gap-0.5"
             >
               Más info <ExternalLink size={9} />
             </a>
