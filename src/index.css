@@ -35,3 +35,14 @@
 .animate-marquee:focus {
   animation-play-state: paused;
 }
+
+@media (min-width: 768px) {
+  .animate-marquee {
+    position: relative;
+    left: auto;
+    top: auto;
+    padding-left: 0;
+    animation: none;
+    transform: none !important;
+  }
+}

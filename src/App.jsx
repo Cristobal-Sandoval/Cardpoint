@@ -715,7 +715,7 @@ export default function App() {
           </span>
 
           {/* Zona de scroll del texto */}
-          <div className="flex-1 overflow-hidden relative h-full">
+          <div className="flex-1 overflow-hidden relative h-full flex items-center justify-center">
             <div
               className="animate-marquee text-[10px] font-bold text-slate-500 dark:text-slate-400 absolute top-0 h-full flex items-center"
               onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
