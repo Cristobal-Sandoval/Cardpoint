@@ -709,13 +709,13 @@ export default function App() {
           className="w-full bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center"
           style={{ height: '34px' }}
         >
-          {/* Label fijo izquierda */}
+          {/* Label izquierda — estático en desktop, oculto en mobile */}
           <span className="hidden md:flex flex-shrink-0 pl-4 pr-3 text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
             Anuncio Patrocinado
           </span>
 
-          {/* Zona de scroll — el texto se recorta aquí */}
-          <div className="flex-1 overflow-hidden relative" style={{ height: '100%' }}>
+          {/* Zona de scroll del texto */}
+          <div className="flex-1 overflow-hidden relative h-full">
             <div
               className="animate-marquee text-[10px] font-bold text-slate-500 dark:text-slate-400 absolute top-0 h-full flex items-center"
               onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
@@ -727,13 +727,13 @@ export default function App() {
             </div>
           </div>
 
-          {/* Más info fijo derecha — fuera de la zona de scroll */}
+          {/* Más info derecha — visible en mobile y desktop para no perder la acción, estático */}
           {currentAd.link && (
             <a
               href={currentAd.link}
               target="_blank"
               rel="noreferrer"
-              className="hidden md:flex flex-shrink-0 px-4 items-center h-full text-[9px] font-extrabold text-[#0052FF] hover:underline gap-0.5"
+              className="flex flex-shrink-0 px-4 items-center h-full text-[9px] font-extrabold text-[#0052FF] hover:underline gap-0.5"
             >
               Más info <ExternalLink size={9} />
             </a>
@@ -1158,7 +1158,12 @@ export default function App() {
                 </div>
 
                 <div className="space-y-4">
-                  {visibleNewsList.slice(0, 3).map((n) => (
+                  {newsLoading ? (
+                    <p className="text-sm text-slate-400">Cargando noticias...</p>
+                  ) : visibleNewsList.length === 0 ? (
+                    <p className="text-sm text-slate-400">No hay noticias publicadas aún.</p>
+                  ) : (
+                    visibleNewsList.slice(0, 3).map((n) => (
                     <div 
                       key={n.id}
                       onClick={() => { setSelectedNews(n); setCurrentTab('news'); }}
@@ -1173,7 +1178,8 @@ export default function App() {
                         <p className="text-xs text-slate-400 line-clamp-2">{n.summary}</p>
                       </div>
                     </div>
-                  ))}
+                  ))
+                  )}
                 </div>
               </div>
 
@@ -2135,20 +2141,34 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 border-y border-slate-100 dark:border-slate-800 py-3 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 border-y border-slate-100 dark:border-slate-800 py-4 text-xs">
                   <div>
-                    <span className="text-slate-400 block text-[9px] uppercase font-bold mb-0.5">Estado</span>
-                    <span className="font-extrabold text-slate-800 dark:text-white text-sm">{selectedCardDetail.condition}</span>
+                    <span className="text-slate-400 block text-[9px] uppercase font-bold mb-0.5">Expansión</span>
+                    <span className="font-extrabold text-slate-800 dark:text-white text-sm leading-tight block">{selectedCardDetail.set || '—'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block text-[9px] uppercase font-bold mb-0.5">Código Set</span>
-                    <span className="font-extrabold text-[#0052FF] text-sm uppercase">
+                    <span className="text-slate-400 block text-[9px] uppercase font-bold mb-0.5">Número</span>
+                    <span className="font-extrabold text-[#0052FF] text-sm uppercase block">
                       {selectedCardDetail.set_code || selectedCardDetail.setCode || '—'}
                     </span>
                   </div>
                   <div>
+                    <span className="text-slate-400 block text-[9px] uppercase font-bold mb-0.5">Rareza</span>
+                    <span className="font-extrabold text-slate-800 dark:text-white text-sm block">{selectedCardDetail.rarity || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[9px] uppercase font-bold mb-0.5">Estado</span>
+                    <span className="font-extrabold text-slate-800 dark:text-white text-sm block">{selectedCardDetail.condition || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[9px] uppercase font-bold mb-0.5">Idioma</span>
+                    <span className="font-extrabold text-slate-800 dark:text-white text-sm block">{selectedCardDetail.idioma || selectedCardDetail.language || '—'}</span>
+                  </div>
+                  <div>
                     <span className="text-slate-400 block text-[9px] uppercase font-bold mb-0.5">Stock</span>
-                    <span className="font-extrabold text-slate-800 dark:text-white text-sm">{selectedCardDetail.stock ?? 1} disponible{(selectedCardDetail.stock ?? 1) !== 1 ? 's' : ''}</span>
+                    <span className="font-extrabold text-slate-800 dark:text-white text-sm block">
+                      {selectedCardDetail.stock ?? 1} disponible{(selectedCardDetail.stock ?? 1) !== 1 ? 's' : ''}
+                    </span>
                   </div>
                 </div>
 
@@ -2274,7 +2294,7 @@ export default function App() {
             <div>
               <p className="font-bold text-slate-800 dark:text-slate-200">CardPoint.cl</p>
               <p className="text-[10px] text-slate-400">© 2026 Cardpoint. Todos los derechos reservados.</p>
-              <p className="text-[9px] text-slate-500 mt-0.5">Hecho por 🐱</p>
+              <p className="text-[9px] text-slate-500 mt-0.5">hecho por 🐱</p>
             </div>
           </div>
 

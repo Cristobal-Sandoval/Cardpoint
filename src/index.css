@@ -17,12 +17,18 @@
 }
 
 @keyframes scrollText {
-  from { left: 100%;  }
-  to   { left: -100%; }
+  0%   { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-100%, 0, 0); }
 }
 .animate-marquee {
   white-space: nowrap;
   position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-left: 100%;
   animation: scrollText 24s linear infinite;
 }
 .animate-marquee:hover,

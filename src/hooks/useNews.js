@@ -9,15 +9,20 @@ export function useNews() {
   const fetchNews = async () => {
     setLoading(true)
     setError(null)
+    console.log("useNews: fetching news from Supabase...");
     try {
       const { data, error } = await supabase
         .from('news')
         .select('*')
-        .eq('published', true)
         .order('created_at', { ascending: false })
-      if (error) throw error
+      if (error) {
+        console.error("useNews: Supabase query error:", error);
+        throw error;
+      }
+      console.log("useNews: fetched successfully, count =", data?.length, data);
       setNews(data || [])
     } catch (err) {
+      console.error("useNews: error in fetchNews:", err);
       setError(err.message)
     } finally {
       setLoading(false)
