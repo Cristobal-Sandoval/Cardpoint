@@ -310,7 +310,7 @@ function AdminCards({ toast }) {
             {form.image && <img src={form.image} alt="preview" className="w-20 h-28 object-contain rounded-xl border border-white/10 mx-auto" />}
             <Field label="📸 Foto Real de tu Carta (URL)">
               <input className={inputCls} value={form.real_photo || ''} onChange={e => setForm({...form, real_photo: e.target.value})} placeholder="https://... (foto de tu carta real, opcional)" />
-              <p className="text-[10px] text-slate-500 mt-1">Sube la foto a un servicio como Imgur.com y pega el enlace directo aquí.</p>
+              <p className="text-[10px] text-slate-500 mt-1">Sube la foto a <strong className="text-slate-400">postimages.org</strong> y pega el enlace "Direct link" aquí.</p>
             </Field>
             {form.real_photo && (
               <div className="flex flex-col items-center gap-1">
