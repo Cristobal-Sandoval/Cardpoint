@@ -120,6 +120,7 @@ function AdminCards({ toast }) {
   const [saving, setSaving] = useState(false);
   const [apiSearching, setApiSearching] = useState(false);
   const [apiResults, setApiResults] = useState([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const handleApiSearch = async () => {
     if (!form.name) return;
@@ -138,10 +139,35 @@ function AdminCards({ toast }) {
     setForm(prev => ({
       ...prev,
       image: card.images?.large || card.images?.small || '',
-      set_code: card.set?.id || '',
+      set: card.set?.name || prev.set,
+      set_code: (card.set?.id || '').toUpperCase(),
       rarity: card.rarity || prev.rarity
     }));
     setApiResults([]);
+  };
+
+  // Upload real photo to Supabase Storage
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const filename = `card-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('card-photos')
+        .upload(filename, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage
+        .from('card-photos')
+        .getPublicUrl(filename);
+      setForm(prev => ({ ...prev, real_photo: urlData.publicUrl }));
+      toast('Foto subida correctamente ✓', 'success');
+    } catch (err) {
+      toast('Error al subir: ' + err.message, 'error');
+    }
+    setUploadingPhoto(false);
+    e.target.value = '';
   };
 
   const load = async () => {
@@ -274,11 +300,27 @@ function AdminCards({ toast }) {
                 </select>
               </Field>
               <Field label="Era / Set">
-                <select className={selectCls} value={form.set} onChange={e => setForm({...form, set: e.target.value})}>
-                  {ERAS.map(e => <option key={e} value={e}>{e}</option>)}
-                </select>
+                <input
+                  className={inputCls}
+                  value={form.set}
+                  onChange={e => setForm({...form, set: e.target.value})}
+                  placeholder="Ej: Escarlata y Púrpura"
+                  list="eras-list"
+                />
+                <datalist id="eras-list">
+                  {['Escarlata y Púrpura','Espada y Escudo','SM - Sol y Luna','XY','Black & White','Otras'].map(e => (
+                    <option key={e} value={e} />
+                  ))}
+                </datalist>
               </Field>
-              <Field label="Código de Set"><input className={inputCls} value={form.set_code} onChange={e => setForm({...form, set_code: e.target.value})} placeholder="Ej: sv4f" /></Field>
+              <Field label="Código de Set">
+                <input
+                  className={inputCls}
+                  value={form.set_code}
+                  onChange={e => setForm({...form, set_code: e.target.value.toUpperCase()})}
+                  placeholder="Ej: SV4F"
+                />
+              </Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Rareza">
@@ -308,9 +350,24 @@ function AdminCards({ toast }) {
               <input className={inputCls} value={form.image} onChange={e => setForm({...form, image: e.target.value})} placeholder="https://images.pokemontcg.io/..." />
             </Field>
             {form.image && <img src={form.image} alt="preview" className="w-20 h-28 object-contain rounded-xl border border-white/10 mx-auto" />}
-            <Field label="📸 Foto Real de tu Carta (URL)">
-              <input className={inputCls} value={form.real_photo || ''} onChange={e => setForm({...form, real_photo: e.target.value})} placeholder="https://... (foto de tu carta real, opcional)" />
-              <p className="text-[10px] text-slate-500 mt-1">Sube la foto a <strong className="text-slate-400">postimages.org</strong> y pega el enlace "Direct link" aquí.</p>
+            <Field label="📸 Foto Real de tu Carta">
+              <div className="flex gap-2">
+                <input
+                  className={inputCls}
+                  value={form.real_photo || ''}
+                  onChange={e => setForm({...form, real_photo: e.target.value})}
+                  placeholder="Pega URL directa o sube un archivo →"
+                />
+                <label className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer border ${
+                  uploadingPhoto
+                    ? 'bg-slate-700 border-white/10 text-slate-400 cursor-not-allowed'
+                    : 'bg-green-600/20 border-green-500/40 text-green-400 hover:bg-green-600/30'
+                }`}>
+                  {uploadingPhoto ? 'Subiendo...' : '↑ Subir'}
+                  <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploadingPhoto} />
+                </label>
+              </div>
+              <p className="text-[10px] text-slate-500 mt-1">Sube desde tu dispositivo directo, o pega un enlace de <strong className="text-slate-400">postimages.org</strong>.</p>
             </Field>
             {form.real_photo && (
               <div className="flex flex-col items-center gap-1">
