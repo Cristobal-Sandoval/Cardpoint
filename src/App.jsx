@@ -356,6 +356,7 @@ export default function App() {
   const [newsList, setNewsList] = useState([]);
   const [selectedNews, setSelectedNews] = useState(null);
   const [newsPage, setNewsPage] = useState(1);
+  const [loadingFullContent, setLoadingFullContent] = useState(false);
 
   const { autoNews, loadingAuto } = useAutoNews();
 
@@ -412,6 +413,139 @@ export default function App() {
   const updateCustomBanners = async (next) => {
     await updateSetting('custom_banners', next);
   };
+
+  // Carga diferida de noticia completa para fuentes externas (Pokémon Oficial, Pokémon Alpha, TCGNews)
+  useEffect(() => {
+    if (!selectedNews || !selectedNews.isExternal || selectedNews.hasFullContent) {
+      return;
+    }
+
+    let isMounted = true;
+    const fetchFullContent = async () => {
+      setLoadingFullContent(true);
+      const PROXIES = [
+        (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+        (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+        (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+      ];
+
+      const fetchWithTimeout = async (url, ms = 6000) => {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), ms);
+        try {
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(id);
+          return res;
+        } catch (e) {
+          clearTimeout(id);
+          throw e;
+        }
+      };
+
+      let success = false;
+      let html = '';
+
+      for (const makeUrl of PROXIES) {
+        try {
+          const proxyUrl = makeUrl(selectedNews.sourceUrl);
+          const res = await fetchWithTimeout(proxyUrl, 6000);
+          if (!res.ok) continue;
+
+          const contentType = res.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const json = await res.json();
+            html = json.contents || json.data || '';
+          } else {
+            html = await res.text();
+          }
+
+          if (html) {
+            success = true;
+            break;
+          }
+        } catch (e) {
+          console.warn("Error fetching full content proxy:", e);
+        }
+      }
+
+      if (!isMounted) return;
+
+      if (success && html) {
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          let paragraphs = [];
+
+          if (selectedNews.sourceName === 'Pokémon Oficial') {
+            const article = doc.querySelector('article') || doc.querySelector('.news-detail') || doc.querySelector('.news-article') || doc.querySelector('main');
+            if (article) {
+              paragraphs = Array.from(article.querySelectorAll('p, h2, h3'));
+            }
+          } else if (selectedNews.sourceName === 'Pokémon Alpha') {
+            const contentDiv = doc.querySelector('.entry-content') || doc.querySelector('.post-content') || doc.querySelector('article') || doc.querySelector('main');
+            if (contentDiv) {
+              paragraphs = Array.from(contentDiv.querySelectorAll('p, h2, h3'));
+            }
+          } else if (selectedNews.sourceName === 'Noticias TCG') {
+            const tcgPs = doc.querySelectorAll('p.noti-p');
+            if (tcgPs && tcgPs.length > 0) {
+              paragraphs = Array.from(tcgPs);
+            } else {
+              const container = doc.querySelector('.noti-body') || doc.querySelector('article') || doc.querySelector('main');
+              if (container) {
+                paragraphs = Array.from(container.querySelectorAll('p, h2, h3'));
+              }
+            }
+          }
+
+          if (paragraphs.length === 0) {
+            const main = doc.querySelector('article') || doc.querySelector('main') || doc.body;
+            if (main) paragraphs = Array.from(main.querySelectorAll('p'));
+          }
+
+          const cleanParas = paragraphs
+            .map(el => {
+              const text = el.textContent?.trim() || '';
+              if (text.length < 10) return null;
+              if (el.tagName.startsWith('H')) {
+                return `<h3 class="text-lg font-black text-slate-900 dark:text-white mt-6 mb-3">${text}</h3>`;
+              }
+              return `<p class="text-sm text-slate-650 dark:text-slate-350 leading-relaxed mb-4">${text}</p>`;
+            })
+            .filter(Boolean)
+            .join('');
+
+          if (cleanParas && cleanParas.length > 100) {
+            setSelectedNews(prev => {
+              if (prev && prev.id === selectedNews.id) {
+                return { ...prev, content: cleanParas, hasFullContent: true };
+              }
+              return prev;
+            });
+            setLoadingFullContent(false);
+            return;
+          }
+        } catch (parseErr) {
+          console.error("Error parsing news content:", parseErr);
+        }
+      }
+
+      // Caer suavemente al contenido pre-cargado de fallback (ya enriquecido en useAutoNews)
+      setSelectedNews(prev => {
+        if (prev && prev.id === selectedNews.id) {
+          return { ...prev, hasFullContent: true };
+        }
+        return prev;
+      });
+      setLoadingFullContent(false);
+    };
+
+    fetchFullContent();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedNews]);
 
   // Noticias visibles: manuales primero (ya ordenadas por fecha desc desde Supabase), luego las auto
   const visibleNewsList = useMemo(() => {
@@ -513,6 +647,25 @@ export default function App() {
     list.sort((a, b) => a.dateTime - b.dateTime);
     return list;
   }, [dbTournaments, localTournaments]);
+
+  const homepageTournaments = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const threeDaysLimit = todayStart + 3 * 24 * 60 * 60 * 1000;
+    
+    // Filtrar los torneos que ocurren en los próximos 3 días (hasta el fin del 3er día)
+    const withinThreeDays = displayTournaments.filter(t => {
+      return t.dateTime <= threeDaysLimit + 24 * 60 * 60 * 1000;
+    });
+
+    // "Si es que hay espacio": Si hay menos de 3 torneos en los próximos 3 días,
+    // rellenamos con los siguientes torneos más cercanos hasta tener 3, con un tope de 4
+    // para mantener el balance y orden estético del layout de inicio.
+    if (withinThreeDays.length < 3) {
+      return displayTournaments.slice(0, 3);
+    }
+    return withinThreeDays.slice(0, 4);
+  }, [displayTournaments]);
 
   // SEO Dinámico según la ruta
   let pageTitle = "Cardpoint | Tienda de Singles TCG";
@@ -1311,7 +1464,7 @@ export default function App() {
                 </div>
 
                 <div className="space-y-4">
-                  {displayTournaments.map((t) => (
+                  {homepageTournaments.map((t) => (
                     <div 
                       key={t.id}
                       className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${
@@ -1607,13 +1760,18 @@ export default function App() {
                   </p>
                 </div>
 
-                {selectedNews.isExternal ? (
+                {selectedNews.isExternal && loadingFullContent ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-slate-400 space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#0052FF] border-t-transparent animate-pulse"></div>
+                    <span className="text-xs font-bold text-slate-500">Cargando noticia completa desde la fuente...</span>
+                  </div>
+                ) : selectedNews.isExternal ? (
                   <div 
-                    className="prose dark:prose-invert text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800"
+                    className="prose dark:prose-invert text-sm text-slate-600 dark:text-slate-350 leading-relaxed space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800"
                     dangerouslySetInnerHTML={{ __html: selectedNews.content }}
                   />
                 ) : (
-                  <div className="prose dark:prose-invert text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <div className="prose dark:prose-invert text-sm text-slate-600 dark:text-slate-350 leading-relaxed space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                     {(selectedNews.content || '').split('\n\n').map((para, i) => (
                       <p key={i}>{para}</p>
                     ))}
@@ -1661,7 +1819,7 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {visibleNewsList.slice((newsPage - 1) * 10, newsPage * 10).map((n) => (
+                  {visibleNewsList.slice((newsPage - 1) * 6, newsPage * 6).map((n) => (
                     <article 
                       key={n.id} 
                       onClick={() => { setSelectedNews(n); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
@@ -1705,7 +1863,7 @@ export default function App() {
                 </div>
 
                 {/* Controles de Paginación */}
-                {Math.ceil(visibleNewsList.length / 10) > 1 && (
+                {Math.ceil(visibleNewsList.length / 6) > 1 && (
                   <div className="flex justify-center items-center gap-2 mt-12 pt-8 border-t border-slate-100 dark:border-slate-800">
                     <button 
                       onClick={() => {
@@ -1718,7 +1876,7 @@ export default function App() {
                       <ChevronLeft size={18} />
                     </button>
                     
-                    {Array.from({ length: Math.ceil(visibleNewsList.length / 10) }, (_, i) => i + 1).map(page => (
+                    {Array.from({ length: Math.ceil(visibleNewsList.length / 6) }, (_, i) => i + 1).map(page => (
                       <button
                         key={page}
                         onClick={() => {
@@ -1737,10 +1895,10 @@ export default function App() {
 
                     <button 
                       onClick={() => {
-                        setNewsPage(p => Math.min(Math.ceil(visibleNewsList.length / 10), p + 1));
+                        setNewsPage(p => Math.min(Math.ceil(visibleNewsList.length / 6), p + 1));
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      disabled={newsPage === Math.ceil(visibleNewsList.length / 10)}
+                      disabled={newsPage === Math.ceil(visibleNewsList.length / 6)}
                       className="w-10 h-10 flex items-center justify-center rounded-xl font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                     >
                       <ChevronRight size={18} />

@@ -24,6 +24,8 @@ const IcoEye        = () => <Icon d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7
 const IcoEyeOff     = () => <Icon d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22" />;
 const IcoImage      = () => <Icon d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21" />;
 const IcoMegaphone  = () => <Icon d="m3 11 18-5v12L3 14v-3zM11.6 16.8a3 3 0 1 1-5.8-1.6" />;
+const IcoChevronLeft  = () => <Icon d="m15 18-6-6 6-6" dSize="16" />;
+const IcoChevronRight = () => <Icon d="m9 18 6-6-6-6" dSize="16" />;
 
 // ── RARITY OPTIONS ───────────────────────────────────────────────────────────
 const RARITIES = ['Común', 'Poco Común', 'Rara', 'Doble Rara', 'Ultra Rara', 'Ilustración Rara', 'Especial Ilustración Rara', 'Ultra Rara Secreta', 'Secreta Dorada', 'Hyper Rara'];
@@ -461,7 +463,7 @@ function AdminNews({ toast }) {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 6;
   
   const { autoNews, loadingAuto } = useAutoNews();
   const { adminSettings, updateSetting } = useAdmin();
@@ -596,26 +598,39 @@ function AdminNews({ toast }) {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-6">
+            <div className="flex items-center justify-center gap-1.5 mt-6 pt-6 border-t border-white/5">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1.5 rounded-lg border border-white/10 text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-medium"
+                className="w-9 h-9 flex items-center justify-center rounded-xl border border-white/10 text-slate-450 hover:bg-white/5 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
-                Anterior
+                <IcoChevronLeft />
               </button>
-              <span className="text-slate-400 text-sm px-2">
-                Página {currentPage} de {totalPages}
-              </span>
+              
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-9 h-9 flex items-center justify-center rounded-xl font-semibold text-sm transition-all cursor-pointer ${
+                    currentPage === page
+                      ? 'bg-[#0052FF] text-white shadow-lg shadow-blue-500/20'
+                      : 'text-slate-400 border border-white/5 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1.5 rounded-lg border border-white/10 text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm font-medium"
+                className="w-9 h-9 flex items-center justify-center rounded-xl border border-white/10 text-slate-450 hover:bg-white/5 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
-                Siguiente
+                <IcoChevronRight />
               </button>
             </div>
           )}
+
         </div>
       )}
 
