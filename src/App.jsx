@@ -704,29 +704,38 @@ export default function App() {
       
       {/* 0. ESPACIO DE GOOGLE ADSENSE SUPERIOR BANNER (Leaderboard Fijo Superior para Monetización Premium) */}
       {currentAd && (
-        <div className="w-full bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-2.5 overflow-hidden relative">
-          <div key={currentAdIndex} className="flex items-center gap-3">
-            <span className="hidden md:block text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex-shrink-0 pl-4">
-              Anuncio Patrocinado
-            </span>
-            <div className="flex-1 overflow-hidden">
-              <div
-                className="text-[10px] font-bold text-slate-500 dark:text-slate-400 animate-marquee"
-                onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
-                onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
-                onTouchStart={e => e.currentTarget.style.animationPlayState = 'paused'}
-                onTouchEnd={e => e.currentTarget.style.animationPlayState = 'running'}
-              >
-                {currentAd.text}
-                {currentAd.link && (
-                  <a href={currentAd.link} target="_blank" rel="noreferrer"
-                    className="ml-4 text-[#0052FF] font-extrabold hover:underline inline-flex items-center gap-0.5">
-                    Más info <ExternalLink size={9} />
-                  </a>
-                )}
-              </div>
-            </div>
+        <div
+          key={currentAdIndex}
+          className="w-full bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 overflow-hidden relative"
+          style={{ height: '34px' }}
+        >
+          {/* Label fijo izquierda */}
+          <span className="hidden md:flex absolute left-4 top-0 h-full items-center text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest z-10 pointer-events-none">
+            Anuncio Patrocinado
+          </span>
+
+          {/* Texto animado — recorre todo el ancho de pantalla */}
+          <div
+            className="animate-marquee text-[10px] font-bold text-slate-500 dark:text-slate-400 absolute top-0 h-full flex items-center"
+            onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
+            onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
+            onTouchStart={e => { e.currentTarget.style.animationPlayState = 'paused'; }}
+            onTouchEnd={e => { e.currentTarget.style.animationPlayState = 'running'; }}
+          >
+            {currentAd.text}
           </div>
+
+          {/* Más info fijo derecha */}
+          {currentAd.link && (
+            <a
+              href={currentAd.link}
+              target="_blank"
+              rel="noreferrer"
+              className="absolute right-4 top-0 h-full hidden md:flex items-center text-[9px] font-extrabold text-[#0052FF] hover:underline gap-0.5 z-10"
+            >
+              Más info <ExternalLink size={9} />
+            </a>
+          )}
         </div>
       )}
 
@@ -2263,7 +2272,7 @@ export default function App() {
             <div>
               <p className="font-bold text-slate-800 dark:text-slate-200">CardPoint.cl</p>
               <p className="text-[10px] text-slate-400">© 2026 Cardpoint. Todos los derechos reservados.</p>
-              <p className="text-[9px] text-slate-500 mt-0.5">Hecho con 🐱</p>
+              <p className="text-[9px] text-slate-500 mt-0.5">Hecho por 🐱</p>
             </div>
           </div>
 

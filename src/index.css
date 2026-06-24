@@ -17,13 +17,13 @@
 }
 
 @keyframes scrollText {
-  0%   { transform: translateX(100vw); }
-  100% { transform: translateX(calc(-100% - 100vw)); }
+  from { transform: translateX(100vw); }
+  to   { transform: translateX(-100%); }
 }
 .animate-marquee {
-  display: inline-block;
   white-space: nowrap;
-  animation: scrollText 22s linear infinite;
+  left: 0;
+  animation: scrollText 24s linear infinite;
 }
 .animate-marquee:hover,
 .animate-marquee:focus {
