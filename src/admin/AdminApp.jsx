@@ -146,23 +146,32 @@ function AdminCards({ toast }) {
     setApiResults([]);
   };
 
-  // Upload real photo to Supabase Storage
+  // Upload real photo to ImgBB (free, unlimited)
+  const IMGBB_KEY = '149aebd904174718dea8f1c5eb444935';
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingPhoto(true);
     try {
-      const ext = file.name.split('.').pop();
-      const filename = `card-${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from('card-photos')
-        .upload(filename, file, { upsert: true });
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage
-        .from('card-photos')
-        .getPublicUrl(filename);
-      setForm(prev => ({ ...prev, real_photo: urlData.publicUrl }));
-      toast('Foto subida correctamente ✓', 'success');
+      // Convert file to base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const formData = new FormData();
+      formData.append('key', IMGBB_KEY);
+      formData.append('image', base64);
+      const res = await fetch('https://api.imgbb.com/1/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error?.message || 'Error al subir');
+      const directUrl = data.data.display_url;
+      setForm(prev => ({ ...prev, real_photo: directUrl }));
+      toast('Foto subida a ImgBB ✓', 'success');
     } catch (err) {
       toast('Error al subir: ' + err.message, 'error');
     }
