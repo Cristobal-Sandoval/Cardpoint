@@ -477,6 +477,7 @@ export default function App() {
   const [showTransferDetails, setShowTransferDetails] = useState(false);
   const [selectedCardDetail, setSelectedCardDetail] = useState(null);
   const [showRealPhoto, setShowRealPhoto] = useState(false);
+  const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
 
   // Sync noticias: mostrar las de Supabase apenas cargan, agregar auto-noticias después
@@ -486,6 +487,11 @@ export default function App() {
       setNewsList([...dbNews, ...autoNews]);
     }
   }, [dbNews, autoNews, newsLoading]);
+
+  // Reset zoom when active card changes
+  useEffect(() => {
+    setIsImageZoomed(false);
+  }, [selectedCardDetail]);
 
   // Control de Animación de Carrusel Continuo (cartas)
   const carruselRef = useRef(null);
@@ -2099,7 +2105,8 @@ export default function App() {
                 src={showRealPhoto && selectedCardDetail.real_photo ? selectedCardDetail.real_photo : selectedCardDetail.image} 
                 alt={selectedCardDetail.name} 
                 loading="lazy"
-                className="w-full max-h-[250px] sm:max-h-[300px] md:max-h-[360px] object-contain transform hover:scale-105 transition-transform duration-300" 
+                onClick={() => setIsImageZoomed(true)}
+                className="w-full max-h-[250px] sm:max-h-[300px] md:max-h-[360px] object-contain transform hover:scale-105 transition-transform duration-300 cursor-zoom-in" 
               />
               {/* Toggle button: only show if real_photo exists */}
               {selectedCardDetail.real_photo && (
@@ -2228,7 +2235,29 @@ export default function App() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
 
+      {/* Lightbox / Zoom de Imagen */}
+      {isImageZoomed && selectedCardDetail && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md animate-fade-in cursor-zoom-out"
+          onClick={() => setIsImageZoomed(false)}
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+            <img 
+              src={showRealPhoto && selectedCardDetail.real_photo ? selectedCardDetail.real_photo : selectedCardDetail.image} 
+              alt={selectedCardDetail.name}
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl select-none animate-scale-up border border-slate-800/50 shadow-2xl"
+            />
+            <button 
+              onClick={() => setIsImageZoomed(false)}
+              className="absolute -top-12 right-0 p-2 text-white/85 hover:text-white hover:bg-white/15 rounded-full transition-all cursor-pointer"
+              aria-label="Cerrar zoom"
+            >
+              <X size={24} />
+            </button>
           </div>
         </div>
       )}
