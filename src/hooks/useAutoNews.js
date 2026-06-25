@@ -97,7 +97,7 @@ const POKEMONALPHA_FALLBACK_NEWS = [
     "title": "Comparten nuevos detalles de “Historias Pokémon: Las Desventuras de Sirfetch’d y Pichu”",
     "summary": "La nueva animación protagonizada por Sirfetch’d y Pichu, creada en conjunto con el estudio Aardman, comparte su portada y otros detalles adicionales.",
     "date": "2026-06-22",
-    "image": "https://pokemonalpha.es/wp-content/uploads/2024/12/pokemon-aardman-portada-551x431.webp",
+    "image": "/og-image.png",
     "content": "<p class=\"noti-p\"><strong>Una nueva y encantadora animación en stop-motion viene en camino.</strong> The Pokémon Company, en colaboración con el legendario estudio Aardman Animations (creadores de <em>Wallace y Gromit</em> y <em>Pollitos en Fuga</em>), ha revelado la portada y nuevos detalles de su próximo proyecto conjunto.</p><p class=\"noti-p\">Titulado <em>Historias Pokémon: Las Desventuras de Sirfetch’d y Pichu</em>, este corto animado narrará la cómica y accidentada relación entre un Sirfetch'd sumamente orgulloso y caballeroso, y un travieso Pichu que no para de meterse en problemas.</p><p class=\"noti-p\">La producción utiliza técnicas tradicionales de stop-motion con marionetas de arcilla y resina meticulosamente esculpidas a mano. Los creadores han destacado que el corto no tendrá diálogos hablados, confiando todo el humor y la emoción en la expresividad visual clásica de Aardman y la personalidad única de ambos Pokémon.</p>",
     "sourceUrl": "https://pokemonalpha.es/2026/06/desventuras-sirfetchd-pichu-portada/",
     "sourceName": "Pokémon Alpha",
@@ -109,7 +109,7 @@ const POKEMONALPHA_FALLBACK_NEWS = [
     "title": "Estas son las novedades de Pokémon GO de julio de 2026",
     "summary": "Todas las novedades y eventos que podréis disfrutar en Pokémon GO este mes de julio. Días de la Comunidad, otros eventos y más",
     "date": "2026-06-24",
-    "image": "https://pokemonalpha.es/wp-content/uploads/2022/06/pokemon-go-julio-2022-resumen-eventos.png",
+    "image": "/og-image.png",
     "content": "<p class=\"noti-p\"><strong>¡El verano está en su punto máximo y Pokémon GO lo sabe!</strong> Niantic ha revelado la hoja de ruta completa para el mes de julio de 2026, repleta de Días de la Comunidad, eventos temáticos de incursiones y bonus especiales para todos los jugadores.</p><p class=\"noti-p\">El Día de la Comunidad de este mes estará protagonizado por un Pokémon muy solicitado por los entrenadores, ofreciendo un movimiento exclusivo sumamente útil para el juego competitivo en la Liga Combate GO. Además, se activará un bonus de triple experiencia por captura durante las tres horas del evento.</p><p class=\"noti-p\">En el apartado de incursiones de cinco estrellas, contaremos con el regreso de varios Pokémon Legendarios en su variante variocolor (shiny), así como horas de incursiones todos los miércoles del mes. Los fines de semana se reservarán para incursiones oscuras especiales que pondrán a prueba la estrategia de los grupos locales.</p>",
     "sourceUrl": "https://pokemonalpha.es/2026/06/novedades-julio-2026-pokemon-go/",
     "sourceName": "Pokémon Alpha",
@@ -121,7 +121,7 @@ const POKEMONALPHA_FALLBACK_NEWS = [
     "title": "Resumen Semanal de Pokémon GO del 22 al 28 de junio de 2026",
     "summary": "Os traemos todas las novedades que llegan a Pokémon GO en nuestro resumen semanal del 22 al 28 de junio. Eventos y más.",
     "date": "2026-06-22",
-    "image": "https://pokemonalpha.es/wp-content/uploads/2026/05/Siempre-Adelante-Forever-Forward-Portada-Pokemon-GO-551x431.jpg",
+    "image": "/og-image.png",
     "content": "<p class=\"noti-p\"><strong>Mantente al día con todo lo que ocurre esta semana en el juego móvil de Niantic.</strong> Te traemos nuestro resumen semanal detallado para que no te pierdas ningún evento, hora destacada ni rotación de jefes de incursión entre el 22 y el 28 de junio.</p><p class=\"noti-p\">La Hora del Pokémon Destacado de este martes presentará una gran oportunidad para acumular caramelos y polvo estelar con un multiplicador de transferencia. Asimismo, el miércoles por la tarde se activará la Hora de Incursiones con jefes legendarios de tipo dragón y volador.</p><p class=\"noti-p\">Hacia el fin de semana, se espera el inicio de un mini-evento temático enfocado en tareas de exploración y eclosión de huevos, ideal para salir a caminar con tus amigos de la comunidad local. ¡Prepara tus incubadoras y asegura espacio en tu almacenamiento de Pokémon!</p>",
     "sourceUrl": "https://pokemonalpha.es/2026/06/resumen-semanal-pokemon-go-22-28-junio-2026/",
     "sourceName": "Pokémon Alpha",
@@ -177,28 +177,34 @@ function parseSlashDate(dateStr) {
   return new Date().toISOString().split('T')[0];
 }
 
-export function useAutoNews() {
+export function useAutoNews(newsSourcesParam) {
   const [autoNews, setAutoNews] = useState([]);
   const [loadingAuto, setLoadingAuto] = useState(true);
+
+  const sourcesKey = newsSourcesParam ? JSON.stringify(newsSourcesParam) : '';
 
   useEffect(() => {
     const fetchAllNews = async () => {
       const CACHE_KEY = 'cardpoint_news_multi_v4';
       const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutos
 
-      // 1. Cargar preferencias de fuentes desde Supabase
+      // 1. Cargar preferencias de fuentes desde Supabase o parámetro
       let enabledSources = { pokemon: true, pokemonalpha: true, tcgnews: true, autogenerate: true };
-      try {
-        const { data, error } = await supabase
-          .from('admin_settings')
-          .select('data')
-          .eq('id', 'news_sources')
-          .single();
-        if (data && data.data) {
-          enabledSources = data.data;
+      if (newsSourcesParam) {
+        enabledSources = newsSourcesParam;
+      } else {
+        try {
+          const { data, error } = await supabase
+            .from('admin_settings')
+            .select('data')
+            .eq('id', 'news_sources')
+            .single();
+          if (data && data.data) {
+            enabledSources = data.data;
+          }
+        } catch (err) {
+          console.warn("useAutoNews: No se pudieron cargar las preferencias de noticias. Usando todas por defecto.", err);
         }
-      } catch (err) {
-        console.warn("useAutoNews: No se pudieron cargar las preferencias de noticias. Usando todas por defecto.", err);
       }
 
       // Si autogenerate está desactivado, limpiar noticias y retornar inmediatamente
@@ -214,7 +220,9 @@ export function useAutoNews() {
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
           const parsedCache = JSON.parse(cached);
-          if (parsedCache.data && parsedCache.data.length > 0) {
+          const cacheSourcesMatch = JSON.stringify(parsedCache.enabledSources) === JSON.stringify(enabledSources);
+          
+          if (parsedCache.data && parsedCache.data.length > 0 && cacheSourcesMatch) {
             // Filtrar las noticias en caché según las fuentes habilitadas actualmente
             const filteredCache = parsedCache.data.filter(n => {
               if (n.sourceName === 'Pokémon Oficial' && !enabledSources.pokemon) return false;
@@ -321,7 +329,7 @@ export function useAutoNews() {
 
           const title = cleanText(linkEl.textContent);
           const href = linkEl.getAttribute('href') || '';
-          const imgSrc = imgEl?.getAttribute('src') || '';
+          const imgSrc = imgEl?.getAttribute('src') || imgEl?.getAttribute('data-src') || '';
           const summary = cleanText(summaryEl?.textContent);
           const dateText = cleanText(dateEl?.textContent);
 
@@ -447,12 +455,13 @@ export function useAutoNews() {
       setAutoNews(allCollectedNews);
       localStorage.setItem(CACHE_KEY, JSON.stringify({
         timestamp: Date.now(),
+        enabledSources: enabledSources,
         data: allCollectedNews
       }));
     };
 
     fetchAllNews().finally(() => setLoadingAuto(false));
-  }, []);
+  }, [sourcesKey]);
 
   return { autoNews, loadingAuto };
 }

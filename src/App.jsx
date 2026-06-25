@@ -425,10 +425,10 @@ export default function App() {
   const [newsPage, setNewsPage] = useState(1);
   const [loadingFullContent, setLoadingFullContent] = useState(false);
 
-  const { autoNews, loadingAuto } = useAutoNews();
-
   // Panel de Control State (Global Supabase)
   const { adminSettings, updateSetting } = useAdmin();
+
+  const { autoNews, loadingAuto } = useAutoNews(adminSettings.news_sources);
   
   const hiddenNewsIds = adminSettings.hidden_news || [];
   const localTournaments = adminSettings.tournaments_override || [];
