@@ -747,12 +747,12 @@ function AdminNews({ toast }) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div className="grid grid-cols-1 gap-4 pt-2">
           {/* Master Toggle */}
-          <div className="md:col-span-2 flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-2xl">
+          <div className="flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-2xl">
             <div>
               <span className="text-sm font-semibold text-white block">Habilitar Noticias Autogeneradas</span>
-              <span className="text-xs text-slate-500 block">Si se desactiva, solo se mostrarán las noticias manuales que crees aquí.</span>
+              <span className="text-xs text-slate-500 block">Si se desactiva, solo se mostrarán las noticias manuales que crees aquí. (Proveedor: Pokémon Alpha)</span>
             </div>
             <button 
               onClick={() => handleToggleSource('autogenerate')} 
@@ -762,27 +762,6 @@ function AdminNews({ toast }) {
             >
               <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
                 newsSources.autogenerate ? 'translate-x-5.5' : 'translate-x-0.5'
-              }`} />
-            </button>
-          </div>
-
-          {/* Source 2: PokemonAlpha */}
-          <div className={`md:col-span-2 flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-2xl transition-opacity ${
-            !newsSources.autogenerate ? 'opacity-40 pointer-events-none' : ''
-          }`}>
-            <div>
-              <span className="text-sm font-semibold text-white block">Pokémon Alpha (Único proveedor activo)</span>
-              <span className="text-xs text-slate-500 block">https://pokemonalpha.es</span>
-            </div>
-            <button 
-              disabled={!newsSources.autogenerate}
-              onClick={() => handleToggleSource('pokemonalpha')} 
-              className={`w-11 h-6 rounded-full transition-all relative flex items-center cursor-pointer ${
-                newsSources.pokemonalpha ? 'bg-[#0052FF]' : 'bg-slate-600'
-              }`}
-            >
-              <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
-                newsSources.pokemonalpha ? 'translate-x-5.5' : 'translate-x-0.5'
               }`} />
             </button>
           </div>

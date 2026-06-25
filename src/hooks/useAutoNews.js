@@ -245,11 +245,11 @@ export function useAutoNews(newsSourcesParam) {
 
   useEffect(() => {
     const fetchAllNews = async () => {
-      const CACHE_KEY = 'cardpoint_news_multi_v5';
+      const CACHE_KEY = 'cardpoint_news_multi_v6';
       const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutos
 
       // 1. Cargar preferencias de fuentes desde Supabase o parámetro
-      let enabledSources = { pokemon: false, pokemonalpha: true, tcgnews: false, autogenerate: true };
+      let enabledSources = { autogenerate: true };
       if (newsSourcesParam) {
         enabledSources = newsSourcesParam;
       } else {
@@ -263,13 +263,13 @@ export function useAutoNews(newsSourcesParam) {
             enabledSources = data.data;
           }
         } catch (err) {
-          console.warn("useAutoNews: No se pudieron cargar las preferencias de noticias. Usando todas por defecto.", err);
+          console.warn("useAutoNews: No se pudieron cargar las preferencias de noticias.", err);
         }
       }
 
-      // Si autogenerate está desactivado o pokemonalpha no está activo, limpiar y retornar
-      if (!enabledSources.autogenerate || !enabledSources.pokemonalpha) {
-        console.log("useAutoNews: Noticias autogeneradas de Pokémon Alpha desactivadas.");
+      // Si autogenerate está desactivado, limpiar y retornar
+      if (!enabledSources.autogenerate) {
+        console.log("useAutoNews: Noticias autogeneradas desactivadas.");
         setAutoNews([]);
         setLoadingAuto(false);
         return;
@@ -280,13 +280,10 @@ export function useAutoNews(newsSourcesParam) {
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
           const parsedCache = JSON.parse(cached);
-          const cacheSourcesMatch = JSON.stringify(parsedCache.enabledSources) === JSON.stringify(enabledSources);
+          const cacheSourcesMatch = parsedCache.enabledSources && parsedCache.enabledSources.autogenerate === enabledSources.autogenerate;
           
           if (parsedCache.data && parsedCache.data.length > 0 && cacheSourcesMatch) {
-            // Filtrar las noticias en caché para tener solamente Pokémon Alpha
-            const filteredCache = parsedCache.data.filter(n => n.sourceName === 'Pokémon Alpha');
-
-            setAutoNews(filteredCache);
+            setAutoNews(parsedCache.data);
             setLoadingAuto(false);
             if (Date.now() - parsedCache.timestamp < CACHE_EXPIRY) {
               console.log("useAutoNews: Cargada caché reciente de noticias de Pokémon Alpha");
@@ -439,15 +436,14 @@ export function useAutoNews(newsSourcesParam) {
       };
 
       // --- EJECUCIÓN DEL FETCH MULTI-FUENTE ---
-      const sourcesToFetch = [];
-      if (enabledSources.pokemonalpha) {
-        sourcesToFetch.push({
+      const sourcesToFetch = [
+        {
           name: 'Pokémon Alpha',
           url: 'https://pokemonalpha.es/archivo-de-noticias/',
           parser: parsePokemonAlpha,
           fallback: POKEMONALPHA_FALLBACK_NEWS
-        });
-      }
+        }
+      ];
 
       let allCollectedNews = [];
 
