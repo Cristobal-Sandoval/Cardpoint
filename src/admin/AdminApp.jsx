@@ -117,7 +117,7 @@ function AdminCards({ toast }) {
   const [editingCard, setEditingCard] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const emptyForm = { name: '', set: 'Escarlata y Púrpura', set_code: '', rarity: 'Rara', price: '', condition: 'NM', image: '', real_photo: '', description: '', in_stock: true, idioma: 'Español', is_reverse: false, stock: 1 };
+  const emptyForm = { name: '', set: 'Escarlata y Púrpura', set_code: '', rarity: 'Rara', price: '', condition: 'NM', image: '', real_photo: '', description: '', in_stock: true, idioma: 'Español', is_reverse: false, is_league: false, stock: 1 };
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [apiSearching, setApiSearching] = useState(false);
@@ -210,7 +210,7 @@ function AdminCards({ toast }) {
   useEffect(() => { load(); }, []);
 
   const openAdd = () => { setForm(emptyForm); setEditingCard(null); setApiResults([]); setShowForm(true); };
-  const openEdit = (card) => { setForm({ ...card, idioma: card.idioma || 'Español', is_reverse: !!card.is_reverse, stock: card.stock ?? 1 }); setEditingCard(card); setApiResults([]); setShowForm(true); };
+  const openEdit = (card) => { setForm({ ...card, idioma: card.idioma || 'Español', is_reverse: !!card.is_reverse, is_league: !!card.is_league, stock: card.stock ?? 1 }); setEditingCard(card); setApiResults([]); setShowForm(true); };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -391,14 +391,22 @@ function AdminCards({ toast }) {
                 </select>
               </Field>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <Field label="Stock (Cantidad)"><input className={inputCls} type="number" required min="0" value={form.stock} onChange={e => setForm({...form, stock: parseInt(e.target.value) || 0})} placeholder="Ej: 1" /></Field>
               <div className="flex flex-col justify-end">
-                <label className="flex items-center gap-3 cursor-pointer select-none pb-2">
-                  <div className={`w-11 h-6 rounded-full transition-all ${form.is_reverse ? 'bg-amber-500' : 'bg-slate-600'}`} onClick={() => setForm({...form, is_reverse: !form.is_reverse})}>
+                <label className="flex items-center gap-2.5 cursor-pointer select-none pb-2.5">
+                  <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 ${form.is_reverse ? 'bg-amber-500' : 'bg-slate-600'}`} onClick={() => setForm({...form, is_reverse: !form.is_reverse})}>
                     <div className={`w-5 h-5 bg-white rounded-full mt-0.5 transition-transform ${form.is_reverse ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
                   </div>
-                  <span className="text-sm font-semibold text-slate-300">Es Reverse Holo</span>
+                  <span className="text-xs font-semibold text-slate-300 whitespace-nowrap">Reverse Holo</span>
+                </label>
+              </div>
+              <div className="flex flex-col justify-end">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none pb-2.5">
+                  <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 ${form.is_league ? 'bg-rose-500' : 'bg-slate-600'}`} onClick={() => setForm({...form, is_league: !form.is_league})}>
+                    <div className={`w-5 h-5 bg-white rounded-full mt-0.5 transition-transform ${form.is_league ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
+                  </div>
+                  <span className="text-xs font-semibold text-slate-300 whitespace-nowrap">Carta de Liga</span>
                 </label>
               </div>
             </div>

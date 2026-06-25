@@ -180,6 +180,32 @@ function CardpointLogo({ className = "h-14", showText = true }) {
   );
 }
 
+// ==========================================
+// COMPONENTE DE BADGE DE LIGA (PLAY! POKÉMON LEAGUE STAMP)
+// ==========================================
+function LeagueBadge({ className = "" }) {
+  return (
+    <div className={`flex flex-col items-center gap-0.5 select-none z-10 ${className}`}>
+      {/* Contenedor recortado de la imagen para quitarle el borde blanco de afuera y los puntos negros de las esquinas */}
+      <div className="w-9 h-6 sm:w-10.5 sm:h-7 rounded-[3px] sm:rounded-[4px] overflow-hidden flex items-center justify-center bg-white border border-black/35 shadow-md">
+        <img 
+          src="/league-stamp.png" 
+          alt="De Liga" 
+          className="w-full h-full object-cover scale-[1.04]" 
+          draggable="false"
+        />
+      </div>
+      {/* Texto debajo */}
+      <span 
+        className="text-[6px] sm:text-[7px] font-black text-black dark:text-black uppercase tracking-wider leading-none text-center"
+        style={{ textShadow: '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff' }}
+      >
+        De Liga
+      </span>
+    </div>
+  );
+}
+
 // Eras de Stock Físico
 const ERAS = [
   { id: 'Todas', name: 'Todas' },
@@ -1328,6 +1354,9 @@ export default function App() {
                               REVERSE
                             </span>
                           )}
+                          {card.is_league && (
+                            <LeagueBadge className="absolute top-2.5 left-2.5" />
+                          )}
                         </div>
 
                         <div className="p-4 flex flex-col flex-grow justify-between">
@@ -1430,7 +1459,18 @@ export default function App() {
 
                 <div className="space-y-4">
                   {newsLoading ? (
-                    <p className="text-sm text-slate-400">Cargando noticias...</p>
+                    <div className="space-y-4">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="flex gap-4 p-3 rounded-2xl border bg-white dark:bg-[#121824] border-slate-100 dark:border-slate-800 animate-pulse">
+                          <div className="w-20 sm:w-24 aspect-[4/3] rounded-xl bg-slate-200 dark:bg-slate-800 flex-shrink-0"></div>
+                          <div className="space-y-2 flex-grow">
+                            <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-3/4"></div>
+                            <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-1/2"></div>
+                            <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-5/6"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   ) : visibleNewsList.length === 0 ? (
                     <p className="text-sm text-slate-400">No hay noticias publicadas aún.</p>
                   ) : (
@@ -1635,7 +1675,21 @@ export default function App() {
             </div>
 
             {/* Grid de Cartas (Responsive, móvil-first) */}
-            {filteredCards.length > 0 ? (
+            {cardsLoading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="rounded-2xl border overflow-hidden flex flex-col justify-between bg-white dark:bg-[#121824] border-slate-200 dark:border-slate-800 animate-pulse">
+                    <div className="relative aspect-[3/4] bg-slate-200 dark:bg-slate-800"></div>
+                    <div className="p-3 sm:p-4 space-y-2.5">
+                      <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-3/4"></div>
+                      <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-1/2"></div>
+                      <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-1/3"></div>
+                      <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded mt-3"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredCards.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                 
                 {/* Renderizado de cartas e inserción de anuncio publicitario tipo tarjeta cada 4 cartas */}
@@ -1674,6 +1728,9 @@ export default function App() {
                             <span className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wide border border-white/20">
                               REVERSE
                             </span>
+                          )}
+                          {card.is_league && (
+                            <LeagueBadge className="absolute top-2 left-2" />
                           )}
                         </div>
 
@@ -1825,47 +1882,60 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {visibleNewsList.slice((newsPage - 1) * 6, newsPage * 6).map((n) => (
-                    <article 
-                      key={n.id} 
-                      onClick={() => { setSelectedNews(n); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                      className="group bg-white dark:bg-[#121824] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer"
-                    >
-                      <div className="relative h-64 md:h-72 overflow-hidden">
-                        <img 
-                          src={n.image} 
-                          alt={n.title} 
-                          loading="lazy"
-                          loading="lazy"
-                          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
-                        />
-                        {n.date && (
-                          <span className="absolute top-2.5 right-2.5 bg-[#0052FF] text-white text-[9px] font-black px-2 py-0.5 rounded shadow uppercase z-10">
-                            {n.date}
-                          </span>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      </div>
-                      <div className="p-6 flex flex-col flex-grow relative">
-                        <div className="flex items-center gap-2 text-xs font-bold text-[#0052FF] mb-3">
-                          <Calendar size={14} className="stroke-[2.5]" />
-                          {n.date}
+                  {newsLoading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="bg-white dark:bg-[#121824] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm animate-pulse flex flex-col h-[400px]">
+                        <div className="h-64 md:h-72 bg-slate-200 dark:bg-slate-800"></div>
+                        <div className="p-6 flex-grow space-y-3">
+                          <div className="h-3.5 bg-slate-200 dark:bg-slate-800 rounded w-1/4"></div>
+                          <div className="h-5 bg-slate-200 dark:bg-slate-800 rounded w-3/4"></div>
+                          <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-5/6"></div>
+                          <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-2/3"></div>
                         </div>
-                        <h3 className="text-lg font-black text-slate-900 dark:text-white mb-3 leading-tight group-hover:text-[#0052FF] transition-colors line-clamp-2">
-                          {n.title}
-                        </h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed line-clamp-3">
-                          {n.summary}
-                        </p>
-                        <div className="mt-auto pt-5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                          <span className="text-[10px] font-black text-[#0052FF] uppercase tracking-wider flex items-center gap-1">Léelo ahora</span>
-                          <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#0052FF] group-hover:text-white transition-all duration-300">
-                            <ChevronRight size={20} className="stroke-[2.5] group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    ))
+                  ) : (
+                    visibleNewsList.slice((newsPage - 1) * 6, newsPage * 6).map((n) => (
+                      <article 
+                        key={n.id} 
+                        onClick={() => { setSelectedNews(n); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        className="group bg-white dark:bg-[#121824] rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer"
+                      >
+                        <div className="relative h-64 md:h-72 overflow-hidden">
+                          <img 
+                            src={n.image} 
+                            alt={n.title} 
+                            loading="lazy"
+                            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                          />
+                          {n.date && (
+                            <span className="absolute top-2.5 right-2.5 bg-[#0052FF] text-white text-[9px] font-black px-2 py-0.5 rounded shadow uppercase z-10">
+                              {n.date}
+                            </span>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        </div>
+                        <div className="p-6 flex flex-col flex-grow relative">
+                          <div className="flex items-center gap-2 text-xs font-bold text-[#0052FF] mb-3">
+                            <Calendar size={14} className="stroke-[2.5]" />
+                            {n.date}
+                          </div>
+                          <h3 className="text-lg font-black text-slate-900 dark:text-white mb-3 leading-tight group-hover:text-[#0052FF] transition-colors line-clamp-2">
+                            {n.title}
+                          </h3>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed line-clamp-3">
+                            {n.summary}
+                          </p>
+                          <div className="mt-auto pt-5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                            <span className="text-[10px] font-black text-[#0052FF] uppercase tracking-wider flex items-center gap-1">Léelo ahora</span>
+                            <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-[#0052FF] group-hover:text-white transition-all duration-300">
+                              <ChevronRight size={20} className="stroke-[2.5] group-hover:translate-x-0.5 transition-transform" />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </article>
-                  ))}
+                      </article>
+                    ))
+                  )}
                 </div>
 
                 {/* Controles de Paginación */}
@@ -1927,67 +1997,87 @@ export default function App() {
 
             {/* Grid de Torneos (Responsive, móvil-first) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {displayTournaments.length === 0 && !tournamentsLoading && (
-                <p className="text-slate-400 col-span-3 text-center py-8">No hay torneos programados por el momento.</p>
-              )}
-              {displayTournaments.map((t, idx) => (
-                <div 
-                  key={t.id}
-                  className={`flex flex-col justify-between p-6 rounded-3xl border transition-all hover:shadow-xl bg-white dark:bg-[#121824] ${
-                    idx === 1 ? 'border-[#0052FF]/60 dark:border-[#0052FF]/50 relative animate-pulse-subtle' : 'border-slate-200 dark:border-slate-800'
-                  }`}
-                >
-                  {idx === 1 && (
-                    <span className="absolute -top-3 left-6 bg-[#0052FF] text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow">
-                      Copa Oficial
-                    </span>
-                  )}
-
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-[#0052FF] flex flex-col items-center justify-center flex-shrink-0 shadow">
-                        <span className="text-2xl font-black leading-none">{t.day}</span>
-                        <span className="text-[9px] font-extrabold text-slate-400 uppercase mt-0.5">{t.month}</span>
+              {tournamentsLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex flex-col justify-between p-6 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121824] animate-pulse h-[300px]">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-slate-200 dark:bg-slate-800"></div>
+                        <div className="space-y-2 flex-grow">
+                          <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-3/4"></div>
+                          <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-1/2"></div>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight">{t.title}</h4>
-                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-bold text-[9px] mt-1">
-                          {t.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-4">
-                      <div className="flex items-center gap-2">
-                        <Shield size={14} className="text-[#0052FF] flex-shrink-0" />
-                        <span>Formato: <strong className="text-slate-805 dark:text-slate-100">{t.format}</strong></span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin size={14} className="text-[#0052FF] flex-shrink-0" />
-                        <span>Lugar: <strong className="text-slate-805 dark:text-slate-100">{t.location}</strong></span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Coins size={14} className="text-[#0052FF] flex-shrink-0" />
-                        <span>Inscripción: <strong className="text-slate-805 dark:text-slate-100">{t.entry_fee}</strong></span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Info size={14} className="text-[#0052FF] flex-shrink-0" />
-                        <span>Hora: <strong className="text-slate-805 dark:text-slate-100">{t.time}</strong></span>
+                      <div className="space-y-2.5 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-full"></div>
+                        <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-5/6"></div>
+                        <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-2/3"></div>
                       </div>
                     </div>
                   </div>
-
-                  <a
-                    href={t.registration_link || "https://instagram.com/cardpoint.cl"}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-6 w-full text-center bg-[#0052FF] hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/10 cursor-pointer"
+                ))
+              ) : displayTournaments.length === 0 ? (
+                <p className="text-slate-400 col-span-3 text-center py-8">No hay torneos programados por el momento.</p>
+              ) : (
+                displayTournaments.map((t, idx) => (
+                  <div 
+                    key={t.id}
+                    className={`flex flex-col justify-between p-6 rounded-3xl border transition-all hover:shadow-xl bg-white dark:bg-[#121824] ${
+                      idx === 1 ? 'border-[#0052FF]/60 dark:border-[#0052FF]/50 relative animate-pulse-subtle' : 'border-slate-200 dark:border-slate-800'
+                    }`}
                   >
-                    <span>{t.registration_link ? 'Inscribirse aquí' : 'Inscribirse por Instagram'}</span>
-                    <ExternalLink size={13} />
-                  </a>
-                </div>
-              ))}
+                    {idx === 1 && (
+                      <span className="absolute -top-3 left-6 bg-[#0052FF] text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow">
+                        Copa Oficial
+                      </span>
+                    )}
+
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-[#0052FF] flex flex-col items-center justify-center flex-shrink-0 shadow">
+                          <span className="text-2xl font-black leading-none">{t.day}</span>
+                          <span className="text-[9px] font-extrabold text-slate-400 uppercase mt-0.5">{t.month}</span>
+                        </div>
+                        <div>
+                          <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight">{t.title}</h4>
+                          <span className="inline-block px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-bold text-[9px] mt-1">
+                            {t.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-4">
+                        <div className="flex items-center gap-2">
+                          <Shield size={14} className="text-[#0052FF] flex-shrink-0" />
+                          <span>Formato: <strong className="text-slate-805 dark:text-slate-100">{t.format}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin size={14} className="text-[#0052FF] flex-shrink-0" />
+                          <span>Lugar: <strong className="text-slate-805 dark:text-slate-100">{t.location}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Coins size={14} className="text-[#0052FF] flex-shrink-0" />
+                          <span>Inscripción: <strong className="text-slate-805 dark:text-slate-100">{t.entry_fee}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Info size={14} className="text-[#0052FF] flex-shrink-0" />
+                          <span>Hora: <strong className="text-slate-805 dark:text-slate-100">{t.time}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <a
+                      href={t.registration_link || "https://instagram.com/cardpoint.cl"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-6 w-full text-center bg-[#0052FF] hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/10 cursor-pointer"
+                    >
+                      <span>{t.registration_link ? 'Inscribirse aquí' : 'Inscribirse por Instagram'}</span>
+                      <ExternalLink size={13} />
+                    </a>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Banner Informativo Torneos */}
@@ -2358,7 +2448,10 @@ export default function App() {
           <div className="relative w-full max-w-2xl bg-white dark:bg-[#121824] rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl z-10 flex flex-col md:flex-row animate-scale-up max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-y-visible no-scrollbar">
             
             {/* Imagen Izquierda */}
-            <div className="md:w-1/2 bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center gap-4 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800">
+            <div className="relative md:w-1/2 bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center gap-4 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800">
+              {selectedCardDetail.is_league && (
+                <LeagueBadge className="absolute top-4 left-4" />
+              )}
               <img 
                 src={showRealPhoto && selectedCardDetail.real_photo ? selectedCardDetail.real_photo : selectedCardDetail.image} 
                 alt={selectedCardDetail.name} 
@@ -2406,6 +2499,11 @@ export default function App() {
                       {selectedCardDetail.is_reverse && (
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 uppercase">
                           ✨ Reverse Holo
+                        </span>
+                      )}
+                      {selectedCardDetail.is_league && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 uppercase flex items-center gap-1">
+                          🏆 De Liga
                         </span>
                       )}
                     </div>
