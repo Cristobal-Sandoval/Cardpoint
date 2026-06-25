@@ -1445,6 +1445,7 @@ export default function AdminApp() {
   const [activeSection, setActiveSection] = useState('cards');
   const [toast, setToastState] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -1494,16 +1495,19 @@ export default function AdminApp() {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-[#0c0e16] border-r border-white/8 flex flex-col transition-transform duration-300
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <aside className={`fixed lg:static inset-y-0 left-0 z-30 bg-[#0c0e16] border-r border-white/8 flex flex-col transition-all duration-300
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        ${sidebarCollapsed ? 'w-64 lg:w-20' : 'w-64 lg:w-64'}`}>
         {/* Logo */}
-        <div className="p-6 border-b border-white/8">
+        <div className={`p-6 border-b border-white/8 ${sidebarCollapsed ? 'flex justify-center' : ''}`}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#0052FF] flex items-center justify-center font-black text-white text-sm">CP</div>
-            <div>
-              <div className="font-black text-white text-sm leading-tight">CardPoint Admin</div>
-              <div className="text-slate-500 text-[10px]">{session.user.email}</div>
-            </div>
+            <div className="w-9 h-9 rounded-xl bg-[#0052FF] flex items-center justify-center font-black text-white text-sm flex-shrink-0">CP</div>
+            {!sidebarCollapsed && (
+              <div className="truncate transition-opacity duration-300">
+                <div className="font-black text-white text-sm leading-tight">CardPoint Admin</div>
+                <div className="text-slate-500 text-[10px] truncate max-w-[155px]">{session.user.email}</div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1513,13 +1517,15 @@ export default function AdminApp() {
             <button
               key={item.id}
               onClick={() => { setActiveSection(item.id); setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all
+              title={sidebarCollapsed ? item.label : undefined}
+              className={`w-full flex items-center rounded-xl text-sm font-semibold transition-all
+                ${sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}
                 ${activeSection === item.id
                   ? 'bg-[#0052FF]/15 text-[#4d8aff] border border-[#0052FF]/20'
                   : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
             >
-              {item.icon}
-              {item.label}
+              <div className="flex-shrink-0">{item.icon}</div>
+              {!sidebarCollapsed && <span className="transition-opacity duration-300">{item.label}</span>}
             </button>
           ))}
         </nav>
@@ -1530,18 +1536,23 @@ export default function AdminApp() {
             href="/"
             target="_blank"
             rel="noreferrer"
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+            title={sidebarCollapsed ? "Ver sitio público" : undefined}
+            className={`w-full flex items-center rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-white/5 transition-all
+              ${sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}`}
           >
-            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" />
             </svg>
-            Ver sitio público
+            {!sidebarCollapsed && <span className="transition-opacity duration-300">Ver sitio público</span>}
           </a>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:text-red-400 hover:bg-red-900/10 transition-all"
+            title={sidebarCollapsed ? "Cerrar sesión" : undefined}
+            className={`w-full flex items-center rounded-xl text-sm font-semibold text-slate-400 hover:text-red-400 hover:bg-red-900/10 transition-all
+              ${sidebarCollapsed ? 'justify-center p-3' : 'gap-3 px-4 py-3'}`}
           >
-            <IcoLogout /> Cerrar sesión
+            <div className="flex-shrink-0"><IcoLogout /></div>
+            {!sidebarCollapsed && <span className="transition-opacity duration-300">Cerrar sesión</span>}
           </button>
         </div>
       </aside>
@@ -1553,6 +1564,19 @@ export default function AdminApp() {
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-slate-400 hover:text-white transition-colors">
             <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
           </button>
+          
+          <button 
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)} 
+            className="hidden lg:flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 w-8 h-8 rounded-lg border border-white/10 transition-all"
+            title={sidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
+          >
+            {sidebarCollapsed ? (
+              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+            ) : (
+              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+            )}
+          </button>
+
           <div className="flex-1">
             <h1 className="text-sm font-bold text-slate-300 capitalize">{navItems.find(n => n.id === activeSection)?.label}</h1>
           </div>
