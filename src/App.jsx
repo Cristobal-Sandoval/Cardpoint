@@ -1,3 +1,4 @@
+// CardPoint v.1.0.2 - Vercel Rebuild Trigger
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useCards } from './hooks/useCards';
