@@ -766,33 +766,12 @@ function AdminNews({ toast }) {
             </button>
           </div>
 
-          {/* Source 1: Pokemon.com */}
-          <div className={`flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-2xl transition-opacity ${
-            !newsSources.autogenerate ? 'opacity-40 pointer-events-none' : ''
-          }`}>
-            <div>
-              <span className="text-sm font-semibold text-white block">Pokémon.com (Oficial)</span>
-              <span className="text-xs text-slate-500 block">https://www.pokemon.com/el/noticias</span>
-            </div>
-            <button 
-              disabled={!newsSources.autogenerate}
-              onClick={() => handleToggleSource('pokemon')} 
-              className={`w-11 h-6 rounded-full transition-all relative flex items-center cursor-pointer ${
-                newsSources.pokemon ? 'bg-[#0052FF]' : 'bg-slate-600'
-              }`}
-            >
-              <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
-                newsSources.pokemon ? 'translate-x-5.5' : 'translate-x-0.5'
-              }`} />
-            </button>
-          </div>
-
           {/* Source 2: PokemonAlpha */}
-          <div className={`flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-2xl transition-opacity ${
+          <div className={`md:col-span-2 flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-2xl transition-opacity ${
             !newsSources.autogenerate ? 'opacity-40 pointer-events-none' : ''
           }`}>
             <div>
-              <span className="text-sm font-semibold text-white block">Pokémon Alpha</span>
+              <span className="text-sm font-semibold text-white block">Pokémon Alpha (Único proveedor activo)</span>
               <span className="text-xs text-slate-500 block">https://pokemonalpha.es</span>
             </div>
             <button 
@@ -804,27 +783,6 @@ function AdminNews({ toast }) {
             >
               <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
                 newsSources.pokemonalpha ? 'translate-x-5.5' : 'translate-x-0.5'
-              }`} />
-            </button>
-          </div>
-
-          {/* Source 3: TCGNews.cl */}
-          <div className={`flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-2xl transition-opacity ${
-            !newsSources.autogenerate ? 'opacity-40 pointer-events-none' : ''
-          }`}>
-            <div>
-              <span className="text-sm font-semibold text-white block">TCGNews (Chile)</span>
-              <span className="text-xs text-slate-500 block">https://www.tcgnews.cl</span>
-            </div>
-            <button 
-              disabled={!newsSources.autogenerate}
-              onClick={() => handleToggleSource('tcgnews')} 
-              className={`w-11 h-6 rounded-full transition-all relative flex items-center cursor-pointer ${
-                newsSources.tcgnews ? 'bg-[#0052FF]' : 'bg-slate-600'
-              }`}
-            >
-              <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
-                newsSources.tcgnews ? 'translate-x-5.5' : 'translate-x-0.5'
               }`} />
             </button>
           </div>

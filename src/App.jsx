@@ -1905,18 +1905,17 @@ export default function App() {
                 </div>
                   
                 {selectedNews.isExternal && (
-                    <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
-                      <a 
-                        href={selectedNews.sourceUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-[#0052FF] text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20"
-                      >
-                        Fuente: {selectedNews.sourceName || 'Página Original'}
-                        <ExternalLink size={16} />
-                      </a>
-                    </div>
-                  )}
+                  <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end text-xs text-slate-450 dark:text-slate-500">
+                    <a 
+                      href={selectedNews.sourceUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="hover:text-[#0052FF] hover:underline transition-colors"
+                    >
+                      Fuente: Pokealpha
+                    </a>
+                  </div>
+                )}
                 </div>
             ) : (
               // Listado de Noticias (Responsive, formato grande)
