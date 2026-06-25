@@ -449,6 +449,20 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Carga dinámica de Google AdSense solo en la parte pública
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const scriptId = 'google-adsense-script';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2882896493327968";
+      script.async = true;
+      script.crossOrigin = "anonymous";
+      document.head.appendChild(script);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeAds.length <= 1) return;
     const duration = isMobile ? 24000 : 30000;
