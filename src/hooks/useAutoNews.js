@@ -46,7 +46,7 @@ const POKEMON_FALLBACK_NEWS = [
     "title": "Ven a bailar con el nuevo POKÉTOON",
     "summary": "Prepárate para vivir una explosión de ternura en Pawmi, Pawmo y Pawmot en YouTube.",
     "date": "2026-06-25",
-    "image": "https://mcdn.pokemon.com/image/upload/c_limit,w_1439/f_auto/q_auto:best/v1/live/pcom-cms/static-assets/cms3/us/img/watch-pokemon-tv/poketoon/poketoon-169.jpg",
+    "image": "/og-image.png",
     "content": "<p class=\"noti-p\"><strong>¡Una nueva entrega de POKÉTOON ha llegado a YouTube!</strong> Prepárate para bailar y sonreír con las divertidas aventuras de Pawmi, Pawmo y Pawmot en este nuevo corto animado lleno de ritmo y diversión.</p><p class=\"noti-p\">En esta adorable historia, una niña que está de pícnic con su padre se encuentra con estos tres dinámicos Pokémon bailando con una sincronía increíble, desatando una tarde llena de risas y música.</p>",
     "sourceUrl": "https://www.pokemon.com/el/noticias/ven-a-bailar-con-el-nuevo-corto-de-poketoon-en-youtube",
     "sourceName": "Pokémon Oficial",
@@ -183,7 +183,7 @@ export function useAutoNews() {
 
   useEffect(() => {
     const fetchAllNews = async () => {
-      const CACHE_KEY = 'cardpoint_news_multi_v3';
+      const CACHE_KEY = 'cardpoint_news_multi_v4';
       const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutos
 
       // 1. Cargar preferencias de fuentes desde Supabase
