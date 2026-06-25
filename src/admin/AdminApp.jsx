@@ -125,6 +125,31 @@ function AdminCards({ toast }) {
   const [apiSearchError, setApiSearchError] = useState(null); // null | 'no_results' | 'timeout' | 'error'
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [adminSearch, setAdminSearch] = useState('');
+  const itemsPerPage = 10;
+
+  // Reset pagination when searching
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [adminSearch]);
+
+  const filteredCards = useMemo(() => {
+    if (!adminSearch) return cards;
+    const q = adminSearch.toLowerCase();
+    return cards.filter(c => 
+      (c.name || '').toLowerCase().includes(q) ||
+      (c.set || '').toLowerCase().includes(q) ||
+      (c.rarity || '').toLowerCase().includes(q)
+    );
+  }, [cards, adminSearch]);
+
+  const totalPages = Math.ceil(filteredCards.length / itemsPerPage);
+  const activePage = Math.min(currentPage, Math.max(1, totalPages));
+  const paginatedCards = useMemo(() => {
+    return filteredCards.slice((activePage - 1) * itemsPerPage, activePage * itemsPerPage);
+  }, [filteredCards, activePage, itemsPerPage]);
+
   const handleApiSearch = async () => {
     if (!form.name) return;
     setApiSearching(true);
@@ -243,60 +268,129 @@ function AdminCards({ toast }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Cartas en Stock</h1>
-          <p className="text-slate-400 text-sm mt-1">{cards.length} cartas registradas</p>
+          <p className="text-slate-400 text-sm mt-1">
+            {adminSearch ? `${filteredCards.length} de ` : ''}{cards.length} cartas registradas
+          </p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-[#0052FF] hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-900/30">
-          <IcoPlus /> Nueva Carta
-        </button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Buscar por nombre, set..."
+              value={adminSearch}
+              onChange={e => setAdminSearch(e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#0052FF] focus:ring-1 focus:ring-[#0052FF] w-full sm:w-64 transition-all"
+            />
+            {adminSearch && (
+              <button 
+                onClick={() => setAdminSearch('')} 
+                className="absolute right-3 top-2 text-slate-550 hover:text-white transition-colors text-sm font-black"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <button onClick={openAdd} className="flex items-center justify-center gap-2 bg-[#0052FF] hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-900/30 whitespace-nowrap">
+            <IcoPlus /> Nueva Carta
+          </button>
+        </div>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center h-48 text-slate-500">Cargando cartas...</div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-white/8">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-white/5 border-b border-white/8">
-                {['Imagen','Nombre','Idioma','Set','Rareza','Precio','Condición','Stock','Visible','Acciones'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {cards.map(card => (
-                <tr key={card.id} className="hover:bg-white/3 transition-colors">
-                  <td className="px-4 py-3">
-                    <img src={card.image} alt={card.name} className="w-10 h-14 object-cover rounded-lg" onError={e => e.target.style.display='none'} />
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-white max-w-[160px] truncate">
-                    {card.name}
-                    {card.is_reverse && <span className="ml-2 text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30 uppercase">Reverse</span>}
-                  </td>
-                  <td className="px-4 py-3"><span className="px-2 py-0.5 bg-purple-900/40 text-purple-300 text-[10px] uppercase font-bold rounded-lg border border-purple-500/20">{card.idioma || 'Español'}</span></td>
-                  <td className="px-4 py-3 text-slate-400 max-w-[140px] truncate">{card.set}</td>
-                  <td className="px-4 py-3 text-slate-400 text-xs max-w-[140px] truncate">{card.rarity}</td>
-                  <td className="px-4 py-3 text-green-400 font-bold whitespace-nowrap">${(card.price || 0).toLocaleString('es-CL')}</td>
-                  <td className="px-4 py-3"><span className="px-2 py-0.5 bg-blue-900/40 text-blue-300 text-xs rounded-lg font-bold">{card.condition}</span></td>
-                  <td className="px-4 py-3 text-slate-300 text-center font-bold">{card.stock ?? 1}</td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => toggleStock(card)} className={`w-10 h-5 rounded-full transition-all ${card.in_stock ? 'bg-green-500' : 'bg-slate-600'}`}>
-                      <div className={`w-4 h-4 bg-white rounded-full mx-0.5 transition-transform ${card.in_stock ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <button onClick={() => openEdit(card)} className="p-2 rounded-lg bg-white/5 hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 transition-all"><IcoEdit /></button>
-                      <button onClick={() => setDeleteTarget(card)} className="p-2 rounded-lg bg-white/5 hover:bg-red-600/20 text-slate-400 hover:text-red-400 transition-all"><IcoTrash /></button>
-                    </div>
-                  </td>
+        <div>
+          <div className="overflow-x-auto rounded-2xl border border-white/8">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-white/5 border-b border-white/8">
+                  {['Imagen','Nombre','Idioma','Set','Rareza','Precio','Condición','Stock','Visible','Acciones'].map(h => (
+                    <th key={h} className="px-3 py-2.5 sm:px-4 sm:py-3 text-left text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                  ))}
                 </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {paginatedCards.map(card => (
+                  <tr key={card.id} className="hover:bg-white/3 transition-colors">
+                    <td className="px-3 py-2 sm:px-4 sm:py-3">
+                      <img src={card.image} alt={card.name} className="w-8 h-11 sm:w-10 sm:h-14 object-cover rounded-lg" onError={e => e.target.style.display='none'} />
+                    </td>
+                    <td className="px-3 py-2 sm:px-4 sm:py-3 font-semibold text-white max-w-[120px] sm:max-w-[160px] truncate">
+                      {card.name}
+                      {card.is_reverse && <span className="ml-2 text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30 uppercase">Reverse</span>}
+                    </td>
+                    <td className="px-3 py-2 sm:px-4 sm:py-3">
+                      <span className="px-1.5 py-0.5 bg-purple-900/40 text-purple-300 text-[9px] sm:text-[10px] uppercase font-bold rounded-lg border border-purple-500/20">
+                        {card.idioma || 'Español'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 sm:px-4 sm:py-3 text-slate-400 text-xs sm:text-sm max-w-[100px] sm:max-w-[140px] truncate">{card.set}</td>
+                    <td className="px-3 py-2 sm:px-4 sm:py-3 text-slate-400 text-[11px] sm:text-xs max-w-[100px] sm:max-w-[140px] truncate">{card.rarity}</td>
+                    <td className="px-3 py-2 sm:px-4 sm:py-3 text-green-400 font-bold whitespace-nowrap text-xs sm:text-sm">${(card.price || 0).toLocaleString('es-CL')}</td>
+                    <td className="px-3 py-2 sm:px-4 sm:py-3">
+                      <span className="px-1.5 py-0.5 bg-blue-900/40 text-blue-300 text-[10px] sm:text-xs rounded-lg font-bold">
+                        {card.condition}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 sm:px-4 sm:py-3 text-slate-300 text-center font-bold text-xs sm:text-sm">{card.stock ?? 1}</td>
+                    <td className="px-3 py-2 sm:px-4 sm:py-3">
+                      <button onClick={() => toggleStock(card)} className={`w-8 h-4.5 sm:w-10 sm:h-5 rounded-full transition-all ${card.in_stock ? 'bg-green-500' : 'bg-slate-600'}`}>
+                        <div className={`w-3.5 h-3.5 sm:w-4 sm:h-4 bg-white rounded-full mx-0.5 transition-transform ${card.in_stock ? 'translate-x-3.5 sm:translate-x-5' : 'translate-x-0'}`} />
+                      </button>
+                    </td>
+                    <td className="px-3 py-2 sm:px-4 sm:py-3">
+                      <div className="flex gap-2">
+                        <button onClick={() => openEdit(card)} className="p-1.5 sm:p-2 rounded-lg bg-white/5 hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 transition-all"><IcoEdit /></button>
+                        <button onClick={() => setDeleteTarget(card)} className="p-1.5 sm:p-2 rounded-lg bg-white/5 hover:bg-red-600/20 text-slate-400 hover:text-red-400 transition-all"><IcoTrash /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filteredCards.length === 0 && (
+              <div className="text-center py-16 text-slate-500">
+                {adminSearch ? 'No se encontraron cartas para tu búsqueda.' : 'No hay cartas registradas aún.'}
+              </div>
+            )}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-1.5 mt-6 pt-6 border-t border-white/5">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={activePage === 1}
+                className="w-9 h-9 flex items-center justify-center rounded-xl border border-white/10 text-slate-400 hover:bg-white/5 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+              >
+                <IcoChevronLeft />
+              </button>
+              
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-9 h-9 flex items-center justify-center rounded-xl font-semibold text-sm transition-all cursor-pointer ${
+                    activePage === page
+                      ? 'bg-[#0052FF] text-white shadow-lg shadow-blue-500/20'
+                      : 'text-slate-400 border border-white/5 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  {page}
+                </button>
               ))}
-            </tbody>
-          </table>
-          {cards.length === 0 && <div className="text-center py-16 text-slate-500">No hay cartas registradas aún.</div>}
+              
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={activePage === totalPages}
+                className="w-9 h-9 flex items-center justify-center rounded-xl border border-white/10 text-slate-400 hover:bg-white/5 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+              >
+                <IcoChevronRight />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1468,7 +1562,7 @@ export default function AdminApp() {
         </header>
 
         {/* Content area */}
-        <div className="flex-1 p-6 lg:p-8 overflow-auto">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
           {activeSection === 'cards'       && <AdminCards toast={showToast} />}
           {activeSection === 'news'        && <AdminNews toast={showToast} />}
           {activeSection === 'tournaments' && <AdminTournaments toast={showToast} />}

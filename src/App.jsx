@@ -370,8 +370,48 @@ export default function App() {
   // Use DB cards for catalog; fall back to empty while loading
   const catalogCards = dbCards;
 
-  // Carousel uses DB cards (tripled for seamless loop) once loaded
-  const carouselSource = dbCards.length > 0 ? dbCards : PLACEHOLDER_CARDS;
+  // Carousel uses DB cards (tripled for seamless loop) once loaded, filtered and sorted by rarity priority
+  const carouselSource = useMemo(() => {
+    const rawSource = dbCards.length > 0 ? dbCards : PLACEHOLDER_CARDS;
+
+    const normalize = (str) => {
+      if (!str) return '';
+      return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    };
+
+    // Rarity priority: smaller number = higher priority
+    const rarityPriority = {
+      'hyper rara': 1,
+      'secreta dorada': 2,
+      'ultra rara secreta': 3,
+      'especial ilustracion rara': 4,
+      'ilustracion rara': 5,
+      'ultra rara': 6,
+      'doble rara': 7,
+      'rara': 8,
+      'poco comun': 9,
+      'comun': 10
+    };
+
+    // Sort the cards by priority, then by price descending
+    const sorted = [...rawSource].sort((a, b) => {
+      const normA = normalize(a.rarity);
+      const normB = normalize(b.rarity);
+      
+      const pA = rarityPriority[normA] || 99;
+      const pB = rarityPriority[normB] || 99;
+
+      if (pA !== pB) {
+        return pA - pB;
+      }
+      
+      // If priority is the same, sort by price descending
+      return (b.price || 0) - (a.price || 0);
+    });
+
+    // Limit to a maximum of 20 cards
+    return sorted.slice(0, 20);
+  }, [dbCards]);
   
   // Search & Catalog Filter States (Stock)
   const [searchQuery, setSearchQuery] = useState('');
