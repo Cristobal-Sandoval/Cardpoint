@@ -440,10 +440,10 @@ export function useAutoNews(newsSourcesParam) {
       const cacheBuster = Math.floor(Date.now() / 600000);
       const sourcesToFetch = [
         {
-          name: 'Pokémon Alpha',
-          url: `https://pokemonalpha.es/archivo-de-noticias/?_cb=${cacheBuster}`,
-          parser: parsePokemonAlpha,
-          fallback: POKEMONALPHA_FALLBACK_NEWS
+          name: 'Noticias TCG',
+          url: `https://www.tcgnews.cl/noticias/?_cb=${cacheBuster}`,
+          parser: parseTCGNews,
+          fallback: TCGNEWS_FALLBACK_NEWS
         }
       ];
 
