@@ -26,6 +26,8 @@ const IcoImage      = () => <Icon d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2
 const IcoMegaphone  = () => <Icon d="m3 11 18-5v12L3 14v-3zM11.6 16.8a3 3 0 1 1-5.8-1.6" />;
 const IcoChevronLeft  = () => <Icon d="m15 18-6-6 6-6" dSize="16" />;
 const IcoChevronRight = () => <Icon d="m9 18 6-6-6-6" dSize="16" />;
+const IcoUpload       = () => <Icon d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />;
+const IcoCamera       = () => <Icon d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10" />;
 
 // ── RARITY OPTIONS ───────────────────────────────────────────────────────────
 const RARITIES = ['Común', 'Poco Común', 'Rara', 'Doble Rara', 'Ultra Rara', 'Ilustración Rara', 'Especial Ilustración Rara', 'Ultra Rara Secreta', 'Secreta Dorada', 'Hyper Rara'];
@@ -39,7 +41,7 @@ const today = () => new Date().toLocaleDateString('es-CL', { day: 'numeric', mon
 // ============================================================
 // MODAL BASE
 // ============================================================
-function Modal({ title, onClose, children }) {
+function Modal({ title, onClose, children, maxWidth = 'max-w-lg' }) {
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
@@ -48,7 +50,7 @@ function Modal({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 bg-[#0f1117] border border-white/10 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div className={`relative z-10 bg-[#0f1117] border border-white/10 rounded-2xl w-full ${maxWidth} max-h-[90vh] overflow-y-auto shadow-2xl`}>
         <div className="flex items-center justify-between p-5 border-b border-white/10">
           <h2 className="text-lg font-bold text-white">{title}</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors p-1">
@@ -114,6 +116,7 @@ function AdminCards({ toast }) {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [editingCard, setEditingCard] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -293,6 +296,9 @@ function AdminCards({ toast }) {
               </button>
             )}
           </div>
+          <button onClick={() => setShowBulkImport(true)} className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-emerald-950/30 whitespace-nowrap">
+            <IcoUpload /> Importar en Lote
+          </button>
           <button onClick={openAdd} className="flex items-center justify-center gap-2 bg-[#0052FF] hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-900/30 whitespace-nowrap">
             <IcoPlus /> Nueva Carta
           </button>
@@ -549,6 +555,14 @@ function AdminCards({ toast }) {
             </div>
           </form>
         </Modal>
+      )}
+
+      {showBulkImport && (
+        <BulkImportModal 
+          onClose={() => setShowBulkImport(false)} 
+          onImportSuccess={load} 
+          toast={toast} 
+        />
       )}
 
       {deleteTarget && (
@@ -1537,5 +1551,636 @@ export default function AdminApp() {
         <Toast key={toast.key} message={toast.message} type={toast.type} onClose={() => setToastState(null)} />
       )}
     </div>
+  );
+}
+
+// ============================================================
+// MODAL DE IMPORTACIÓN MASIVA (BULK IMPORT)
+// ============================================================
+function BulkImportModal({ onClose, onImportSuccess, toast }) {
+  const [step, setStep] = useState(1); // 1: Input, 2: Preview, 3: Success
+  const [inputText, setInputText] = useState('');
+  const [defaultLanguage, setDefaultLanguage] = useState('Español');
+  const [importRows, setImportRows] = useState([]);
+  const [processing, setProcessing] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
+  const [uploadingRowId, setUploadingRowId] = useState(null);
+
+  // Manual Add Form Modal state
+  const [manualAddIndex, setManualAddIndex] = useState(null);
+  const [showManualAddForm, setShowManualAddForm] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    name: '',
+    set: 'Escarlata y Púrpura',
+    setCode: '',
+    rarity: 'Rara',
+    price: 0,
+    stock: 1,
+    condition: 'NM',
+    idioma: 'Español',
+    image: '',
+    real_photo: '',
+    is_reverse: false,
+    is_league: false
+  });
+
+  const translateRarity = (engRarity) => {
+    if (!engRarity) return 'Rara';
+    const r = engRarity.toLowerCase();
+    if (r.includes('common') && !r.includes('uncommon')) return 'Común';
+    if (r.includes('uncommon')) return 'Poco Común';
+    if (r.includes('double rare')) return 'Doble Rara';
+    if (r.includes('special illustration rare')) return 'Especial Ilustración Rara';
+    if (r.includes('illustration rare')) return 'Ilustración Rara';
+    if (r.includes('ultra rare') || r.includes('shiny ultra rare')) return 'Ultra Rara';
+    if (r.includes('secret rare') || r.includes('shiny rare')) return 'Ultra Rara Secreta';
+    if (r.includes('hyper rare') || r.includes('rainbow rare')) return 'Hyper Rara';
+    if (r.includes('gold') || r.includes('rare holo star')) return 'Secreta Dorada';
+    if (r.includes('rare') || r.includes('holo')) return 'Rara';
+    return 'Común';
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      setInputText(evt.target?.result || '');
+    };
+    reader.readAsText(file);
+  };
+
+  const handleProcessList = async () => {
+    if (!inputText.trim()) return;
+    
+    // Parse
+    const lines = inputText.split('\n');
+    const parsed = [];
+    
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      
+      const parts = trimmed.split('|').map(p => p.trim());
+      if (parts.length < 3) return; // Name, Set Code, Number required
+      
+      const name = parts[0];
+      const setCode = parts[1].toLowerCase();
+      const fullNumber = parts[2];
+      const number = fullNumber.split('/')[0].trim();
+      
+      const stock = parts[3] ? parseInt(parts[3], 10) || 1 : 1;
+      const price = parts[4] ? parseInt(parts[4].replace(/[$.]/g, ''), 10) || 0 : 0;
+      const condition = parts[5] || 'NM';
+      
+      parsed.push({
+        id: Math.random().toString(36).substr(2, 9),
+        name,
+        setCode,
+        number,
+        stock,
+        price,
+        condition,
+        idioma: defaultLanguage,
+        is_reverse: false,
+        is_league: false,
+        real_photo: '',
+        status: 'pending',
+        image: '',
+        set: '',
+        rarity: 'Rara',
+        description: 'Sin descripción adicional.',
+        apiCard: null
+      });
+    });
+
+    if (parsed.length === 0) {
+      toast('No se encontraron líneas válidas. Formato: Nombre | Set | Número | Cantidad | Precio', 'error');
+      return;
+    }
+
+    setProcessing(true);
+    setStep(2);
+    setImportRows(parsed);
+    setProgress({ current: 0, total: parsed.length });
+
+    const updatedRows = [...parsed];
+
+    for (let i = 0; i < updatedRows.length; i++) {
+      const row = updatedRows[i];
+      updatedRows[i] = { ...row, status: 'loading' };
+      setImportRows([...updatedRows]);
+
+      try {
+        const query = `name:"${row.name}" number:"${row.number}" set.id:"${row.setCode}"`;
+        const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}`);
+        
+        if (res.ok) {
+          const data = await res.json();
+          const results = data.data || [];
+          if (results.length > 0) {
+            const card = results[0];
+            updatedRows[i] = {
+              ...row,
+              status: 'success',
+              name: card.name,
+              set: card.set?.name || 'Escarlata y Púrpura',
+              setCode: card.set?.id || row.setCode,
+              rarity: translateRarity(card.rarity),
+              image: card.images?.large || card.images?.small || '',
+              apiCard: card
+            };
+          } else {
+            // Fallback lookup
+            const fallbackQuery = `name:"${row.name}" number:"${row.number}"`;
+            const fbRes = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(fallbackQuery)}`);
+            if (fbRes.ok) {
+              const fbData = await fbRes.json();
+              const fbResults = fbData.data || [];
+              const match = fbResults.find(c => 
+                (c.set?.id || '').toLowerCase().includes(row.setCode) || 
+                (c.set?.name || '').toLowerCase().includes(row.setCode)
+              );
+              
+              if (match) {
+                updatedRows[i] = {
+                  ...row,
+                  status: 'success',
+                  name: match.name,
+                  set: match.set?.name || 'Escarlata y Púrpura',
+                  setCode: match.set?.id || row.setCode,
+                  rarity: translateRarity(match.rarity),
+                  image: match.images?.large || match.images?.small || '',
+                  apiCard: match
+                };
+              } else if (fbResults.length > 0) {
+                const matchFirst = fbResults[0];
+                updatedRows[i] = {
+                  ...row,
+                  status: 'success',
+                  name: matchFirst.name,
+                  set: matchFirst.set?.name || 'Escarlata y Púrpura',
+                  setCode: matchFirst.set?.id || row.setCode,
+                  rarity: translateRarity(matchFirst.rarity),
+                  image: matchFirst.images?.large || matchFirst.images?.small || '',
+                  apiCard: matchFirst
+                };
+              } else {
+                updatedRows[i] = { ...row, status: 'error' };
+              }
+            } else {
+              updatedRows[i] = { ...row, status: 'error' };
+            }
+          }
+        } else {
+          updatedRows[i] = { ...row, status: 'error' };
+        }
+      } catch (err) {
+        console.error(err);
+        updatedRows[i] = { ...row, status: 'error' };
+      }
+
+      setProgress(prev => ({ ...prev, current: i + 1 }));
+      setImportRows([...updatedRows]);
+      await new Promise(resolve => setTimeout(resolve, 150));
+    }
+
+    setProcessing(false);
+  };
+
+  const handleRowChange = (rowId, field, value) => {
+    setImportRows(prev => prev.map(row => {
+      if (row.id === rowId) {
+        return { ...row, [field]: value };
+      }
+      return row;
+    }));
+  };
+
+  const handleRowPhotoUpload = async (rowId, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploadingRowId(rowId);
+    
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    try {
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=149aebd904174718dea8f1c5eb444935`, {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const url = data.data?.url || '';
+        handleRowChange(rowId, 'real_photo', url);
+        toast('📷 Foto real cargada con éxito', 'success');
+      } else {
+        toast('⚠️ Error al subir imagen a ImgBB', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      toast('⚠️ Error de conexión al subir imagen', 'error');
+    } finally {
+      setUploadingRowId(null);
+    }
+  };
+
+  const openManualAdd = (idx) => {
+    const row = importRows[idx];
+    setManualForm({
+      name: row.name,
+      set: 'Escarlata y Púrpura',
+      setCode: row.setCode.toUpperCase(),
+      rarity: 'Rara',
+      price: row.price,
+      stock: row.stock,
+      condition: row.condition,
+      idioma: row.idioma,
+      image: '',
+      real_photo: '',
+      is_reverse: false,
+      is_league: false
+    });
+    setManualAddIndex(idx);
+    setShowManualAddForm(true);
+  };
+
+  const handleSaveManual = (e) => {
+    e.preventDefault();
+    const updated = [...importRows];
+    updated[manualAddIndex] = {
+      ...updated[manualAddIndex],
+      ...manualForm,
+      status: 'success'
+    };
+    setImportRows(updated);
+    setShowManualAddForm(false);
+    setManualAddIndex(null);
+    toast('Carta configurada manualmente ✓', 'success');
+  };
+
+  const handleManualFormPhotoUpload = async (e, type) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    try {
+      toast('Subiendo imagen...', 'info');
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=149aebd904174718dea8f1c5eb444935`, {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const url = data.data?.url || '';
+        setManualForm(prev => ({ ...prev, [type]: url }));
+        toast('Imagen subida con éxito ✓', 'success');
+      } else {
+        toast('⚠️ Error al subir imagen', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      toast('⚠️ Error al subir imagen', 'error');
+    }
+  };
+
+  const handlePublish = async () => {
+    const successRows = importRows.filter(r => r.status === 'success');
+    if (successRows.length === 0) {
+      toast('No hay cartas listas para importar.', 'error');
+      return;
+    }
+
+    setProcessing(true);
+    setStep(3);
+    setImportProgress({ current: 0, total: successRows.length });
+
+    try {
+      const cardsToInsert = successRows.map(row => ({
+        name: row.name,
+        set: row.set || 'Escarlata y Púrpura',
+        set_code: row.setCode.toUpperCase(),
+        rarity: row.rarity,
+        price: row.price,
+        condition: row.condition,
+        image: row.image || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop',
+        real_photo: row.real_photo || null,
+        description: row.description || 'Sin descripción adicional.',
+        in_stock: row.price > 0 && row.stock > 0,
+        stock: row.stock,
+        is_reverse: row.is_reverse,
+        is_league: row.is_league,
+        idioma: row.idioma
+      }));
+
+      const { error } = await supabase.from('cards').insert(cardsToInsert);
+      if (error) throw error;
+
+      setImportProgress({ current: successRows.length, total: successRows.length });
+      toast(`🎉 ${successRows.length} cartas importadas correctamente`, 'success');
+      
+      setTimeout(() => {
+        onImportSuccess();
+        onClose();
+      }, 1500);
+    } catch (err) {
+      console.error(err);
+      toast('⚠️ Error al publicar cartas en Supabase: ' + err.message, 'error');
+      setProcessing(false);
+      setStep(2);
+    }
+  };
+
+  const inputCls = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#0052FF] transition-all";
+  const selectCls = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#0052FF] transition-all cursor-pointer";
+
+  return (
+    <Modal title="Importar Cartas en Lote" onClose={onClose} maxWidth="max-w-5xl">
+      {step === 1 && (
+        <div className="space-y-4">
+          <div className="p-4 bg-white/5 rounded-xl border border-white/5 space-y-2 text-xs text-slate-400">
+            <p className="font-bold text-slate-200">💡 Instrucciones de Formato:</p>
+            <p>Escribe o pega una lista de cartas, una por línea. El formato requerido es:</p>
+            <code className="block bg-black/40 p-2 rounded text-[#0052FF] font-mono select-all">
+              Nombre de Carta | Código de Set | Número de Carta | Cantidad (opcional) | Precio (opcional) | Estado (opcional)
+            </code>
+            <p className="mt-2 text-[10px]">Ejemplo: <strong className="text-white">Mega Gengar Ex | xy4 | 35 | 1 | 60000 | NM</strong></p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Idioma por Defecto">
+              <select className={selectCls} value={defaultLanguage} onChange={e => setDefaultLanguage(e.target.value)}>
+                {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </Field>
+            <Field label="Subir Archivo (.txt / .csv)">
+              <input type="file" accept=".txt,.csv" onChange={handleFileUpload} className={inputCls} />
+            </Field>
+          </div>
+
+          <Field label="Pegar Lista de Cartas">
+            <textarea
+              className={`${inputCls} font-mono`}
+              rows={8}
+              value={inputText}
+              onChange={e => setInputText(e.target.value)}
+              placeholder={`Ejemplo:\nCharmander | obf | 026/197 | 3 | 800\nMewtwo V | swsh12 | GG44 | 1 | 39990 | NM`}
+            />
+          </Field>
+
+          <div className="flex justify-end gap-3">
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 text-sm font-semibold transition-all">Cancelar</button>
+            <button type="button" onClick={handleProcessList} disabled={!inputText.trim()} className="px-6 py-2 rounded-xl bg-[#0052FF] hover:bg-blue-500 text-white text-sm font-semibold transition-all disabled:opacity-50">
+              Procesar Lista
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="space-y-4">
+          {processing ? (
+            <div className="p-8 text-center space-y-3">
+              <div className="w-10 h-10 border-4 border-[#0052FF] border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-sm font-medium">Buscando detalles en la API oficial...</p>
+              <p className="text-xs text-slate-500">{progress.current} de {progress.total} procesadas</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                <span className="text-xs text-slate-400">Total leídas: <strong className="text-white">{importRows.length}</strong> | Listas para guardar: <strong className="text-green-400">{importRows.filter(r => r.status === 'success').length}</strong></span>
+                <span className="text-[10px] text-amber-400 font-semibold">⚠️ Revisa precio, cantidad y sube foto real antes de publicar.</span>
+              </div>
+
+              <div className="overflow-x-auto border border-white/10 rounded-xl max-h-[50vh] overflow-y-auto">
+                <table className="w-full text-left text-xs text-slate-300 border-collapse">
+                  <thead>
+                    <tr className="bg-white/5 border-b border-white/10 uppercase tracking-wider text-[10px] text-slate-400 font-bold">
+                      <th className="px-3 py-3 w-12 text-center">Arte</th>
+                      <th className="px-3 py-3">Nombre / Set</th>
+                      <th className="px-3 py-3 w-28">Precio (CLP)</th>
+                      <th className="px-3 py-3 w-20">Stock</th>
+                      <th className="px-3 py-3 w-20">Cond.</th>
+                      <th className="px-3 py-3 w-24">Idioma</th>
+                      <th className="px-2 py-3 text-center">Rev.</th>
+                      <th className="px-2 py-3 text-center">Liga</th>
+                      <th className="px-3 py-3 text-center w-16">Foto Real</th>
+                      <th className="px-3 py-3 text-center w-24">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importRows.map((row, idx) => (
+                      <tr key={row.id} className="border-b border-white/5 hover:bg-white/2 transition-colors">
+                        <td className="px-3 py-3 text-center">
+                          {row.image ? (
+                            <img src={row.image} alt={row.name} className="w-8 h-10 object-contain rounded border border-white/10 bg-slate-900" />
+                          ) : (
+                            <div className="w-8 h-10 bg-white/5 border border-white/10 rounded flex items-center justify-center text-[10px] text-slate-500 font-black">?</div>
+                          )}
+                        </td>
+                        <td className="px-3 py-3">
+                          <p className="font-bold text-white line-clamp-1">{row.name}</p>
+                          <p className="text-[10px] text-slate-500 line-clamp-1">{row.set || row.setCode.toUpperCase()} • #{row.number}</p>
+                          <span className="inline-block mt-0.5 text-[8px] px-1.5 py-0.5 rounded uppercase font-extrabold bg-[#0052FF]/20 text-blue-400 border border-blue-500/20">{row.rarity}</span>
+                        </td>
+                        <td className="px-3 py-3">
+                          <input
+                            type="number"
+                            value={row.price}
+                            onChange={e => handleRowChange(row.id, 'price', parseInt(e.target.value) || 0)}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                          />
+                        </td>
+                        <td className="px-3 py-3">
+                          <input
+                            type="number"
+                            value={row.stock}
+                            onChange={e => handleRowChange(row.id, 'stock', parseInt(e.target.value) || 1)}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs text-white"
+                          />
+                        </td>
+                        <td className="px-3 py-3">
+                          <select
+                            value={row.condition}
+                            onChange={e => handleRowChange(row.id, 'condition', e.target.value)}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg px-1 py-1 text-xs text-white cursor-pointer"
+                          >
+                            {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </td>
+                        <td className="px-3 py-3">
+                          <select
+                            value={row.idioma}
+                            onChange={e => handleRowChange(row.id, 'idioma', e.target.value)}
+                            className="w-full bg-black/40 border border-white/10 rounded-lg px-1 py-1 text-xs text-white cursor-pointer"
+                          >
+                            {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+                          </select>
+                        </td>
+                        <td className="px-2 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={row.is_reverse}
+                            onChange={e => handleRowChange(row.id, 'is_reverse', e.target.checked)}
+                            className="w-4 h-4 rounded border-white/10 bg-black/40 text-[#0052FF] cursor-pointer"
+                          />
+                        </td>
+                        <td className="px-2 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={row.is_league}
+                            onChange={e => handleRowChange(row.id, 'is_league', e.target.checked)}
+                            className="w-4 h-4 rounded border-white/10 bg-black/40 text-[#0052FF] cursor-pointer"
+                          />
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          <label className={`w-8 h-8 rounded-lg border border-white/10 bg-black/40 flex items-center justify-center hover:bg-white/5 cursor-pointer mx-auto transition-all ${row.real_photo ? 'border-green-500/50 bg-green-500/10' : ''}`}>
+                            {uploadingRowId === row.id ? (
+                              <div className="w-3.5 h-3.5 border border-white border-t-transparent rounded-full animate-spin" />
+                            ) : row.real_photo ? (
+                              <IcoCheck size={14} className="text-green-400" />
+                            ) : (
+                              <IcoCamera size={14} />
+                            )}
+                            <input type="file" accept="image/*" className="hidden" onChange={e => handleRowPhotoUpload(row.id, e)} disabled={uploadingRowId !== null} />
+                          </label>
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          {row.status === 'success' && (
+                            <span className="text-green-400 font-bold text-[10px]">Listo</span>
+                          )}
+                          {row.status === 'loading' && (
+                            <span className="text-blue-400 animate-pulse text-[10px]">Cargando...</span>
+                          )}
+                          {row.status === 'error' && (
+                            <button
+                              type="button"
+                              onClick={() => openManualAdd(idx)}
+                              className="px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg text-[10px] font-bold border border-amber-500/30 whitespace-nowrap transition-colors"
+                            >
+                              Agregar Manual
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex justify-between gap-3 pt-2">
+                <button type="button" onClick={() => setStep(1)} className="px-4 py-2.5 rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 text-sm font-semibold transition-all">← Atrás</button>
+                <div className="flex gap-3">
+                  <button type="button" onClick={onClose} className="px-4 py-2.5 rounded-xl border border-white/10 text-slate-400 hover:text-white text-sm font-semibold transition-all">Cancelar</button>
+                  <button
+                    type="button"
+                    onClick={handlePublish}
+                    disabled={importRows.filter(r => r.status === 'success').length === 0}
+                    className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-all shadow-lg shadow-emerald-900/30 disabled:opacity-50"
+                  >
+                    Publicar {importRows.filter(r => r.status === 'success').length} cartas
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="p-8 text-center space-y-4">
+          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm font-bold text-slate-200">Guardando cartas en la base de datos...</p>
+          <p className="text-xs text-slate-500">{importProgress.current} de {importProgress.total} guardadas</p>
+        </div>
+      )}
+
+      {showManualAddForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowManualAddForm(false)} />
+          <div className="relative z-10 bg-[#0f1117] border border-white/10 rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-6 shadow-2xl">
+            <h3 className="text-base font-bold text-white mb-4">Configurar Carta Manualmente</h3>
+            <form onSubmit={handleSaveManual} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Nombre"><input className={inputCls} required value={manualForm.name} onChange={e => setManualForm({ ...manualForm, name: e.target.value })} /></Field>
+                <Field label="Expansión / Set"><input className={inputCls} required value={manualForm.set} onChange={e => setManualForm({ ...manualForm, set: e.target.value })} /></Field>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="Código Set"><input className={inputCls} required value={manualForm.setCode} onChange={e => setManualForm({ ...manualForm, setCode: e.target.value })} /></Field>
+                <Field label="Número"><input className={inputCls} required value={manualForm.number} onChange={e => setManualForm({ ...manualForm, number: e.target.value })} /></Field>
+                <Field label="Rareza">
+                  <select className={selectCls} value={manualForm.rarity} onChange={e => setManualForm({ ...manualForm, rarity: e.target.value })}>
+                    {RARITIES.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Precio (CLP)"><input type="number" className={inputCls} required value={manualForm.price} onChange={e => setManualForm({ ...manualForm, price: parseInt(e.target.value) || 0 })} /></Field>
+                <Field label="Stock"><input type="number" className={inputCls} required value={manualForm.stock} onChange={e => setManualForm({ ...manualForm, stock: parseInt(e.target.value) || 1 })} /></Field>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Condición">
+                  <select className={selectCls} value={manualForm.condition} onChange={e => setManualForm({ ...manualForm, condition: e.target.value })}>
+                    {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </Field>
+                <Field label="Idioma">
+                  <select className={selectCls} value={manualForm.idioma} onChange={e => setManualForm({ ...manualForm, idioma: e.target.value })}>
+                    {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </Field>
+              </div>
+
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+                  <input type="checkbox" checked={manualForm.is_reverse} onChange={e => setManualForm({ ...manualForm, is_reverse: e.target.checked })} className="w-4 h-4 rounded border-white/10 bg-black/40 text-[#0052FF]" />
+                  Reverso (Reverse)
+                </label>
+                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+                  <input type="checkbox" checked={manualForm.is_league} onChange={e => setManualForm({ ...manualForm, is_league: e.target.checked })} className="w-4 h-4 rounded border-white/10 bg-black/40 text-[#0052FF]" />
+                  De Liga (League Badge)
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <Field label="Arte Oficial">
+                  <div className="flex gap-2">
+                    <input className={inputCls} placeholder="https://..." value={manualForm.image} onChange={e => setManualForm({ ...manualForm, image: e.target.value })} />
+                    <label className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl border border-white/10 flex items-center justify-center cursor-pointer whitespace-nowrap">
+                      Subir
+                      <input type="file" accept="image/*" className="hidden" onChange={e => handleManualFormPhotoUpload(e, 'image')} />
+                    </label>
+                  </div>
+                </Field>
+                <Field label="Foto Real (Opcional)">
+                  <div className="flex gap-2">
+                    <input className={inputCls} placeholder="https://..." value={manualForm.real_photo} onChange={e => setManualForm({ ...manualForm, real_photo: e.target.value })} />
+                    <label className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl border border-white/10 flex items-center justify-center cursor-pointer whitespace-nowrap">
+                      Subir
+                      <input type="file" accept="image/*" className="hidden" onChange={e => handleManualFormPhotoUpload(e, 'real_photo')} />
+                    </label>
+                  </div>
+                </Field>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={() => setShowManualAddForm(false)} className="flex-1 py-2 rounded-xl border border-white/10 text-slate-350 hover:bg-white/5 text-xs font-semibold transition-all">Cancelar</button>
+                <button type="submit" className="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold transition-all">
+                  Guardar en Lista
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }
