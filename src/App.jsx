@@ -82,6 +82,9 @@ function GoogleAdSlot({ format = "horizontal", className = "" }) {
     }
   }, []);
 
+  const isPreviewMode = typeof window !== 'undefined' && 
+                        (window.location.search.includes('preview-ads') || window.location.hash.includes('preview-ads'));
+
   if (isAdSenseScriptPresent) {
     return (
       <div className={`ad-slot-container relative overflow-hidden rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-4 text-center transition-all ${className}`}>
@@ -98,6 +101,10 @@ function GoogleAdSlot({ format = "horizontal", className = "" }) {
         </div>
       </div>
     );
+  }
+
+  if (!isPreviewMode) {
+    return null;
   }
 
   return (
