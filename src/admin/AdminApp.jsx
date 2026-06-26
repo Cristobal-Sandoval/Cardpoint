@@ -1626,13 +1626,31 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       if (parts.length < 3) return; // Name, Set Code, Number required
       
       const name = parts[0];
-      const setCode = parts[1].toLowerCase();
+      let setCode = parts[1].toLowerCase();
       const fullNumber = parts[2];
       const number = fullNumber.split('/')[0].trim();
       
       const stock = parts[3] ? parseInt(parts[3], 10) || 1 : 1;
       const price = parts[4] ? parseInt(parts[4].replace(/[$.]/g, ''), 10) || 0 : 0;
       const condition = parts[5] || 'NM';
+      
+      // Detect language from set suffix (e.g. "MEGes" or "MEGen") or explicit 7th field
+      let idioma = defaultLanguage;
+      if (setCode.endsWith('es') && setCode.length > 2) {
+        setCode = setCode.slice(0, -2);
+        idioma = 'Español';
+      } else if (setCode.endsWith('en') && setCode.length > 2) {
+        setCode = setCode.slice(0, -2);
+        idioma = 'Inglés';
+      }
+      
+      if (parts[6]) {
+        const pLang = parts[6].trim().toLowerCase();
+        if (pLang === 'es' || pLang.includes('español') || pLang.includes('espanol')) idioma = 'Español';
+        else if (pLang === 'en' || pLang.includes('ingles') || pLang.includes('inglés') || pLang.includes('english')) idioma = 'Inglés';
+        else if (pLang === 'jp' || pLang.includes('japones') || pLang.includes('japonés') || pLang.includes('japanese')) idioma = 'Japonés';
+        else idioma = parts[6].trim();
+      }
       
       parsed.push({
         id: Math.random().toString(36).substr(2, 9),
@@ -1642,7 +1660,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
         stock,
         price,
         condition,
-        idioma: defaultLanguage,
+        idioma,
         is_reverse: false,
         is_league: false,
         real_photo: '',
@@ -1907,9 +1925,10 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
             <p className="font-bold text-slate-200">💡 Instrucciones de Formato:</p>
             <p>Escribe o pega una lista de cartas, una por línea. El formato requerido es:</p>
             <code className="block bg-black/40 p-2 rounded text-[#0052FF] font-mono select-all">
-              Nombre de Carta | Código de Set | Número de Carta | Cantidad (opcional) | Precio (opcional) | Estado (opcional)
+              Nombre de Carta | Código de Set | Número de Carta | Cantidad (opcional) | Precio (opcional) | Estado (opcional) | Idioma (opcional)
             </code>
-            <p className="mt-2 text-[10px]">Ejemplo: <strong className="text-white">Mega Gengar Ex | xy4 | 35 | 1 | 60000 | NM</strong></p>
+            <p className="mt-2 text-[10px]">Ejemplo: <strong className="text-white">Mega Gengar Ex | xy4es | 35 | 1 | 60000 | NM</strong> (detecta Español por el sufijo <strong className="text-[#0052FF]">es</strong> en el set)</p>
+            <p className="text-[10px]">O de forma explícita: <strong className="text-white">Mega Gengar Ex | xy4 | 35 | 1 | 60000 | NM | Español</strong></p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
