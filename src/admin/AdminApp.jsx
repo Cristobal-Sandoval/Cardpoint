@@ -28,6 +28,7 @@ const IcoChevronLeft  = () => <Icon d="m15 18-6-6 6-6" dSize="16" />;
 const IcoChevronRight = () => <Icon d="m9 18 6-6-6-6" dSize="16" />;
 const IcoUpload       = () => <Icon d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />;
 const IcoCamera       = () => <Icon d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10" />;
+const IcoPin         = () => <Icon d="M12 17v5M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.78-3.5A2 2 0 0 1 15 9.24V5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v4.24c0 .43-.14.85-.4 1.2l-2.78 3.5a2 2 0 0 0-.44 1.24z" />;
 
 // ── RARITY OPTIONS ───────────────────────────────────────────────────────────
 const RARITIES = ['Común', 'Poco Común', 'Rara', 'Doble Rara', 'Ultra Rara', 'Ilustración Rara', 'Especial Ilustración Rara', 'Ultra Rara Secreta', 'Secreta Dorada', 'Hyper Rara'];
@@ -634,8 +635,16 @@ function AdminNews({ toast }) {
   
   const { adminSettings, updateSetting } = useAdmin();
   const hiddenNewsIds = adminSettings?.hidden_news || [];
+  const pinnedNewsIds = adminSettings?.pinned_news || [];
   const newsSources = adminSettings?.news_sources || { pokemon: true, tcgnews: true, autogenerate: true };
   const { autoNews, loadingAuto } = useAutoNews(newsSources);
+
+  const togglePinNews = async (id) => {
+    const next = pinnedNewsIds.includes(id)
+      ? pinnedNewsIds.filter(pId => pId !== id)
+      : [...pinnedNewsIds, id];
+    await updateSetting('pinned_news', next);
+  };
 
   const handleToggleSource = async (key) => {
     const nextSources = {
@@ -701,8 +710,15 @@ function AdminNews({ toast }) {
   };
 
   const combinedNews = useMemo(() => {
-    return [...news, ...autoNews].sort((a, b) => new Date(b.date || b.created_at || 0) - new Date(a.date || a.created_at || 0));
-  }, [news, autoNews]);
+    const list = [...news, ...autoNews];
+    return list.sort((a, b) => {
+      const aPinned = pinnedNewsIds.includes(a.id);
+      const bPinned = pinnedNewsIds.includes(b.id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return new Date(b.date || b.created_at || 0) - new Date(a.date || a.created_at || 0);
+    });
+  }, [news, autoNews, pinnedNewsIds]);
 
   const totalPages = Math.ceil(combinedNews.length / itemsPerPage);
   const paginatedNews = combinedNews.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -727,11 +743,16 @@ function AdminNews({ toast }) {
         <div className="space-y-4">
           <div className="space-y-3">
             {paginatedNews.map(item => (
-              <div key={item.id} className="flex items-center gap-4 bg-white/3 border border-white/8 rounded-2xl p-4 hover:bg-white/5 transition-all">
+              <div key={item.id} className={`flex items-center gap-4 bg-white/3 border rounded-2xl p-4 hover:bg-white/5 transition-all ${pinnedNewsIds.includes(item.id) ? 'border-amber-500/40 bg-amber-500/5' : 'border-white/8 bg-white/3'}`}>
                 {item.image && <img src={item.image} alt={item.title} className="w-16 h-12 object-cover rounded-xl flex-shrink-0" />}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-white truncate">{item.title}</h3>
+                    {pinnedNewsIds.includes(item.id) && (
+                      <span className="flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-0.5">
+                        📌 Fijada
+                      </span>
+                    )}
                     {item.isExternal ? (
                       <span className="flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0052FF]/20 text-[#4d8aff] border border-[#0052FF]/30">
                         Automática
@@ -751,6 +772,17 @@ function AdminNews({ toast }) {
                     </button>
                   ) : (
                     <>
+                      <button 
+                        onClick={() => togglePinNews(item.id)} 
+                        title={pinnedNewsIds.includes(item.id) ? 'Desfijar de arriba' : 'Fijar arriba (Pin)'} 
+                        className={`p-2 rounded-lg bg-white/5 transition-all ${
+                          pinnedNewsIds.includes(item.id) 
+                            ? 'text-amber-400 hover:bg-amber-600/20 bg-amber-500/10' 
+                            : 'text-slate-400 hover:text-amber-400 hover:bg-amber-600/20'
+                        }`}
+                      >
+                        <IcoPin />
+                      </button>
                       <button onClick={() => togglePublish(item)} title={item.published ? 'Ocultar' : 'Publicar'} className="p-2 rounded-lg bg-white/5 hover:bg-yellow-600/20 text-slate-400 hover:text-yellow-400 transition-all">
                         {item.published ? <IcoEyeOff /> : <IcoEye />}
                       </button>
@@ -817,7 +849,7 @@ function AdminNews({ toast }) {
           <div className="flex items-center justify-between p-4 bg-white/2 border border-white/5 rounded-2xl">
             <div>
               <span className="text-sm font-semibold text-white block">Habilitar Noticias Autogeneradas</span>
-              <span className="text-xs text-slate-500 block">Si se desactiva, solo se mostrarán las noticias manuales que crees aquí. (Proveedor: Pokémon Alpha)</span>
+              <span className="text-xs text-slate-500 block">Si se desactiva, solo se mostrarán las noticias manuales que crees aquí. (Proveedor: TCGnews)</span>
             </div>
             <button 
               onClick={() => handleToggleSource('autogenerate')} 

@@ -399,7 +399,13 @@ export default function Home({
                   className="flex gap-4 p-3 rounded-2xl border cursor-pointer transition-all hover:border-[#0052FF]/40 bg-white dark:bg-[#121824] border-slate-100 dark:border-slate-800"
                 >
                   <div className="w-20 sm:w-24 aspect-[4/3] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-950 flex-shrink-0">
-                    <img src={n.image} alt={`Noticia: ${n.title}`} loading="lazy" className="w-full h-full object-cover" />
+                    <img 
+                      src={n.image} 
+                      alt={`Noticia: ${n.title}`} 
+                      loading="lazy" 
+                      className="w-full h-full object-cover" 
+                      onError={(e) => { e.target.onerror = null; e.target.src = "/og-image.png"; }}
+                    />
                   </div>
                   <div className="space-y-1 flex-grow">
                     <span className="text-[9px] font-bold text-[#0052FF] uppercase">{n.date}</span>

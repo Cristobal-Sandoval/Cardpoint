@@ -245,7 +245,7 @@ export function useAutoNews(newsSourcesParam) {
 
   useEffect(() => {
     const fetchAllNews = async () => {
-      const CACHE_KEY = 'cardpoint_news_rss_v8';
+      const CACHE_KEY = 'cardpoint_news_rss_v9';
       const CACHE_EXPIRY = 10 * 60 * 1000; // 10 minutos (actualización más frecuente)
 
       // 1. Cargar preferencias de fuentes desde Supabase o parámetro
@@ -320,21 +320,31 @@ export function useAutoNews(newsSourcesParam) {
             image = imgMatch[1];
           }
 
-          // Si no tiene imagen, asignar una temática según el título y categorías
+          // Si no tiene imagen, asignar una temática estable según el título y categorías
           if (!image) {
             const categories = (item.categories || []).map(c => c.toLowerCase());
             const titleLower = (item.title || '').toLowerCase();
             
-            if (categories.includes('pokémon go') || categories.includes('go') || titleLower.includes('go')) {
-              image = 'https://mcdn.pokemon.com/image/upload/c_limit,w_1024/f_auto/q_auto:best/v1/live/pcom-cms/static-assets/cms3/us/img/video-games/tiles/pokemon-go/2026/06/23/pokemon-go-169.jpg';
+            if (titleLower.includes('rayquaza')) {
+              image = 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/xy06/xy06-169.jpg';
+            } else if (titleLower.includes('charizard')) {
+              image = 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv03/sv03-169.jpg';
+            } else if (titleLower.includes('pikachu')) {
+              image = 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv04/sv04-169.jpg';
+            } else if (titleLower.includes('mew')) {
+              image = 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv03pt5/sv03pt5-169.jpg';
+            } else if (categories.includes('pokémon go') || categories.includes('go') || titleLower.includes('go')) {
+              image = 'https://assets.pokemon.com/assets/cms2/img/misc/countries/es/country_detail_pokemon_go.jpg';
             } else if (categories.includes('jcc pokémon') || categories.includes('tcg') || categories.includes('pocket') || titleLower.includes('tcg') || titleLower.includes('cartas') || titleLower.includes('pocket')) {
-              image = 'https://mcdn.pokemon.com/image/upload/c_limit,w_1024/f_auto/q_auto:best/v1/live/pcom-cms/static-assets/cms3/es/img/video-games/tiles/tcg-pocket/2026/06/24/pokemon-tcg-pocket-169-es.png';
+              image = 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/tcg-homepage-featured-169-es.jpg';
             } else if (categories.includes('masters') || titleLower.includes('masters') || titleLower.includes('ex')) {
-              image = 'https://mcdn.pokemon.com/image/upload/c_limit,w_1024/f_auto/q_auto:best/v1/live/pcom-cms/static-assets/cms3/us/img/video-games/tiles/pokemon-masters-ex-169.jpg';
+              image = 'https://assets.pokemon.com/assets/cms2/img/video-games/pokemon-masters/pokemon-masters-169.jpg';
             } else if (categories.includes('escarlata') || categories.includes('púrpura') || titleLower.includes('escarlata') || titleLower.includes('púrpura') || titleLower.includes('teraincursión')) {
-              image = 'https://mcdn.pokemon.com/image/upload/c_limit,w_1024/f_auto/q_auto:best/v1/live/pcom-cms/static-assets/cms3/us/img/video-games/pokemon-scarlet-violet/pokemon-scarlet-violet-169.jpg';
+              image = 'https://assets.pokemon.com/assets/cms2/img/video-games/pokemon-scarlet-and-pokemon-violet/pokemon-scarlet-and-pokemon-violet-169.jpg';
+            } else if (categories.includes('anime') || titleLower.includes('anime') || titleLower.includes('serie') || titleLower.includes('poketoon') || titleLower.includes('corto')) {
+              image = 'https://assets.pokemon.com/assets/cms2/img/watch-pokemon-tv/seasons/season26/season26_169_es.jpg';
             } else {
-              image = '/og-image.png'; // Fallback por defecto de CardPoint
+              image = 'https://assets.pokemon.com/assets/cms2/img/misc/countries/es/country_detail_pokemon_tv.jpg'; // Fallback oficial genérico
             }
           }
 

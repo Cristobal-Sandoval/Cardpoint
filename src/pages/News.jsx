@@ -30,7 +30,13 @@ export default function News({
           </button>
 
           <div className="aspect-[21/9] rounded-3xl overflow-hidden bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-            <img src={selectedNews.image} alt={`Imagen destacada de noticia: ${selectedNews.title}`} loading="lazy" className="w-full h-full object-cover" />
+            <img 
+              src={selectedNews.image} 
+              alt={`Imagen destacada de noticia: ${selectedNews.title}`} 
+              loading="lazy" 
+              className="w-full h-full object-cover" 
+              onError={(e) => { e.target.onerror = null; e.target.src = "/og-image.png"; }}
+            />
           </div>
 
           <div className="space-y-3">
@@ -123,6 +129,7 @@ export default function News({
                       alt={`Miniatura de noticia: ${n.title}`}
                       loading="lazy"
                       className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                      onError={(e) => { e.target.onerror = null; e.target.src = "/og-image.png"; }}
                     />
                     {n.date && (
                       <span className="absolute top-2.5 right-2.5 bg-[#0052FF] text-white text-[9px] font-black px-2 py-0.5 rounded shadow uppercase z-10">

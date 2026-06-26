@@ -312,6 +312,7 @@ export default function App() {
   const { autoNews, loadingAuto } = useAutoNews(adminSettings.news_sources);
   
   const hiddenNewsIds = adminSettings.hidden_news || [];
+  const pinnedNewsIds = adminSettings.pinned_news || [];
   const localTournaments = adminSettings.tournaments_override || [];
   const customBanners = adminSettings.custom_banners || [];
   const rawSponsoredAd = adminSettings.sponsored_ad;
@@ -534,10 +535,16 @@ export default function App() {
   // Filtrado de noticias visibles
   const visibleNewsList = useMemo(() => {
     const filtered = newsList.filter(n => !hiddenNewsIds.includes(n.id));
-    const manual = filtered.filter(n => !n.isExternal);
-    const auto = filtered.filter(n => n.isExternal);
-    return [...manual, ...auto];
-  }, [newsList, hiddenNewsIds]);
+    return filtered.sort((a, b) => {
+      const aPinned = pinnedNewsIds.includes(a.id);
+      const bPinned = pinnedNewsIds.includes(b.id);
+      
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      
+      return new Date(b.date || b.created_at || 0) - new Date(a.date || a.created_at || 0);
+    });
+  }, [newsList, hiddenNewsIds, pinnedNewsIds]);
 
   const displayTournaments = useMemo(() => {
     const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
