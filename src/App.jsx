@@ -22,7 +22,8 @@ import {
   Layers,
   Sparkles,
   BookOpen,
-  MapPin
+  MapPin,
+  Database as DatabaseIcon
 } from 'lucide-react';
 
 import CardpointLogo from './components/CardpointLogo';
@@ -1013,7 +1014,7 @@ export default function App() {
           { id: 'catalog', label: 'Stock', icon: Layers },
           { id: 'news', label: 'Noticias', icon: BookOpen },
           { id: 'tournaments', label: 'Torneos', icon: MapPin },
-          { id: 'database', label: 'Buscar', icon: Database }
+          { id: 'database', label: 'Buscar', icon: DatabaseIcon }
         ].map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;

@@ -15,13 +15,13 @@ export default function DatabaseView({
   theme,
   dbSearch,
   setDbSearch,
-  dbCardsList,
+  dbCardsList = [],
   dbLoading,
   dbError,
   dbPage,
   setDbPage,
   setSelectedCardDetail,
-  inquiryList,
+  inquiryList = [],
   toggleInquiry
 }) {
 
