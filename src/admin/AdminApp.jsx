@@ -1622,7 +1622,12 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       const trimmed = line.trim();
       if (!trimmed) return;
       
-      const parts = trimmed.split('|').map(p => p.trim());
+      let parts = [];
+      if (trimmed.includes('|')) {
+        parts = trimmed.split('|').map(p => p.trim());
+      } else {
+        parts = trimmed.split(',').map(p => p.trim());
+      }
       if (parts.length < 3) return; // Name, Set Code, Number required
       
       const name = parts[0];
@@ -1685,7 +1690,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     });
 
     if (parsed.length === 0) {
-      toast('No se encontraron líneas válidas. Formato: Nombre | Set | Número | Cantidad | Precio', 'error');
+      toast('No se encontraron líneas válidas. Formato: Nombre, Set, Número, Cantidad, Precio', 'error');
       return;
     }
 
@@ -1934,12 +1939,12 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
         <div className="space-y-4">
           <div className="p-4 bg-white/5 rounded-xl border border-white/5 space-y-2 text-xs text-slate-400">
             <p className="font-bold text-slate-200">💡 Instrucciones de Formato:</p>
-            <p>Escribe o pega una lista de cartas, una por línea. El formato requerido es:</p>
+            <p>Escribe o pega una lista de cartas, una por línea. El formato requerido es (separado por comas `,` o barras `|`):</p>
             <code className="block bg-black/40 p-2 rounded text-[#0052FF] font-mono select-all">
-              Nombre de Carta | Código de Set | Número de Carta | Cantidad (opcional) | Precio (opcional) | Estado (opcional) | Idioma (opcional) | Reverso (opcional) | Liga (opcional)
+              Nombre de Carta, Código de Set, Número de Carta, Cantidad (opcional), Precio (opcional), Estado (opcional), Idioma (opcional), Reverso (opcional), Liga (opcional)
             </code>
-            <p className="mt-2 text-[10px]">Ejemplo: <strong className="text-white">Mega Gengar Ex | xy4es | 35 | 1 | 60000 | NM</strong> (detecta Español por el sufijo <strong className="text-[#0052FF]">es</strong> en el set)</p>
-            <p className="text-[10px]">O de forma explícita con banderas: <strong className="text-white">Mega Gengar Ex | xy4 | 35 | 1 | 60000 | NM | Español | reverse | liga</strong></p>
+            <p className="mt-2 text-[10px]">Ejemplo con comas: <strong className="text-white">Mega Gengar Ex, xy4es, 35, 1, 60000, NM</strong> (detecta Español por el sufijo <strong className="text-[#0052FF]">es</strong> en el set)</p>
+            <p className="text-[10px]">Ejemplo con banderas: <strong className="text-white">Mega Gengar Ex, xy4, 35, 1, 60000, NM, Español, reverse, liga</strong></p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
