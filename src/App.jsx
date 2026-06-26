@@ -391,8 +391,8 @@ export default function App() {
       'especial ilustracion rara': 4,
       'ilustracion rara': 5,
       'ultra rara': 6,
-      'doble rara': 7,
-      'rara': 8,
+      'rara': 7,
+      'doble rara': 8,
       'poco comun': 9,
       'comun': 10
     };
@@ -413,8 +413,8 @@ export default function App() {
       return (b.price || 0) - (a.price || 0);
     });
 
-    // Limit to a maximum of 20 cards
-    return sorted.slice(0, 20);
+    // Limit to a maximum of 15 cards
+    return sorted.slice(0, 15);
   }, [dbCards]);
   
   // Search & Catalog Filter States (Stock)
@@ -423,6 +423,35 @@ export default function App() {
   const [selectedRarity, setSelectedRarity] = useState('Todas');
   const [sortBy, setSortBy] = useState('default');
   const [cardPage, setCardPage] = useState(1);
+
+  // Refs to control scrolling to catalog grid on page changes
+  const catalogHeaderRef = useRef(null);
+  const prevPageRef = useRef(1);
+  const prevTabRef = useRef(currentTab);
+
+  // Scroll to catalog grid when changing page
+  useEffect(() => {
+    const tabChanged = currentTab !== prevTabRef.current;
+    if (currentTab === 'catalog' && cardPage !== prevPageRef.current && !tabChanged) {
+      catalogHeaderRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    prevPageRef.current = cardPage;
+    prevTabRef.current = currentTab;
+  }, [cardPage, currentTab]);
+
+  // Memoized visible rarities based on existing cards in stock
+  const visibleRarities = useMemo(() => {
+    if (dbCards.length === 0) return RARITIES;
+    
+    const existingNormalized = new Set(
+      dbCards.map(c => c.rarity ? c.rarity.trim().toLowerCase() : '').filter(Boolean)
+    );
+    
+    return RARITIES.filter(rarity => {
+      if (rarity.id === 'Todas') return true;
+      return existingNormalized.has(rarity.id.trim().toLowerCase());
+    });
+  }, [dbCards]);
 
   // Reset card page when filters or sorting changes
   useEffect(() => {
@@ -1743,7 +1772,7 @@ export default function App() {
             <GoogleAdSlot format="horizontal" />
 
             {/* Header de Catálogo (Filtros y orden solamente, sin la barra de búsqueda al lado) */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div ref={catalogHeaderRef} style={{ scrollMarginTop: '100px' }} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
               <div>
                 <h3 className="font-extrabold text-base text-slate-900 dark:text-white">Cartas en Vitrina</h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">Mostrando {filteredCards.length} singles de stock real.</p>
@@ -1766,7 +1795,7 @@ export default function App() {
 
             {/* Filtro de Rarezas (Desplazable horizontalmente en móvil, limpio) */}
             <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
-              {RARITIES.map((rarity) => (
+              {visibleRarities.map((rarity) => (
                 <button
                   key={rarity.id}
                   onClick={() => setSelectedRarity(rarity.id)}
