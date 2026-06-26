@@ -245,7 +245,7 @@ export function useAutoNews(newsSourcesParam) {
 
   useEffect(() => {
     const fetchAllNews = async () => {
-      const CACHE_KEY = 'cardpoint_news_multi_v7';
+      const CACHE_KEY = 'cardpoint_news_rss_v8';
       const CACHE_EXPIRY = 10 * 60 * 1000; // 10 minutos (actualización más frecuente)
 
       // 1. Cargar preferencias de fuentes desde Supabase o parámetro
@@ -286,7 +286,7 @@ export function useAutoNews(newsSourcesParam) {
             setAutoNews(parsedCache.data);
             setLoadingAuto(false);
             if (Date.now() - parsedCache.timestamp < CACHE_EXPIRY) {
-              console.log("useAutoNews: Cargada caché reciente de noticias de Pokémon Alpha");
+              console.log("useAutoNews: Cargada caché reciente de noticias de Pokémon Alpha RSS");
               return;
             }
           }
@@ -294,13 +294,6 @@ export function useAutoNews(newsSourcesParam) {
       } catch (e) {
         console.warn("useAutoNews: Error leyendo caché:", e);
       }
-
-      const PROXIES = [
-        (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-        (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-        (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-        (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
-      ];
 
       const fetchWithTimeout = async (url, ms = 8000) => {
         const controller = new AbortController();
@@ -315,176 +308,92 @@ export function useAutoNews(newsSourcesParam) {
         }
       };
 
-      // --- PARSERS ---
-
-      // 1. Parser para TCGNews.cl
-      const parseTCGNews = (html) => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const divs = doc.querySelectorAll('.grid_noti_resumen2');
-        const results = [];
-        let idx = 0;
-        for (const div of divs) {
-          const linkEl = div.querySelector('a.tit_noti_resumen3');
-          const imgEl = div.querySelector('img.img_noti_resumen');
-          const sumEl = div.querySelector('.txt_noti_resumen2');
-          const dateEl = div.querySelector('.fecha_noti_resumen2');
-          if (!linkEl) continue;
+      // --- PARSER PARA EL FEED RSS DE POKÉMON ALPHA ---
+      const parsePokemonAlphaRSS = (items) => {
+        return items.map((item, idx) => {
+          let cleanContent = item.content || item.description || '';
           
-          const title = linkEl.textContent?.trim() || '';
-          const href = linkEl.getAttribute('href') || '';
-          const imgSrc = imgEl?.getAttribute('src') || '';
-          const summary = sumEl?.textContent?.trim() || '';
-          
-          let dateText = dateEl?.textContent || '';
-          dateText = dateText.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-          dateText = dateText.split('|').pop().trim();
-          
-          let dateObj = new Date();
-          const dateMatch = dateText.match(/Hace\s+(\d+)\s+(hora|horas|día|días|semana|semanas|mes|meses)/i);
-          if (dateMatch) {
-            const n = parseInt(dateMatch[1], 10);
-            const unit = dateMatch[2].toLowerCase();
-            if (unit.startsWith('hora')) dateObj = new Date(Date.now() - n * 3600000);
-            if (unit.startsWith('d') || unit.startsWith('dí')) dateObj = new Date(Date.now() - n * 86400000);
-            if (unit.startsWith('semana')) dateObj = new Date(Date.now() - n * 604800000);
-            if (unit.startsWith('mes')) dateObj = new Date(Date.now() - n * 2592000000);
+          // Extraer la primera imagen del contenido HTML
+          let image = '';
+          const imgMatch = cleanContent.match(/<img[^>]+src="([^">]+)"/);
+          if (imgMatch) {
+            image = imgMatch[1];
           }
-          
-          results.push({
-            id: `tcgnews-${idx++}-${Date.now()}`,
-            title,
-            date: dateObj.toISOString().split('T')[0],
-            image: imgSrc.startsWith('http') ? imgSrc : `https://www.tcgnews.cl${imgSrc}`,
-            summary: summary || title,
-            content: summary,
-            sourceUrl: href.startsWith('http') ? href : `https://www.tcgnews.cl${href}`,
-            sourceName: 'Noticias TCG',
-            isExternal: true
-          });
-        }
-        return results;
-      };
 
-      // 2. Parser para Pokemon.com
-      const parsePokemon = (html) => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const articles = doc.querySelectorAll('article');
-        const results = [];
-        let idx = 0;
-        for (const art of articles) {
-          const linkEl = art.querySelector('a[class*="TileTitleLink"]') || art.querySelector('a[href*="/noticias/"]') || art.querySelector('a');
-          const imgEl = art.querySelector('img');
-          const summaryEl = art.querySelector('p[class*="Text--variant-body-3"]') || art.querySelector('p[class*="variant-body-3"]') || art.querySelector('p:last-of-type') || art.querySelector('p');
-          const dateEl = art.querySelector('p[class*="TileLabel"]') || art.querySelector('[class*="TileLabel"]') || art.querySelector('p:first-of-type');
-          if (!linkEl) continue;
-
-          const title = cleanText(linkEl.textContent);
-          const href = linkEl.getAttribute('href') || '';
-          const imgSrc = imgEl?.getAttribute('src') || imgEl?.getAttribute('data-src') || '';
-          const summary = cleanText(summaryEl?.textContent);
-          const dateText = cleanText(dateEl?.textContent);
-
-          results.push({
-            id: `pokemon-${idx++}-${Date.now()}`,
-            title,
-            date: parseSpanishDate(dateText),
-            image: imgSrc,
-            summary: summary || title,
-            content: summary,
-            sourceUrl: href.startsWith('http') ? href : `https://www.pokemon.com${href}`,
-            sourceName: 'Pokémon Oficial',
-            isExternal: true
-          });
-        }
-        return results;
-      };
-
-      // 3. Parser para PokemonAlpha.es
-      const parsePokemonAlpha = (html) => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const posts = doc.querySelectorAll('div[id^="post-"]');
-        const results = [];
-        let idx = 0;
-        for (const post of posts) {
-          const titleLink = post.querySelector('h3.entry-title a');
-          const imgEl = post.querySelector('img.wp-post-image');
-          const dateEl = post.querySelector('li.post-date');
-          const excerptEl = post.querySelector('div.post-excerpt');
-          if (!titleLink) continue;
-
-          const title = cleanText(titleLink.textContent);
-          const href = titleLink.getAttribute('href') || '';
-          const imgSrc = imgEl?.getAttribute('src') || '';
-          const summary = cleanText(excerptEl?.textContent);
-          const dateText = cleanText(dateEl?.textContent);
-
-          results.push({
-            id: `pokemonalpha-${idx++}-${Date.now()}`,
-            title,
-            date: parseSlashDate(dateText),
-            image: imgSrc,
-            summary: summary || title,
-            content: summary,
-            sourceUrl: href,
-            sourceName: 'Pokémon Alpha',
-            isExternal: true
-          });
-        }
-        return results;
-      };
-
-      // --- EJECUCIÓN DEL FETCH MULTI-FUENTE ---
-      // Agregamos un cache-buster que cambia cada 10 minutos para forzar a los proxies CORS a traer HTML fresco
-      const cacheBuster = Math.floor(Date.now() / 600000);
-      const sourcesToFetch = [
-        {
-          name: 'Noticias TCG',
-          url: `https://www.tcgnews.cl/noticias/?_cb=${cacheBuster}`,
-          parser: parseTCGNews,
-          fallback: TCGNEWS_FALLBACK_NEWS
-        }
-      ];
-
-      let allCollectedNews = [];
-
-      for (const src of sourcesToFetch) {
-        let success = false;
-        // Intentar con proxies
-        for (const makeUrl of PROXIES) {
-          try {
-            const proxyUrl = makeUrl(src.url);
-            const res = await fetchWithTimeout(proxyUrl, 8000);
-            if (!res.ok) continue;
-
-            let html = '';
-            const contentType = res.headers.get('content-type') || '';
-            if (contentType.includes('application/json')) {
-              const json = await res.json();
-              html = json.contents || json.data || '';
+          // Si no tiene imagen, asignar una temática según el título y categorías
+          if (!image) {
+            const categories = (item.categories || []).map(c => c.toLowerCase());
+            const titleLower = (item.title || '').toLowerCase();
+            
+            if (categories.includes('pokémon go') || categories.includes('go') || titleLower.includes('go')) {
+              image = 'https://mcdn.pokemon.com/image/upload/c_limit,w_1024/f_auto/q_auto:best/v1/live/pcom-cms/static-assets/cms3/us/img/video-games/tiles/pokemon-go/2026/06/23/pokemon-go-169.jpg';
+            } else if (categories.includes('jcc pokémon') || categories.includes('tcg') || categories.includes('pocket') || titleLower.includes('tcg') || titleLower.includes('cartas') || titleLower.includes('pocket')) {
+              image = 'https://mcdn.pokemon.com/image/upload/c_limit,w_1024/f_auto/q_auto:best/v1/live/pcom-cms/static-assets/cms3/es/img/video-games/tiles/tcg-pocket/2026/06/24/pokemon-tcg-pocket-169-es.png';
+            } else if (categories.includes('masters') || titleLower.includes('masters') || titleLower.includes('ex')) {
+              image = 'https://mcdn.pokemon.com/image/upload/c_limit,w_1024/f_auto/q_auto:best/v1/live/pcom-cms/static-assets/cms3/us/img/video-games/tiles/pokemon-masters-ex-169.jpg';
+            } else if (categories.includes('escarlata') || categories.includes('púrpura') || titleLower.includes('escarlata') || titleLower.includes('púrpura') || titleLower.includes('teraincursión')) {
+              image = 'https://mcdn.pokemon.com/image/upload/c_limit,w_1024/f_auto/q_auto:best/v1/live/pcom-cms/static-assets/cms3/us/img/video-games/pokemon-scarlet-violet/pokemon-scarlet-violet-169.jpg';
             } else {
-              html = await res.text();
+              image = '/og-image.png'; // Fallback por defecto de CardPoint
             }
+          }
 
-            const parsed = src.parser(html);
-            if (parsed && parsed.length > 0) {
-              console.log(`useAutoNews: Éxito al obtener ${parsed.length} noticias desde ${src.name}`);
-              allCollectedNews = [...allCollectedNews, ...parsed];
-              success = true;
-              break;
-            }
-          } catch (e) {
-            console.warn(`useAutoNews: Falló proxy para ${src.name}:`, e.message);
+          // Remover scripts si hubiera
+          cleanContent = cleanContent
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .trim();
+
+          const dateStr = item.pubDate ? item.pubDate.split(' ')[0] : new Date().toISOString().split('T')[0];
+
+          let summary = item.description || '';
+          summary = summary.replace(/<[^>]*>/g, '').trim();
+          if (summary.length > 150) {
+            summary = summary.substring(0, 150) + "...";
+          }
+
+          return {
+            id: `pokemonalpha-rss-${idx}-${Date.now()}`,
+            title: item.title,
+            date: dateStr,
+            image: image,
+            summary: summary || item.title,
+            content: cleanContent,
+            sourceUrl: item.link,
+            sourceName: 'Pokémon Alpha',
+            isExternal: true,
+            hasFullContent: true // Ya tiene todo el HTML, no requiere fetch diferido
+          };
+        });
+      };
+
+      // --- EJECUCIÓN DEL FETCH AL RSS ---
+      let allCollectedNews = [];
+      let success = false;
+
+      try {
+        const feedUrl = "https://pokemonalpha.es/feed/";
+        const rssJsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`;
+        
+        const res = await fetchWithTimeout(rssJsonUrl, 6000);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.status === 'ok' && json.items && json.items.length > 0) {
+            allCollectedNews = parsePokemonAlphaRSS(json.items);
+            success = true;
+            console.log(`useAutoNews: Éxito al obtener ${allCollectedNews.length} noticias desde Pokémon Alpha RSS`);
           }
         }
+      } catch (e) {
+        console.warn("useAutoNews: Error consultando feed RSS de Pokémon Alpha:", e.message);
+      }
 
-        // Si fallan los proxies, cargar fallbacks pre-scrapeados
-        if (!success) {
-          console.log(`useAutoNews: Cargando noticias de fallback para ${src.name}`);
-          allCollectedNews = [...allCollectedNews, ...src.fallback];
-        }
+      // Si falla, usar fallback local de Pokémon Alpha
+      if (!success) {
+        console.log("useAutoNews: Cargando noticias de fallback locales de Pokémon Alpha");
+        allCollectedNews = POKEMONALPHA_FALLBACK_NEWS.map(n => ({
+          ...n,
+          hasFullContent: true
+        }));
       }
 
       // Ordenar por fecha descendente
