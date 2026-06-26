@@ -1667,7 +1667,14 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       const name = parts[0];
       let setCode = parts[1].toLowerCase();
       const fullNumber = parts[2];
-      const number = fullNumber.split('/')[0].trim();
+      let number = fullNumber.split('/')[0].trim();
+      
+      // Strip leading zeros from purely numeric card numbers or numbers with trailing letters (e.g. "018" -> "18")
+      if (/^0+[1-9]\d*$/.test(number)) {
+        number = number.replace(/^0+/, '');
+      } else if (/^0+$/.test(number)) {
+        number = '0';
+      }
       
       const stock = parts[3] ? parseInt(parts[3], 10) || 1 : 1;
       const price = parts[4] ? parseInt(parts[4].replace(/[$.]/g, ''), 10) || 0 : 0;
@@ -1681,6 +1688,19 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       } else if (setCode.endsWith('en') && setCode.length > 2) {
         setCode = setCode.slice(0, -2);
         idioma = 'Inglés';
+      }
+      
+      // Map common set abbreviations to official API set IDs (supporting prefixes like twmem -> twm -> sv6)
+      const setCodeMapping = {
+        'svi': 'sv1', 'pal': 'sv2', 'obf': 'sv3', 'mew': 'sv3pt5', 'par': 'sv4', 'paf': 'sv4pt5',
+        'tef': 'sv5', 'twm': 'sv6', 'ste': 'sv7', 'ssp': 'sv8', 'pre': 'sv8pt5'
+      };
+      
+      for (const [key, val] of Object.entries(setCodeMapping)) {
+        if (setCode.startsWith(key)) {
+          setCode = val;
+          break;
+        }
       }
       
       if (parts[6]) {
@@ -1777,10 +1797,36 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
             if (fbRes.ok) {
               const fbData = await fbRes.json();
               const fbResults = fbData.data || [];
-              const match = fbResults.find(c => 
-                (c.set?.id || '').toLowerCase().includes(row.setCode) || 
-                (c.set?.name || '').toLowerCase().includes(row.setCode)
-              );
+              const match = fbResults.find(c => {
+                const setId = (c.set?.id || '').toLowerCase();
+                const setName = (c.set?.name || '').toLowerCase();
+                const userCode = row.setCode.toLowerCase();
+                
+                if (setId.includes(userCode) || setName.includes(userCode)) return true;
+                
+                const fallbackSetMapping = {
+                  'svi': ['sv1', 'scarlet & violet', 'escarlata y púrpura'],
+                  'pal': ['sv2', 'paldea evolved', 'evoluciones en paldea'],
+                  'obf': ['sv3', 'obsidian flames', 'llamas obsidianas'],
+                  'mew': ['sv3pt5', '151'],
+                  'par': ['sv4', 'paradox rift', 'brecha paradójica'],
+                  'paf': ['sv4pt5', 'paldean fates', 'destino de paldea'],
+                  'tef': ['sv5', 'temporal forces', 'fuerzas temporales'],
+                  'twm': ['sv6', 'twilight masquerade', 'mascarada crepuscular'],
+                  'ste': ['sv7', 'stellar crown', 'corona estelar'],
+                  'ssp': ['sv8', 'surging sparks', 'chispas fulgurantes'],
+                  'pre': ['sv8pt5', 'prismatic evolutions', 'evoluciones prismáticas']
+                };
+                
+                const mapKey = Object.keys(fallbackSetMapping).find(k => userCode.startsWith(k));
+                if (mapKey) {
+                  return fallbackSetMapping[mapKey].some(mappedVal => 
+                    setId.includes(mappedVal) || setName.includes(mappedVal)
+                  );
+                }
+                
+                return false;
+              });
               
               if (match) {
                 updatedRows[i] = {
