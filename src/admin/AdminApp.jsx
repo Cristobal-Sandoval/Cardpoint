@@ -1611,6 +1611,40 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     reader.readAsText(file);
   };
 
+  const parseRarityPrefix = (prefix) => {
+    if (!prefix) return null;
+    const p = prefix.trim().toUpperCase();
+    switch (p) {
+      case 'C': return 'Común';
+      case 'PC':
+      case 'U': return 'Poco Común';
+      case 'R': return 'Rara';
+      case 'RR': return 'Doble Rara';
+      case 'UR': return 'Ultra Rara';
+      case 'IR':
+      case 'AR': return 'Ilustración Rara';
+      case 'SIR': return 'Especial Ilustración Rara';
+      case 'SR':
+      case 'URS': return 'Ultra Rara Secreta';
+      case 'GR':
+      case 'SD': return 'Secreta Dorada';
+      case 'HR': return 'Hyper Rara';
+      default:
+        const lower = prefix.toLowerCase();
+        if (lower.includes('común') || lower.includes('comun')) return 'Común';
+        if (lower.includes('poco')) return 'Poco Común';
+        if (lower.includes('doble')) return 'Doble Rara';
+        if (lower.includes('especial')) return 'Especial Ilustración Rara';
+        if (lower.includes('ilustración') || lower.includes('ilustracion')) return 'Ilustración Rara';
+        if (lower.includes('secreta') && lower.includes('ultra')) return 'Ultra Rara Secreta';
+        if (lower.includes('dorada')) return 'Secreta Dorada';
+        if (lower.includes('hyper')) return 'Hyper Rara';
+        if (lower.includes('ultra')) return 'Ultra Rara';
+        if (lower.includes('rara')) return 'Rara';
+        return null;
+    }
+  };
+
   const handleProcessList = async () => {
     if (!inputText.trim()) return;
     
@@ -1657,14 +1691,24 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
         else idioma = parts[6].trim();
       }
       
-      // Detect flags in optional fields (reverse / liga)
+      // Detect flags and custom rarity in optional fields (reverse / liga / rarity)
       let is_reverse = false;
       let is_league = false;
+      let overriddenRarity = null;
       for (let j = 3; j < parts.length; j++) {
         if (parts[j]) {
-          const val = parts[j].toLowerCase().trim();
-          if (val === 'reverse' || val === 'rev') is_reverse = true;
-          if (val === 'liga' || val === 'league' || val === 'de liga') is_league = true;
+          const val = parts[j].trim();
+          const lowerVal = val.toLowerCase();
+          if (lowerVal === 'reverse' || lowerVal === 'rev') {
+            is_reverse = true;
+          } else if (lowerVal === 'liga' || lowerVal === 'league' || lowerVal === 'de liga') {
+            is_league = true;
+          } else {
+            const matchedRarity = parseRarityPrefix(val);
+            if (matchedRarity) {
+              overriddenRarity = matchedRarity;
+            }
+          }
         }
       }
       
@@ -1679,11 +1723,12 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
         idioma,
         is_reverse,
         is_league,
+        overriddenRarity,
         real_photo: '',
         status: 'pending',
         image: '',
         set: '',
-        rarity: 'Rara',
+        rarity: overriddenRarity || 'Rara',
         description: 'Sin descripción adicional.',
         apiCard: null
       });
@@ -1721,7 +1766,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
               name: card.name,
               set: card.set?.name || 'Escarlata y Púrpura',
               setCode: card.set?.id || row.setCode,
-              rarity: translateRarity(card.rarity),
+              rarity: row.overriddenRarity || translateRarity(card.rarity),
               image: card.images?.large || card.images?.small || '',
               apiCard: card
             };
@@ -1744,7 +1789,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                   name: match.name,
                   set: match.set?.name || 'Escarlata y Púrpura',
                   setCode: match.set?.id || row.setCode,
-                  rarity: translateRarity(match.rarity),
+                  rarity: row.overriddenRarity || translateRarity(match.rarity),
                   image: match.images?.large || match.images?.small || '',
                   apiCard: match
                 };
@@ -1756,7 +1801,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                   name: matchFirst.name,
                   set: matchFirst.set?.name || 'Escarlata y Púrpura',
                   setCode: matchFirst.set?.id || row.setCode,
-                  rarity: translateRarity(matchFirst.rarity),
+                  rarity: row.overriddenRarity || translateRarity(matchFirst.rarity),
                   image: matchFirst.images?.large || matchFirst.images?.small || '',
                   apiCard: matchFirst
                 };
@@ -1828,7 +1873,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       name: row.name,
       set: 'Escarlata y Púrpura',
       setCode: row.setCode.toUpperCase(),
-      rarity: 'Rara',
+      rarity: row.overriddenRarity || 'Rara',
       price: row.price,
       stock: row.stock,
       condition: row.condition,
