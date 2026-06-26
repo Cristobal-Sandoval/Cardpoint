@@ -38,6 +38,63 @@ const LANGUAGES = ['Español', 'Inglés', 'Japonés', 'Otro'];
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const today = () => new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });
 
+const compressImage = (file, maxDimension = 800, quality = 0.85) => {
+  return new Promise((resolve) => {
+    if (!file || !file.type.startsWith('image/')) {
+      resolve(file);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > maxDimension) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            }
+          } else {
+            if (height > maxDimension) {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                  type: 'image/jpeg',
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            },
+            'image/jpeg',
+            quality
+          );
+        } catch (err) {
+          console.error('Image compression error:', err);
+          resolve(file);
+        }
+      };
+      img.onerror = () => resolve(file);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+};
+
 // ============================================================
 // MODAL BASE
 // ============================================================
@@ -202,23 +259,17 @@ function AdminCards({ toast }) {
     if (!file) return;
     setUploadingPhoto(true);
     try {
-      // Convert file to base64
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      toast('Optimizando imagen...', 'info');
+      const compressedFile = await compressImage(file, 800, 0.85);
       const formData = new FormData();
-      formData.append('key', IMGBB_KEY);
-      formData.append('image', base64);
-      const res = await fetch('https://api.imgbb.com/1/upload', {
+      formData.append('image', compressedFile);
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
         method: 'POST',
         body: formData,
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error?.message || 'Error al subir');
-      const directUrl = data.data.display_url;
+      const directUrl = data.data.display_url || data.data.url;
       setForm(prev => ({ ...prev, real_photo: directUrl }));
       toast('Foto subida a ImgBB ✓', 'success');
     } catch (err) {
@@ -1889,11 +1940,12 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     if (!file) return;
     
     setUploadingRowId(rowId);
-    
-    const formData = new FormData();
-    formData.append('image', file);
-    
     try {
+      toast('Optimizando imagen...', 'info');
+      const compressedFile = await compressImage(file, 800, 0.85);
+      const formData = new FormData();
+      formData.append('image', compressedFile);
+      
       const res = await fetch(`https://api.imgbb.com/1/upload?key=149aebd904174718dea8f1c5eb444935`, {
         method: 'POST',
         body: formData
@@ -1908,7 +1960,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       }
     } catch (err) {
       console.error(err);
-      toast('⚠️ Error de conexión al subir imagen', 'error');
+      toast('⚠️ Error al subir imagen', 'error');
     } finally {
       setUploadingRowId(null);
     }
@@ -1953,11 +2005,12 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    const formData = new FormData();
-    formData.append('image', file);
-    
     try {
-      toast('Subiendo imagen...', 'info');
+      toast('Optimizando imagen...', 'info');
+      const compressedFile = await compressImage(file, 800, 0.85);
+      const formData = new FormData();
+      formData.append('image', compressedFile);
+      
       const res = await fetch(`https://api.imgbb.com/1/upload?key=149aebd904174718dea8f1c5eb444935`, {
         method: 'POST',
         body: formData
