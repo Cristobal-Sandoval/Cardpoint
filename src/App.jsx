@@ -65,10 +65,45 @@ function Instagram({ size = 24, className = "" }) {
 // COMPONENTE DE ANUNCIOS DE GOOGLE ADSENSE (PLACEHOLDER PREMIUM)
 // ==========================================
 function GoogleAdSlot({ format = "horizontal", className = "" }) {
+  const [isAdSenseScriptPresent, setIsAdSenseScriptPresent] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hasScript = document.querySelector('script[src*="adsbygoogle.js"]') || window.adsbygoogle;
+      setIsAdSenseScriptPresent(!!hasScript);
+      
+      if (hasScript) {
+        try {
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+        } catch (e) {
+          console.error("AdSense initialization error:", e);
+        }
+      }
+    }
+  }, []);
+
+  if (isAdSenseScriptPresent) {
+    return (
+      <div className={`ad-slot-container relative overflow-hidden rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-4 text-center transition-all ${className}`}>
+        <span className="absolute top-2 right-3 text-[9px] font-black uppercase tracking-wider text-slate-400">
+          Publicidad Patrocinada
+        </span>
+        <div className="flex items-center justify-center py-2">
+          <ins className="adsbygoogle"
+               style={{ display: 'block', width: '100%', minHeight: format === 'horizontal' ? '90px' : format === 'card' ? '280px' : '250px' }}
+               data-ad-client="ca-pub-XXXXXXXXXX"
+               data-ad-slot="XXXXXXXXXX"
+               data-ad-format={format === "horizontal" ? "auto" : "rectangle"}
+               data-full-width-responsive="true"></ins>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`relative overflow-hidden rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-4 text-center transition-all ${className}`}>
+    <div className="ad-slot-container relative overflow-hidden rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-4 text-center transition-all">
       <span className="absolute top-2 right-3 text-[9px] font-black uppercase tracking-wider text-slate-400">
-        Publicidad Patrocinada
+        Publicidad Patrocinada (Simulada)
       </span>
       
       {format === "horizontal" ? (
@@ -81,7 +116,7 @@ function GoogleAdSlot({ format = "horizontal", className = "" }) {
         </div>
       ) : format === "card" ? (
         <div className="flex flex-col items-center justify-center min-h-[280px] h-full p-4 rounded-2xl bg-gradient-to-b from-slate-100/40 to-slate-50/20 dark:from-slate-900/40 dark:to-slate-900/10 border border-slate-200/60 dark:border-slate-800/60 text-center">
-          <div className="w-8 h-8 rounded-full bg-blue-105 dark:bg-blue-950 flex items-center justify-center text-blue-600 mb-2">
+          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-blue-600 mb-2">
             <Sparkles size={16} />
           </div>
           <span className="text-xs font-bold text-slate-700 dark:text-slate-400">Anuncio Patrocinado</span>
