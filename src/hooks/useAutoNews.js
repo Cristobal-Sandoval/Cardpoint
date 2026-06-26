@@ -245,7 +245,7 @@ export function useAutoNews(newsSourcesParam) {
 
   useEffect(() => {
     const fetchAllNews = async () => {
-      const CACHE_KEY = 'cardpoint_news_multi_v6';
+      const CACHE_KEY = 'cardpoint_news_multi_v7';
       const CACHE_EXPIRY = 10 * 60 * 1000; // 10 minutos (actualización más frecuente)
 
       // 1. Cargar preferencias de fuentes desde Supabase o parámetro
@@ -296,6 +296,7 @@ export function useAutoNews(newsSourcesParam) {
       }
 
       const PROXIES = [
+        (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
         (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
         (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
         (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
