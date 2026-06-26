@@ -246,7 +246,7 @@ export function useAutoNews(newsSourcesParam) {
   useEffect(() => {
     const fetchAllNews = async () => {
       const CACHE_KEY = 'cardpoint_news_multi_v6';
-      const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutos
+      const CACHE_EXPIRY = 10 * 60 * 1000; // 10 minutos (actualización más frecuente)
 
       // 1. Cargar preferencias de fuentes desde Supabase o parámetro
       let enabledSources = { autogenerate: true };
@@ -436,10 +436,12 @@ export function useAutoNews(newsSourcesParam) {
       };
 
       // --- EJECUCIÓN DEL FETCH MULTI-FUENTE ---
+      // Agregamos un cache-buster que cambia cada 10 minutos para forzar a los proxies CORS a traer HTML fresco
+      const cacheBuster = Math.floor(Date.now() / 600000);
       const sourcesToFetch = [
         {
           name: 'Pokémon Alpha',
-          url: 'https://pokemonalpha.es/archivo-de-noticias/',
+          url: `https://pokemonalpha.es/archivo-de-noticias/?_cb=${cacheBuster}`,
           parser: parsePokemonAlpha,
           fallback: POKEMONALPHA_FALLBACK_NEWS
         }
