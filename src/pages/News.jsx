@@ -73,9 +73,9 @@ export default function News({
                 href={selectedNews.sourceUrl} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="hover:text-[#0052FF] hover:underline transition-colors"
+                className="hover:text-[#0052FF] hover:underline transition-colors font-semibold"
               >
-                Fuente: Pokealpha
+                Fuente: {selectedNews.sourceName === 'Noticias TCG' ? 'TCGnews' : (selectedNews.sourceName || 'TCGnews')}
               </a>
             </div>
           )}

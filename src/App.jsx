@@ -369,6 +369,7 @@ export default function App() {
       setLoadingFullContent(true);
       try {
         const PROXIES = [
+          (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
           (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
           (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
           (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
@@ -450,7 +451,41 @@ export default function App() {
 
             const cleanParas = paragraphs
               .map(el => {
-                const text = el.textContent?.trim() || '';
+                const clone = el.cloneNode(true);
+
+                // Si es Noticias TCG, removemos enlaces a instagram o menciones
+                if (selectedNews.sourceName === 'Noticias TCG') {
+                  const links = clone.querySelectorAll('a');
+                  links.forEach(a => {
+                    const href = a.getAttribute('href') || '';
+                    const aText = a.textContent || '';
+                    if (
+                      href.includes('instagram.com/tcgnews') ||
+                      href.includes('instagram.com/tcgnews.cl') ||
+                      aText.includes('@tcgnews.cl') ||
+                      aText.includes('tcgnews.cl')
+                    ) {
+                      a.remove();
+                    }
+                  });
+                }
+
+                let text = clone.textContent?.trim() || '';
+
+                if (selectedNews.sourceName === 'Noticias TCG') {
+                  const lowerText = text.toLowerCase();
+                  if (lowerText.includes('@tcgnews.cl') || lowerText.includes('instagram.com/tcgnews')) {
+                    if (text.length < 60 || lowerText.includes('síguenos') || lowerText.includes('siguenos') || lowerText.includes('redes sociales')) {
+                      return null;
+                    }
+                    text = text
+                      .replace(/@tcgnews\.cl/gi, '')
+                      .replace(/tcgnews\.cl/gi, '')
+                      .replace(/\s+/g, ' ')
+                      .trim();
+                  }
+                }
+
                 if (text.length < 10) return null;
                 if (el.tagName && el.tagName.startsWith('H')) {
                   return `<h3 class="text-lg font-black text-slate-900 dark:text-white mt-6 mb-3">${text}</h3>`;
