@@ -222,6 +222,26 @@ const RARITIES = [
   { id: 'Hyper Rara', name: 'Hyper Rara' }
 ];
 
+// Normalizador de texto para rarezas
+const normalizeRarityText = (str) => {
+  if (!str) return '';
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+};
+
+// Prioridades de rareza para ordenamiento (menor número = más rara)
+const RARITY_PRIORITY = {
+  'hyper rara': 1,
+  'secreta dorada': 2,
+  'ultra rara secreta': 3,
+  'especial ilustracion rara': 4,
+  'ilustracion rara': 5,
+  'ultra rara': 6,
+  'rara': 7,
+  'doble rara': 8,
+  'poco comun': 9,
+  'comun': 10
+};
+
 // Placeholder cards para el carrusel cuando la DB aún carga
 const PLACEHOLDER_CARDS = [
   {
@@ -378,32 +398,13 @@ export default function App() {
   const carouselSource = useMemo(() => {
     const rawSource = dbCards.length > 0 ? dbCards : PLACEHOLDER_CARDS;
 
-    const normalize = (str) => {
-      if (!str) return '';
-      return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-    };
-
-    // Rarity priority: smaller number = higher priority
-    const rarityPriority = {
-      'hyper rara': 1,
-      'secreta dorada': 2,
-      'ultra rara secreta': 3,
-      'especial ilustracion rara': 4,
-      'ilustracion rara': 5,
-      'ultra rara': 6,
-      'rara': 7,
-      'doble rara': 8,
-      'poco comun': 9,
-      'comun': 10
-    };
-
     // Sort the cards by priority, then by price descending
     const sorted = [...rawSource].sort((a, b) => {
-      const normA = normalize(a.rarity);
-      const normB = normalize(b.rarity);
+      const normA = normalizeRarityText(a.rarity);
+      const normB = normalizeRarityText(b.rarity);
       
-      const pA = rarityPriority[normA] || 99;
-      const pB = rarityPriority[normB] || 99;
+      const pA = RARITY_PRIORITY[normA] || 99;
+      const pB = RARITY_PRIORITY[normB] || 99;
 
       if (pA !== pB) {
         return pA - pB;
@@ -444,12 +445,12 @@ export default function App() {
     if (dbCards.length === 0) return RARITIES;
     
     const existingNormalized = new Set(
-      dbCards.map(c => c.rarity ? c.rarity.trim().toLowerCase() : '').filter(Boolean)
+      dbCards.map(c => normalizeRarityText(c.rarity)).filter(Boolean)
     );
     
     return RARITIES.filter(rarity => {
       if (rarity.id === 'Todas') return true;
-      return existingNormalized.has(rarity.id.trim().toLowerCase());
+      return existingNormalized.has(normalizeRarityText(rarity.id));
     });
   }, [dbCards]);
 
@@ -1095,7 +1096,21 @@ export default function App() {
       if (sortBy === 'price-low') return a.price - b.price;
       if (sortBy === 'price-high') return b.price - a.price;
       if (sortBy === 'name') return a.name.localeCompare(b.name);
-      return 0;
+      
+      // Default: sort by rarity (rarest first), then by price descending, then by name
+      const normA = normalizeRarityText(a.rarity);
+      const normB = normalizeRarityText(b.rarity);
+      const pA = RARITY_PRIORITY[normA] || 99;
+      const pB = RARITY_PRIORITY[normB] || 99;
+      
+      if (pA !== pB) {
+        return pA - pB;
+      }
+      
+      const priceDiff = (b.price || 0) - (a.price || 0);
+      if (priceDiff !== 0) return priceDiff;
+      
+      return a.name.localeCompare(b.name);
     });
   }, [catalogCards, debouncedSearchQuery, selectedRarity, sortBy]);
 
@@ -1347,9 +1362,9 @@ export default function App() {
 
                           {/* Imágenes de cartas en abanico */}
                           <div className="hidden lg:flex items-center justify-center relative h-[260px]">
-                            <img src={b.images[2]} alt="carta" className="absolute w-[130px] rounded-xl shadow-2xl border border-white/20 rotate-[-20deg] -translate-x-28 translate-y-8 opacity-80" />
-                            <img src={b.images[0]} alt="carta" className="absolute w-[145px] rounded-xl shadow-2xl border border-white/30 rotate-[12deg] translate-x-20 translate-y-10" />
-                            <img src={b.images[1]} alt="carta" className="absolute w-[155px] rounded-xl shadow-2xl border border-white/40 -rotate-5 z-10" />
+                            <img src={b.images[2]} alt="Carta Pokémon TCG ilustrativa" className="absolute w-[130px] rounded-xl shadow-2xl border border-white/20 rotate-[-20deg] -translate-x-28 translate-y-8 opacity-80" />
+                            <img src={b.images[0]} alt="Carta Pokémon TCG ilustrativa" className="absolute w-[145px] rounded-xl shadow-2xl border border-white/30 rotate-[12deg] translate-x-20 translate-y-10" />
+                            <img src={b.images[1]} alt="Carta Pokémon TCG ilustrativa" className="absolute w-[155px] rounded-xl shadow-2xl border border-white/40 -rotate-5 z-10" />
                           </div>
                         </div>
                       </div>
