@@ -1744,6 +1744,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
         is_reverse,
         is_league,
         overriddenRarity,
+        selected: true,
         real_photo: '',
         status: 'pending',
         image: '',
@@ -1919,6 +1920,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       name: row.name,
       set: 'Escarlata y Púrpura',
       setCode: row.setCode.toUpperCase(),
+      number: row.number,
       rarity: row.overriddenRarity || 'Rara',
       price: row.price,
       stock: row.stock,
@@ -1926,8 +1928,8 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       idioma: row.idioma,
       image: '',
       real_photo: '',
-      is_reverse: false,
-      is_league: false
+      is_reverse: !!row.is_reverse,
+      is_league: !!row.is_league
     });
     setManualAddIndex(idx);
     setShowManualAddForm(true);
@@ -1975,9 +1977,9 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
   };
 
   const handlePublish = async () => {
-    const successRows = importRows.filter(r => r.status === 'success');
+    const successRows = importRows.filter(r => r.status === 'success' && r.selected);
     if (successRows.length === 0) {
-      toast('No hay cartas listas para importar.', 'error');
+      toast('No hay cartas seleccionadas listas para importar.', 'error');
       return;
     }
 
@@ -2079,7 +2081,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
           ) : (
             <>
               <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
-                <span className="text-xs text-slate-400">Total leídas: <strong className="text-white">{importRows.length}</strong> | Listas para guardar: <strong className="text-green-400">{importRows.filter(r => r.status === 'success').length}</strong></span>
+                <span className="text-xs text-slate-400">Total leídas: <strong className="text-white">{importRows.length}</strong> | Listas para guardar: <strong className="text-green-400">{importRows.filter(r => r.status === 'success').length}</strong> | Seleccionadas: <strong className="text-[#0052FF]">{importRows.filter(r => r.status === 'success' && r.selected).length}</strong></span>
                 <span className="text-[10px] text-amber-400 font-semibold">⚠️ Revisa precio, cantidad y sube foto real antes de publicar.</span>
               </div>
 
@@ -2087,6 +2089,17 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                 <table className="w-full text-left text-xs text-slate-300 border-collapse">
                   <thead>
                     <tr className="bg-white/5 border-b border-white/10 uppercase tracking-wider text-[10px] text-slate-400 font-bold">
+                      <th className="px-3 py-3 w-10 text-center">
+                        <input
+                          type="checkbox"
+                          checked={importRows.length > 0 && importRows.every(r => r.selected)}
+                          onChange={e => {
+                            const val = e.target.checked;
+                            setImportRows(prev => prev.map(r => ({ ...r, selected: val })));
+                          }}
+                          className="w-4 h-4 rounded border-white/10 bg-black/40 text-[#0052FF] cursor-pointer"
+                        />
+                      </th>
                       <th className="px-3 py-3 w-12 text-center">Arte</th>
                       <th className="px-3 py-3">Nombre / Set</th>
                       <th className="px-3 py-3 w-28">Precio (CLP)</th>
@@ -2101,7 +2114,15 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                   </thead>
                   <tbody>
                     {importRows.map((row, idx) => (
-                      <tr key={row.id} className="border-b border-white/5 hover:bg-white/2 transition-colors">
+                      <tr key={row.id} className={`border-b border-white/5 hover:bg-white/2 transition-colors ${!row.selected ? 'opacity-40' : ''}`}>
+                        <td className="px-3 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={!!row.selected}
+                            onChange={e => handleRowChange(row.id, 'selected', e.target.checked)}
+                            className="w-4 h-4 rounded border-white/10 bg-black/40 text-[#0052FF] cursor-pointer"
+                          />
+                        </td>
                         <td className="px-3 py-3 text-center">
                           {row.image ? (
                             <img src={row.image} alt={row.name} className="w-8 h-10 object-contain rounded border border-white/10 bg-slate-900" />
@@ -2206,10 +2227,10 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                   <button
                     type="button"
                     onClick={handlePublish}
-                    disabled={importRows.filter(r => r.status === 'success').length === 0}
+                    disabled={importRows.filter(r => r.status === 'success' && r.selected).length === 0}
                     className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-all shadow-lg shadow-emerald-900/30 disabled:opacity-50"
                   >
-                    Publicar {importRows.filter(r => r.status === 'success').length} cartas
+                    Publicar {importRows.filter(r => r.status === 'success' && r.selected).length} cartas
                   </button>
                 </div>
               </div>
@@ -2232,69 +2253,117 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
           <div className="relative z-10 bg-[#0f1117] border border-white/10 rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-6 shadow-2xl">
             <h3 className="text-base font-bold text-white mb-4">Configurar Carta Manualmente</h3>
             <form onSubmit={handleSaveManual} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Nombre"><input className={inputCls} required value={manualForm.name} onChange={e => setManualForm({ ...manualForm, name: e.target.value })} /></Field>
-                <Field label="Expansión / Set"><input className={inputCls} required value={manualForm.set} onChange={e => setManualForm({ ...manualForm, set: e.target.value })} /></Field>
-              </div>
+              <Field label="Nombre">
+                <input className={inputCls} required value={manualForm.name} onChange={e => setManualForm({ ...manualForm, name: e.target.value })} placeholder="Ej: Charizard ex" />
+              </Field>
 
               <div className="grid grid-cols-3 gap-3">
-                <Field label="Código Set"><input className={inputCls} required value={manualForm.setCode} onChange={e => setManualForm({ ...manualForm, setCode: e.target.value })} /></Field>
-                <Field label="Número"><input className={inputCls} required value={manualForm.number} onChange={e => setManualForm({ ...manualForm, number: e.target.value })} /></Field>
-                <Field label="Rareza">
-                  <select className={selectCls} value={manualForm.rarity} onChange={e => setManualForm({ ...manualForm, rarity: e.target.value })}>
-                    {RARITIES.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </Field>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Precio (CLP)"><input type="number" className={inputCls} required value={manualForm.price} onChange={e => setManualForm({ ...manualForm, price: parseInt(e.target.value) || 0 })} /></Field>
-                <Field label="Stock"><input type="number" className={inputCls} required value={manualForm.stock} onChange={e => setManualForm({ ...manualForm, stock: parseInt(e.target.value) || 1 })} /></Field>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Condición">
-                  <select className={selectCls} value={manualForm.condition} onChange={e => setManualForm({ ...manualForm, condition: e.target.value })}>
-                    {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </Field>
                 <Field label="Idioma">
                   <select className={selectCls} value={manualForm.idioma} onChange={e => setManualForm({ ...manualForm, idioma: e.target.value })}>
                     {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
                 </Field>
+                <Field label="Era / Set">
+                  <input
+                    className={inputCls}
+                    required
+                    value={manualForm.set}
+                    onChange={e => setManualForm({ ...manualForm, set: e.target.value })}
+                    placeholder="Ej: Escarlata y Púrpura"
+                    list="manual-eras-list"
+                  />
+                  <datalist id="manual-eras-list">
+                    {['Escarlata y Púrpura','Espada y Escudo','SM - Sol y Luna','XY','Black & White','Otras'].map(e => (
+                      <option key={e} value={e} />
+                    ))}
+                  </datalist>
+                </Field>
+                <Field label="Código de Set">
+                  <input className={inputCls} required value={manualForm.setCode} onChange={e => setManualForm({ ...manualForm, setCode: e.target.value.toUpperCase() })} placeholder="Ej: SV4F" />
+                </Field>
               </div>
 
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
-                  <input type="checkbox" checked={manualForm.is_reverse} onChange={e => setManualForm({ ...manualForm, is_reverse: e.target.checked })} className="w-4 h-4 rounded border-white/10 bg-black/40 text-[#0052FF]" />
-                  Reverso (Reverse)
-                </label>
-                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
-                  <input type="checkbox" checked={manualForm.is_league} onChange={e => setManualForm({ ...manualForm, is_league: e.target.checked })} className="w-4 h-4 rounded border-white/10 bg-black/40 text-[#0052FF]" />
-                  De Liga (League Badge)
-                </label>
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="Número">
+                  <input className={inputCls} required value={manualForm.number} onChange={e => setManualForm({ ...manualForm, number: e.target.value })} placeholder="Ej: 18" />
+                </Field>
+                <Field label="Rareza">
+                  <select className={selectCls} value={manualForm.rarity} onChange={e => setManualForm({ ...manualForm, rarity: e.target.value })}>
+                    {RARITIES.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </Field>
+                <Field label="Condición">
+                  <select className={selectCls} value={manualForm.condition} onChange={e => setManualForm({ ...manualForm, condition: e.target.value })}>
+                    {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </Field>
               </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="Stock (Cantidad)">
+                  <input type="number" className={inputCls} required min="0" value={manualForm.stock} onChange={e => setManualForm({ ...manualForm, stock: parseInt(e.target.value) || 0 })} placeholder="Ej: 1" />
+                </Field>
+                <div className="flex flex-col justify-end">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none pb-2.5">
+                    <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 ${manualForm.is_reverse ? 'bg-amber-500' : 'bg-slate-600'}`} onClick={() => setManualForm({ ...manualForm, is_reverse: !manualForm.is_reverse })}>
+                      <div className={`w-5 h-5 bg-white rounded-full mt-0.5 transition-transform ${manualForm.is_reverse ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
+                    </div>
+                    <span className="text-xs font-semibold text-slate-300 whitespace-nowrap">Reverse Holo</span>
+                  </label>
+                </div>
+                <div className="flex flex-col justify-end">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none pb-2.5">
+                    <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 ${manualForm.is_league ? 'bg-rose-500' : 'bg-slate-600'}`} onClick={() => setManualForm({ ...manualForm, is_league: !manualForm.is_league })}>
+                      <div className={`w-5 h-5 bg-white rounded-full mt-0.5 transition-transform ${manualForm.is_league ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
+                    </div>
+                    <span className="text-xs font-semibold text-slate-300 whitespace-nowrap">Carta de Liga</span>
+                  </label>
+                </div>
+              </div>
+
+              <Field label="Precio (CLP)">
+                <input type="number" className={inputCls} required min="0" value={manualForm.price} onChange={e => setManualForm({ ...manualForm, price: parseInt(e.target.value) || 0 })} placeholder="Ej: 89990" />
+              </Field>
 
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <Field label="Arte Oficial">
                   <div className="flex gap-2">
                     <input className={inputCls} placeholder="https://..." value={manualForm.image} onChange={e => setManualForm({ ...manualForm, image: e.target.value })} />
-                    <label className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl border border-white/10 flex items-center justify-center cursor-pointer whitespace-nowrap">
+                    <label className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer border bg-slate-800 border-white/10 hover:bg-slate-700 text-slate-300">
                       Subir
                       <input type="file" accept="image/*" className="hidden" onChange={e => handleManualFormPhotoUpload(e, 'image')} />
                     </label>
                   </div>
                 </Field>
-                <Field label="Foto Real (Opcional)">
+                <Field label="📸 Foto Real (Opcional)">
                   <div className="flex gap-2">
-                    <input className={inputCls} placeholder="https://..." value={manualForm.real_photo} onChange={e => setManualForm({ ...manualForm, real_photo: e.target.value })} />
-                    <label className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold rounded-xl border border-white/10 flex items-center justify-center cursor-pointer whitespace-nowrap">
+                    <input
+                      className={inputCls}
+                      placeholder="Pega URL o sube archivo →"
+                      value={manualForm.real_photo || ''}
+                      onChange={e => setManualForm({ ...manualForm, real_photo: e.target.value })}
+                    />
+                    <label className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer border bg-green-600/20 border-green-500/40 text-green-400 hover:bg-green-600/30">
                       Subir
                       <input type="file" accept="image/*" className="hidden" onChange={e => handleManualFormPhotoUpload(e, 'real_photo')} />
                     </label>
                   </div>
                 </Field>
+              </div>
+
+              <div className="flex gap-4 justify-center">
+                {manualForm.image && (
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Arte Oficial</span>
+                    <img src={manualForm.image} alt="preview" className="w-16 h-22 object-contain rounded-lg border border-white/10" />
+                  </div>
+                )}
+                {manualForm.real_photo && (
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Foto Real</span>
+                    <img src={manualForm.real_photo} alt="preview real" className="w-16 h-22 object-cover rounded-lg border-2 border-green-500/40 shadow-md" />
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-4">
