@@ -207,15 +207,19 @@ function LeagueBadge({ className = "" }) {
   );
 }
 
-// Eras de Stock Físico
-const ERAS = [
+// Rarezas de Stock Físico
+const RARITIES = [
   { id: 'Todas', name: 'Todas' },
-  { id: 'Escarlata y Púrpura', name: 'Escarlata y Púrpura' },
-  { id: 'Espada y Escudo', name: 'Espada y Escudo' },
-  { id: 'SM - Sol y Luna', name: 'SM - Sol y Luna' },
-  { id: 'XY', name: 'XY' },
-  { id: 'Black & White', name: 'Black & White' },
-  { id: 'Otras', name: 'Otras' }
+  { id: 'Común', name: 'Común' },
+  { id: 'Poco Común', name: 'Poco Común' },
+  { id: 'Rara', name: 'Rara' },
+  { id: 'Doble Rara', name: 'Doble Rara' },
+  { id: 'Ultra Rara', name: 'Ultra Rara' },
+  { id: 'Ilustración Rara', name: 'Ilustración Rara' },
+  { id: 'Especial Ilustración Rara', name: 'Especial Ilustración Rara' },
+  { id: 'Ultra Rara Secreta', name: 'Ultra Rara Secreta' },
+  { id: 'Secreta Dorada', name: 'Secreta Dorada' },
+  { id: 'Hyper Rara', name: 'Hyper Rara' }
 ];
 
 // Placeholder cards para el carrusel cuando la DB aún carga
@@ -416,8 +420,14 @@ export default function App() {
   // Search & Catalog Filter States (Stock)
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300); // 300ms de retraso inteligente
-  const [selectedEra, setSelectedEra] = useState('Todas');
+  const [selectedRarity, setSelectedRarity] = useState('Todas');
   const [sortBy, setSortBy] = useState('default');
+  const [cardPage, setCardPage] = useState(1);
+
+  // Reset card page when filters or sorting changes
+  useEffect(() => {
+    setCardPage(1);
+  }, [debouncedSearchQuery, selectedRarity, sortBy]);
 
   // Sistema de Noticias
   const [newsList, setNewsList] = useState([]);
@@ -1012,19 +1022,61 @@ export default function App() {
     window.open(`https://instagram.com/cardpoint.cl`, '_blank');
   };
 
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      
+      let start = Math.max(2, cardPage - 1);
+      let end = Math.min(totalPages - 1, cardPage + 1);
+      
+      if (cardPage <= 2) {
+        end = 4;
+      } else if (cardPage >= totalPages - 1) {
+        start = totalPages - 3;
+      }
+      
+      if (start > 2) {
+        pages.push('...');
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      
+      if (end < totalPages - 1) {
+        pages.push('...');
+      }
+      
+      pages.push(totalPages);
+    }
+    return pages;
+  };
+
   const filteredCards = useMemo(() => {
     return catalogCards.filter(card => {
       const matchesSearch = card.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) || 
                             card.set.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
-      const matchesEra = selectedEra === 'Todas' || card.set === selectedEra;
-      return matchesSearch && matchesEra;
+      const matchesRarity = selectedRarity === 'Todas' || (card.rarity && card.rarity.trim().toLowerCase() === selectedRarity.trim().toLowerCase());
+      return matchesSearch && matchesRarity;
     }).sort((a, b) => {
       if (sortBy === 'price-low') return a.price - b.price;
       if (sortBy === 'price-high') return b.price - a.price;
       if (sortBy === 'name') return a.name.localeCompare(b.name);
       return 0;
     });
-  }, [catalogCards, debouncedSearchQuery, selectedEra, sortBy]);
+  }, [catalogCards, debouncedSearchQuery, selectedRarity, sortBy]);
+
+  const cardsPerPage = 12;
+  const totalPages = Math.ceil(filteredCards.length / cardsPerPage);
+  
+  const paginatedCards = useMemo(() => {
+    const start = (cardPage - 1) * cardsPerPage;
+    return filteredCards.slice(start, start + cardsPerPage);
+  }, [filteredCards, cardPage]);
 
   const totalInquiryValue = inquiryList.reduce((sum, item) => sum + item.price, 0);
 
@@ -1099,7 +1151,7 @@ export default function App() {
           <div className="flex items-center justify-between h-24">
             
             {/* Logo Corporativo */}
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setCurrentTab('home'); setSelectedEra('Todas'); setSelectedNews(null); }}>
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setCurrentTab('home'); setSelectedRarity('Todas'); setSelectedNews(null); }}>
               <CardpointLogo className="scale-90 origin-left" showText={true} />
             </div>
 
@@ -1339,7 +1391,7 @@ export default function App() {
                 </div>
                 
                 <button
-                  onClick={() => { setCurrentTab('catalog'); setSelectedEra('Todas'); }}
+                  onClick={() => { setCurrentTab('catalog'); setSelectedRarity('Todas'); }}
                   className="text-sm font-bold text-[#0052FF] hover:text-blue-700 ml-2 cursor-pointer"
                 >
                   Ver stock completo
@@ -1712,19 +1764,19 @@ export default function App() {
               </div>
             </div>
 
-            {/* Filtro de Eras (Desplazable horizontalmente en móvil, limpio) */}
+            {/* Filtro de Rarezas (Desplazable horizontalmente en móvil, limpio) */}
             <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
-              {ERAS.map((era) => (
+              {RARITIES.map((rarity) => (
                 <button
-                  key={era.id}
-                  onClick={() => setSelectedEra(era.id)}
+                  key={rarity.id}
+                  onClick={() => setSelectedRarity(rarity.id)}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                    selectedEra === era.id
+                    selectedRarity === rarity.id
                       ? 'bg-[#0052FF] text-white shadow-md shadow-blue-500/10'
                       : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:border-[#0052FF]'
                   }`}
                 >
-                  {era.name}
+                  {rarity.name}
                 </button>
               ))}
             </div>
@@ -1745,101 +1797,147 @@ export default function App() {
                 ))}
               </div>
             ) : filteredCards.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-                
-                {/* Renderizado de cartas e inserción de anuncio publicitario tipo tarjeta cada 4 cartas */}
-                {filteredCards.map((card, index) => {
-                  const isInList = inquiryList.some(item => item.id === card.id);
-                  const isAdPosition = index === 3; // Mostrar publicidad en la 4ta tarjeta para monetización elegante
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                  
+                  {/* Renderizado de cartas e inserción de anuncio publicitario tipo tarjeta cada 4 cartas */}
+                  {paginatedCards.map((card, index) => {
+                    const isInList = inquiryList.some(item => item.id === card.id);
+                    const isAdPosition = index === 3; // Mostrar publicidad en la 4ta tarjeta para monetización elegante
 
-                  return (
-                    <React.Fragment key={card.id}>
-                      {isAdPosition && (
-                        <GoogleAdSlot format="card" className="col-span-1" />
-                      )}
-                      
-                      <div 
-                        className="rounded-2xl border overflow-hidden flex flex-col justify-between transition-all hover:shadow-xl hover:-translate-y-0.5 bg-white dark:bg-[#121824] border-slate-200 dark:border-slate-800"
-                      >
+                    return (
+                      <React.Fragment key={card.id}>
+                        {isAdPosition && (
+                          <GoogleAdSlot format="card" className="col-span-1" />
+                        )}
+                        
                         <div 
-                          className="relative aspect-[3/4] bg-slate-50 dark:bg-slate-950 overflow-hidden cursor-pointer" 
-                          onClick={() => setSelectedCardDetail(card)}
+                          className="rounded-2xl border overflow-hidden flex flex-col justify-between transition-all hover:shadow-xl hover:-translate-y-0.5 bg-white dark:bg-[#121824] border-slate-200 dark:border-slate-800"
                         >
-                          <img 
-                            src={card.image} 
-                            alt={card.name} 
-                            loading="lazy"
-                            loading="lazy"
-                            decoding="async"
-                            className="w-full h-full object-contain p-3 sm:p-4 transform hover:scale-105 transition-transform duration-300"
-                          />
-                          <span className="absolute bottom-2 right-2 bg-[#0052FF] text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">
-                            {card.condition}
-                          </span>
-                          <span className="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow uppercase">
-                            {card.idioma || 'ES'}
-                          </span>
-                          {card.is_reverse && (
-                            <span className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wide border border-white/20">
-                              REVERSE
+                          <div 
+                            className="relative aspect-[3/4] bg-slate-50 dark:bg-slate-950 overflow-hidden cursor-pointer" 
+                            onClick={() => setSelectedCardDetail(card)}
+                          >
+                            <img 
+                              src={card.image} 
+                              alt={card.name} 
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-contain p-3 sm:p-4 transform hover:scale-105 transition-transform duration-300"
+                            />
+                            <span className="absolute bottom-2 right-2 bg-[#0052FF] text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">
+                              {card.condition}
                             </span>
-                          )}
-                          {card.is_league && (
-                            <LeagueBadge className="absolute top-2 left-2" />
-                          )}
-                        </div>
-
-                        <div className="p-3 sm:p-4 flex flex-col flex-grow justify-between">
-                          <div>
-                            <h4 
-                              className="font-bold text-xs sm:text-sm text-slate-800 dark:text-white line-clamp-1 hover:text-[#0052FF] transition-colors cursor-pointer"
-                              onClick={() => setSelectedCardDetail(card)}
-                            >
-                              {card.name}
-                            </h4>
-                            <p className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">{card.rarity}</p>
-                            <p className="text-[9px] sm:text-[10px] text-[#0052FF] font-medium">{card.set}</p>
-                          </div>
-                          
-                          <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
-                            <div>
-                              {card.stock === 0 ? (
-                                <span className="font-extrabold text-red-500 text-xs sm:text-sm">AGOTADO</span>
-                              ) : (
-                                <div className="flex flex-col">
-                                  <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm">
-                                    ${card.price.toLocaleString('es-CL')} CLP
-                                  </span>
-                                  {(card.stock || 1) > 1 && <span className="text-[8px] sm:text-[9px] text-slate-400 font-medium tracking-tight">x{card.stock} disp.</span>}
-                                </div>
-                              )}
-                            </div>
-                            {(card.stock !== 0) && (
-                              <button
-                                onClick={() => toggleInquiry(card)}
-                                className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                                  isInList
-                                    ? 'bg-emerald-500 border-emerald-500 text-white'
-                                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                                }`}
-                              >
-                                {isInList ? <Check size={13} className="scale-110" /> : <Plus size={13} className="opacity-60" />}
-                              </button>
+                            <span className="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow uppercase">
+                              {card.idioma || 'ES'}
+                            </span>
+                            {card.is_reverse && (
+                              <span className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wide border border-white/20">
+                                REVERSE
+                              </span>
+                            )}
+                            {card.is_league && (
+                              <LeagueBadge className="absolute top-2 left-2" />
                             )}
                           </div>
+
+                          <div className="p-3 sm:p-4 flex flex-col flex-grow justify-between">
+                            <div>
+                              <h4 
+                                className="font-bold text-xs sm:text-sm text-slate-800 dark:text-white line-clamp-1 hover:text-[#0052FF] transition-colors cursor-pointer"
+                                onClick={() => setSelectedCardDetail(card)}
+                              >
+                                {card.name}
+                              </h4>
+                              <p className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">{card.rarity}</p>
+                              <p className="text-[9px] sm:text-[10px] text-[#0052FF] font-medium">{card.set}</p>
+                            </div>
+                            
+                            <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                              <div>
+                                {card.stock === 0 ? (
+                                  <span className="font-extrabold text-red-500 text-xs sm:text-sm">AGOTADO</span>
+                                ) : (
+                                  <div className="flex flex-col">
+                                    <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm">
+                                      ${card.price.toLocaleString('es-CL')} CLP
+                                    </span>
+                                    {(card.stock || 1) > 1 && <span className="text-[8px] sm:text-[9px] text-slate-400 font-medium tracking-tight">x{card.stock} disp.</span>}
+                                  </div>
+                                )}
+                              </div>
+                              {(card.stock !== 0) && (
+                                <button
+                                  onClick={() => toggleInquiry(card)}
+                                  className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                    isInList
+                                      ? 'bg-emerald-500 border-emerald-500 text-white'
+                                      : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                  }`}
+                                >
+                                  {isInList ? <Check size={13} className="scale-110" /> : <Plus size={13} className="opacity-60" />}
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
-              </div>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+
+                {/* Controles de Paginación */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-2 mt-8 sm:mt-10 pt-6 border-t border-slate-100 dark:border-slate-850">
+                    <button
+                      onClick={() => setCardPage(prev => Math.max(1, prev - 1))}
+                      disabled={cardPage === 1}
+                      className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121824] text-slate-650 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[#0052FF] transition-all cursor-pointer"
+                      aria-label="Página anterior"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    
+                    <div className="flex items-center gap-1.5">
+                      {getPageNumbers().map((p, idx) => (
+                        p === '...' ? (
+                          <span key={`dots-${idx}`} className="px-2 text-slate-400 dark:text-slate-600 text-xs select-none">
+                            ...
+                          </span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => setCardPage(p)}
+                            className={`min-w-[36px] h-9 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              cardPage === p
+                                ? 'bg-[#0052FF] text-white shadow-md shadow-blue-500/10'
+                                : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:border-[#0052FF]'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        )
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => setCardPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={cardPage === totalPages}
+                      className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121824] text-slate-650 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[#0052FF] transition-all cursor-pointer"
+                      aria-label="Página siguiente"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-16 bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 rounded-3xl">
                 <HelpCircle size={40} className="mx-auto text-slate-400 mb-3" />
                 <h3 className="font-bold text-slate-900 dark:text-white">No encontramos cartas</h3>
-                <p className="text-xs text-slate-400 mt-1">Prueba cambiando tu búsqueda o seleccionando otra era.</p>
+                <p className="text-xs text-slate-400 mt-1">Prueba cambiando tu búsqueda o seleccionando otra rareza.</p>
                 <button
-                  onClick={() => { setSearchQuery(''); setSelectedEra('Todas'); }}
+                  onClick={() => { setSearchQuery(''); setSelectedRarity('Todas'); }}
                   className="mt-4 px-4 py-2 bg-[#0052FF] text-white text-xs font-bold rounded-xl cursor-pointer"
                 >
                   Restaurar Filtros

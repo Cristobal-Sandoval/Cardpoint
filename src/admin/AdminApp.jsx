@@ -159,7 +159,7 @@ function AdminCards({ toast }) {
     const timeout = setTimeout(() => controller.abort(), 10000);
     try {
       const res = await fetch(
-        `https://api.pokemontcg.io/v2/cards?q=name:"${form.name}"&pageSize=20`,
+        `https://api.pokemontcg.io/v2/cards?q=name:"${form.name}"&pageSize=250`,
         { signal: controller.signal }
       );
       clearTimeout(timeout);
@@ -405,10 +405,10 @@ function AdminCards({ toast }) {
                 </button>
               </div>
               {apiResults.length > 0 && (
-                <div className="mt-2 p-3 bg-black/40 rounded-xl border border-white/10 max-h-[240px] overflow-y-auto grid grid-cols-4 gap-2 shadow-inner">
+                <div className="mt-2 p-3 bg-black/40 rounded-xl border border-white/10 max-h-[300px] overflow-y-auto grid grid-cols-4 gap-2 shadow-inner">
                   {apiResults.map(res => (
                     <div key={res.id} onClick={() => selectApiResult(res)} className="cursor-pointer hover:scale-105 transition-transform relative group">
-                      <img src={res.images?.small} alt={res.name} className="w-full rounded-lg shadow-md border border-white/5" />
+                      <img src={res.images?.small} alt={res.name} loading="lazy" className="w-full rounded-lg shadow-md border border-white/5" />
                       <div className="absolute inset-0 bg-[#0052FF]/20 opacity-0 group-hover:opacity-100 rounded-lg transition-opacity flex items-center justify-center">
                         <IcoCheck />
                       </div>
