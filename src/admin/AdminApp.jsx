@@ -1652,6 +1652,17 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
         else idioma = parts[6].trim();
       }
       
+      // Detect flags in optional fields (reverse / liga)
+      let is_reverse = false;
+      let is_league = false;
+      for (let j = 3; j < parts.length; j++) {
+        if (parts[j]) {
+          const val = parts[j].toLowerCase().trim();
+          if (val === 'reverse' || val === 'rev') is_reverse = true;
+          if (val === 'liga' || val === 'league' || val === 'de liga') is_league = true;
+        }
+      }
+      
       parsed.push({
         id: Math.random().toString(36).substr(2, 9),
         name,
@@ -1661,8 +1672,8 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
         price,
         condition,
         idioma,
-        is_reverse: false,
-        is_league: false,
+        is_reverse,
+        is_league,
         real_photo: '',
         status: 'pending',
         image: '',
@@ -1925,10 +1936,10 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
             <p className="font-bold text-slate-200">💡 Instrucciones de Formato:</p>
             <p>Escribe o pega una lista de cartas, una por línea. El formato requerido es:</p>
             <code className="block bg-black/40 p-2 rounded text-[#0052FF] font-mono select-all">
-              Nombre de Carta | Código de Set | Número de Carta | Cantidad (opcional) | Precio (opcional) | Estado (opcional) | Idioma (opcional)
+              Nombre de Carta | Código de Set | Número de Carta | Cantidad (opcional) | Precio (opcional) | Estado (opcional) | Idioma (opcional) | Reverso (opcional) | Liga (opcional)
             </code>
             <p className="mt-2 text-[10px]">Ejemplo: <strong className="text-white">Mega Gengar Ex | xy4es | 35 | 1 | 60000 | NM</strong> (detecta Español por el sufijo <strong className="text-[#0052FF]">es</strong> en el set)</p>
-            <p className="text-[10px]">O de forma explícita: <strong className="text-white">Mega Gengar Ex | xy4 | 35 | 1 | 60000 | NM | Español</strong></p>
+            <p className="text-[10px]">O de forma explícita con banderas: <strong className="text-white">Mega Gengar Ex | xy4 | 35 | 1 | 60000 | NM | Español | reverse | liga</strong></p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
