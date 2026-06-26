@@ -634,7 +634,7 @@ function AdminNews({ toast }) {
   
   const { adminSettings, updateSetting } = useAdmin();
   const hiddenNewsIds = adminSettings?.hidden_news || [];
-  const newsSources = adminSettings?.news_sources || { pokemon: true, pokemonalpha: true, tcgnews: true, autogenerate: true };
+  const newsSources = adminSettings?.news_sources || { pokemon: true, tcgnews: true, autogenerate: true };
   const { autoNews, loadingAuto } = useAutoNews(newsSources);
 
   const handleToggleSource = async (key) => {
