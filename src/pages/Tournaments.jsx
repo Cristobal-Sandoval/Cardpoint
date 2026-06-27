@@ -44,18 +44,11 @@ export default function Tournaments({
         ) : displayTournaments.length === 0 ? (
           <p className="text-slate-450 col-span-3 text-center py-8">No hay torneos programados por el momento.</p>
         ) : (
-          displayTournaments.map((t, idx) => (
+          displayTournaments.map((t) => (
             <div 
               key={t.id}
-              className={`flex flex-col justify-between p-6 rounded-3xl border transition-all hover:shadow-xl bg-white dark:bg-[#121824] ${
-                idx === 1 ? 'border-[#0052FF]/60 dark:border-[#0052FF]/50 relative animate-pulse-subtle' : 'border-slate-200 dark:border-slate-800'
-              }`}
+              className="flex flex-col justify-between p-6 rounded-3xl border border-slate-200 dark:border-slate-800 transition-all hover:shadow-xl bg-white dark:bg-[#121824]"
             >
-              {idx === 1 && (
-                <span className="absolute -top-3 left-6 bg-[#0052FF] text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shadow">
-                  Copa Oficial
-                </span>
-              )}
 
               <div className="space-y-4">
                 <div className="flex items-center gap-4">

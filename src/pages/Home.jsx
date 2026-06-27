@@ -517,7 +517,18 @@ export default function Home({
 
                   <div className="flex-grow space-y-1">
                     <div className="flex items-center justify-between gap-2">
-                      <h4 className="font-bold text-sm text-slate-900 dark:text-white line-clamp-1">{t.title}</h4>
+                      {t.registration_link ? (
+                        <a 
+                          href={t.registration_link}
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="font-bold text-sm text-slate-900 dark:text-white line-clamp-1 hover:text-[#0052FF] hover:underline transition-all cursor-pointer"
+                        >
+                          {t.title}
+                        </a>
+                      ) : (
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white line-clamp-1">{t.title}</h4>
+                      )}
                       <span className="text-[10px] font-bold text-[#0052FF] bg-blue-50 dark:bg-blue-955/40 px-2 py-0.5 rounded whitespace-nowrap">
                         Inscripción: {t.entry_fee}
                       </span>

@@ -591,6 +591,7 @@ export default function App() {
               dateObj: date,
               dateTime: date.getTime()
             });
+            break;
           }
         }
       } else {
