@@ -329,7 +329,8 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Carga dinámica diferida de Google AdSense (1.5 segundos de retraso para optimizar FCP/LCP)
+  // Carga dinámica diferida de Google AdSense (Deshabilitado temporalmente a petición del usuario)
+  /*
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const timer = setTimeout(() => {
@@ -345,6 +346,7 @@ export default function App() {
     }, 1500);
     return () => clearTimeout(timer);
   }, []);
+  */
 
   useEffect(() => {
     if (activeAds.length <= 1) return;
