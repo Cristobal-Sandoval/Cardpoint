@@ -144,6 +144,7 @@ export default function Home({
                     src={b.imageUrl} 
                     alt="Banner promocional" 
                     className="absolute inset-0 w-full h-full object-cover"
+                    style={{ objectPosition: `center ${b.alignmentY ?? 50}%` }}
                     loading={i === 0 ? "eager" : "lazy"}
                     {...(i === 0 ? { fetchpriority: "high" } : {})}
                   />

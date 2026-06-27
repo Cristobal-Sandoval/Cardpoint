@@ -1314,7 +1314,7 @@ function AdminBanners({ toast }) {
                 </div>
               ) : b.imageUrl && (
                 <div className="mb-4 relative w-full h-32 md:h-48 rounded-xl overflow-hidden border border-white/10 bg-slate-900">
-                  <img src={b.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                  <img src={b.imageUrl} alt="Preview" className="w-full h-full object-cover" style={{ objectPosition: `center ${b.alignmentY ?? 50}%` }} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
                   <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded text-[10px] font-bold text-white uppercase tracking-wider">
                     Vista Previa (Proporción exacta)
@@ -1323,13 +1323,31 @@ function AdminBanners({ toast }) {
               )}
 
               {b.type !== 'ui' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field label="URL de la Imagen">
-                    <input className={inputCls} value={b.imageUrl || ''} onChange={e => updateBanner(b.id, 'imageUrl', e.target.value)} placeholder="https://..." />
-                  </Field>
-                  <Field label="Enlace al hacer clic (Opcional)">
-                    <input className={inputCls} value={b.linkUrl || ''} onChange={e => updateBanner(b.id, 'linkUrl', e.target.value)} placeholder="https://..." />
-                  </Field>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Field label="URL de la Imagen">
+                      <input className={inputCls} value={b.imageUrl || ''} onChange={e => updateBanner(b.id, 'imageUrl', e.target.value)} placeholder="https://..." />
+                    </Field>
+                    <Field label="Enlace al hacer clic (Opcional)">
+                      <input className={inputCls} value={b.linkUrl || ''} onChange={e => updateBanner(b.id, 'linkUrl', e.target.value)} placeholder="https://..." />
+                    </Field>
+                  </div>
+                  {b.imageUrl && (
+                    <Field label={`Alineación Vertical de Imagen: ${b.alignmentY ?? 50}%`}>
+                      <div className="flex items-center gap-4 bg-white/5 p-3.5 rounded-xl border border-white/10">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Arriba</span>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="100" 
+                          value={b.alignmentY ?? 50} 
+                          onChange={e => updateBanner(b.id, 'alignmentY', parseInt(e.target.value))} 
+                          className="flex-grow h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#0052FF]" 
+                        />
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Abajo</span>
+                      </div>
+                    </Field>
+                  )}
                 </div>
               )}
             </div>
