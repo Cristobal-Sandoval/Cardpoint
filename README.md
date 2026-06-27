@@ -1,4 +1,4 @@
-# Cardpoint.cl 🃏 (v1.0.2)
+# Cardpoint.cl 🃏 (v1.0.5)
 
 Plataforma oficial de **Cardpoint Concepción**, una aplicación web moderna diseñada para la exhibición, catalogación y gestión de cartas sueltas (singles) de **Pokémon TCG** en Chile. 
 
@@ -77,3 +77,7 @@ Desarrollado y mantenido para la comunidad chilena de coleccionistas y jugadores
 > [!IMPORTANT]
 > **Canal Oficial de Contacto:**
 > Para resolver cualquier tipo de duda, coordinar compras del catálogo, enviar decklists o realizar consultas comerciales, el **único canal oficial disponible** es nuestro perfil de **[Instagram Oficial @cardpoint.cl](https://www.instagram.com/cardpoint.cl/)**. No se atienden requerimientos por otros medios.
+
+---
+
+*Este proyecto fue desarrollado íntegramente por **CardPoint**.*
