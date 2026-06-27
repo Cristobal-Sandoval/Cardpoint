@@ -22,8 +22,7 @@ import {
   Layers,
   Sparkles,
   BookOpen,
-  MapPin,
-  Database as DatabaseIcon
+  MapPin
 } from 'lucide-react';
 
 import CardpointLogo from './components/CardpointLogo';
@@ -35,7 +34,6 @@ const Home = lazy(() => import('./pages/Home'));
 const Catalog = lazy(() => import('./pages/Catalog'));
 const News = lazy(() => import('./pages/News'));
 const Tournaments = lazy(() => import('./pages/Tournaments'));
-const Database = lazy(() => import('./pages/Database'));
 const HowToBuy = lazy(() => import('./pages/HowToBuy'));
 
 // SVG de Icono de Instagram
@@ -1019,7 +1017,6 @@ export default function App() {
                 { id: 'catalog', label: 'En Stock' },
                 { id: 'news', label: 'Noticias' },
                 { id: 'tournaments', label: 'Torneos' },
-                { id: 'database', label: 'Buscador' },
                 { id: 'how-to-buy', label: 'Nosotros' }
               ].map((item) => {
                 const isActive = currentTab === item.id && !selectedNews;
@@ -1095,8 +1092,7 @@ export default function App() {
           { id: 'home', label: 'Inicio', icon: Sparkles },
           { id: 'catalog', label: 'Stock', icon: Layers },
           { id: 'news', label: 'Noticias', icon: BookOpen },
-          { id: 'tournaments', label: 'Torneos', icon: MapPin },
-          { id: 'database', label: 'Buscar', icon: DatabaseIcon }
+          { id: 'tournaments', label: 'Torneos', icon: MapPin }
         ].map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
@@ -1206,23 +1202,6 @@ export default function App() {
             />
           )}
 
-          {currentTab === 'database' && (
-            <Database 
-              theme={theme}
-              dbSearch={dbSearch}
-              setDbSearch={setDbSearch}
-              dbCardsList={dbCardsList}
-              dbLoading={dbLoading}
-              dbError={dbError}
-              dbPage={dbPage}
-              setDbPage={setDbPage}
-              setSelectedCardDetail={setSelectedCardDetail}
-              inquiryList={inquiryList}
-              toggleInquiry={toggleInquiry}
-              storeStockCards={dbCards}
-              refetch={() => fetchDBCards(dbSearch, dbPage)}
-            />
-          )}
 
           {currentTab === 'how-to-buy' && (
             <HowToBuy theme={theme} />
