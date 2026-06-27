@@ -5,6 +5,7 @@ import {
   ChevronRight, 
   ChevronLeft 
 } from 'lucide-react';
+import GoogleAdSlot from '../components/GoogleAdSlot';
 
 export default function News({
   theme,
@@ -66,12 +67,7 @@ export default function News({
           )}
           
           {/* Espacio para publicidad AdSense en el detalle */}
-          <div className="w-full bg-slate-50 dark:bg-[#0a0f18] border border-slate-200 dark:border-slate-800/50 rounded-xl p-4 my-8 flex flex-col items-center justify-center text-slate-400 dark:text-slate-550 text-xs shadow-inner">
-            <span className="mb-2 uppercase tracking-widest font-bold text-[10px] opacity-70">Publicidad</span>
-            <div className="w-full max-w-[728px] h-[90px] border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-lg flex items-center justify-center">
-              Espacio para Google AdSense (728x90)
-            </div>
-          </div>
+          <GoogleAdSlot format="horizontal" className="my-8" />
             
           {selectedNews.isExternal && (
             <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end text-xs text-slate-450 dark:text-slate-500">
@@ -97,12 +93,7 @@ export default function News({
           </div>
 
           {/* Espacio para publicidad AdSense en listado de noticias */}
-          <div className="w-full bg-slate-50 dark:bg-[#0a0f18] border border-slate-200 dark:border-slate-800/50 rounded-xl p-4 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-xs shadow-inner">
-            <span className="mb-2 uppercase tracking-widest font-bold text-[10px] opacity-70">Publicidad Patrocinada</span>
-            <div className="w-full max-w-[728px] h-[90px] border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-lg flex items-center justify-center">
-              Espacio reservado para banner Google AdSense (Horizontal)
-            </div>
-          </div>
+          <GoogleAdSlot format="horizontal" className="mb-8" />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {newsLoading ? (
