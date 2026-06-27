@@ -671,6 +671,41 @@ function AdminNews({ toast }) {
 
   useEffect(() => { load(); }, []);
 
+  const [cleaned, setCleaned] = useState(false);
+
+  useEffect(() => {
+    if (adminSettings && Object.keys(adminSettings).length > 0 && !cleaned) {
+      const cleanOldNews = async () => {
+        try {
+          const sixMonthsAgo = new Date();
+          sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+          const isoString = sixMonthsAgo.toISOString();
+
+          const { data: oldNews } = await supabase
+            .from('news')
+            .select('id')
+            .lt('created_at', isoString);
+
+          if (oldNews && oldNews.length > 0) {
+            const idsToDelete = oldNews
+              .map(n => n.id)
+              .filter(id => !pinnedNewsIds.includes(id));
+
+            if (idsToDelete.length > 0) {
+              await supabase.from('news').delete().in('id', idsToDelete);
+              console.log(`Auto-limpieza de noticias: ${idsToDelete.length} eliminadas.`);
+              load();
+            }
+          }
+          setCleaned(true);
+        } catch (err) {
+          console.warn("Auto-limpieza de noticias falló:", err);
+        }
+      };
+      cleanOldNews();
+    }
+  }, [adminSettings, pinnedNewsIds, cleaned]);
+
   const openAdd = () => { setForm({...emptyForm, date: today()}); setEditingItem(null); setShowForm(true); };
   const openEdit = (item) => {
     setForm({
