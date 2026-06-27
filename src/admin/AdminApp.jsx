@@ -1062,10 +1062,17 @@ function AdminTournaments({ toast }) {
     e.preventDefault();
     setSaving(true);
     let error;
+    
+    // Convertir specific_date vacía en null para evitar error de sintaxis de fecha en Postgres
+    const payload = { ...form };
+    if (!payload.specific_date || payload.specific_date.trim() === '') {
+      payload.specific_date = null;
+    }
+
     if (editingItem) {
-      ({ error } = await supabase.from('tournaments').update(form).eq('id', editingItem.id));
+      ({ error } = await supabase.from('tournaments').update(payload).eq('id', editingItem.id));
     } else {
-      ({ error } = await supabase.from('tournaments').insert([form]));
+      ({ error } = await supabase.from('tournaments').insert([payload]));
     }
     setSaving(false);
     if (error) { toast('Error: ' + error.message, 'error'); return; }
