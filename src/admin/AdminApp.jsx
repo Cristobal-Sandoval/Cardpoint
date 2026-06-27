@@ -1317,7 +1317,11 @@ function AdminBanners({ toast }) {
                   <img src={b.imageUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: `center ${b.alignmentY ?? 50}%` }} />
                   <div className={`absolute inset-0 pointer-events-none ${
                     (b.title || b.subtitle) 
-                      ? 'bg-gradient-to-r from-black/85 via-black/50 to-transparent' 
+                      ? b.alignmentX === 'right'
+                        ? 'bg-gradient-to-l from-black/85 via-black/55 to-transparent'
+                        : b.alignmentX === 'center'
+                          ? 'bg-black/55'
+                          : 'bg-gradient-to-r from-black/85 via-black/55 to-transparent' 
                       : 'bg-gradient-to-t from-black/40 via-transparent to-transparent'
                   }`} />
                   <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded text-[8px] font-bold text-white uppercase tracking-wider z-20">
@@ -1326,7 +1330,13 @@ function AdminBanners({ toast }) {
 
                   {/* Texto superpuesto en la vista previa del administrador */}
                   {(b.title || b.subtitle || b.badge) && (
-                    <div className="relative z-10 px-6 max-w-sm space-y-1">
+                    <div className={`relative z-10 px-6 w-full space-y-1 ${
+                      b.alignmentX === 'right' 
+                        ? 'text-right pr-6 pl-12 flex flex-col items-end' 
+                        : b.alignmentX === 'center' 
+                          ? 'text-center px-12 flex flex-col items-center' 
+                          : 'text-left pl-6 pr-12 flex flex-col items-start'
+                    }`}>
                       {b.badge && (
                         <div className="inline-block px-1.5 py-0.5 bg-[#0052FF]/20 border border-[#0052FF]/30 text-[#4d8aff] text-[7px] md:text-[8px] font-black uppercase rounded">
                           {b.badge}
@@ -1338,7 +1348,7 @@ function AdminBanners({ toast }) {
                         </div>
                       )}
                       {b.subtitle && (
-                        <div className="text-slate-300 text-[8px] md:text-[9px] line-clamp-2 leading-tight drop-shadow">
+                        <div className="text-slate-300 text-[8px] md:text-[9px] line-clamp-2 leading-tight drop-shadow max-w-[200px]">
                           {b.subtitle}
                         </div>
                       )}
@@ -1361,7 +1371,7 @@ function AdminBanners({ toast }) {
                   {b.imageUrl && (
                     <div className="bg-white/3 p-4 rounded-xl border border-white/8 space-y-4">
                       <div className="font-bold text-white text-[10px] sm:text-xs uppercase tracking-wider">Superposición de Texto (Opcional)</div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                         <Field label="Etiqueta / Badge (Ej: ¡OFERTA!)">
                           <input className={inputCls} value={b.badge || ''} onChange={e => updateBanner(b.id, 'badge', e.target.value)} placeholder="Ej: ¡Nuevo Set!" />
                         </Field>
@@ -1370,6 +1380,13 @@ function AdminBanners({ toast }) {
                         </Field>
                         <Field label="Subtítulo / Descripción Corta">
                           <input className={inputCls} value={b.subtitle || ''} onChange={e => updateBanner(b.id, 'subtitle', e.target.value)} placeholder="Ej: Asegura tu display al mejor precio." />
+                        </Field>
+                        <Field label="Alineación Horizontal">
+                          <select className={selectCls} value={b.alignmentX || 'left'} onChange={e => updateBanner(b.id, 'alignmentX', e.target.value)}>
+                            <option value="left">Izquierda</option>
+                            <option value="center">Centrado</option>
+                            <option value="right">Derecha</option>
+                          </select>
                         </Field>
                       </div>
                     </div>
