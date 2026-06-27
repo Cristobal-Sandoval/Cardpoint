@@ -1313,12 +1313,37 @@ function AdminBanners({ toast }) {
                   </div>
                 </div>
               ) : b.imageUrl && (
-                <div className="mb-4 relative w-full h-32 md:h-48 rounded-xl overflow-hidden border border-white/10 bg-slate-900">
-                  <img src={b.imageUrl} alt="Preview" className="w-full h-full object-cover" style={{ objectPosition: `center ${b.alignmentY ?? 50}%` }} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-                  <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded text-[10px] font-bold text-white uppercase tracking-wider">
-                    Vista Previa (Proporción exacta)
+                <div className="mb-4 relative w-full h-32 md:h-48 rounded-xl overflow-hidden border border-white/10 bg-slate-900 flex items-center">
+                  <img src={b.imageUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: `center ${b.alignmentY ?? 50}%` }} />
+                  <div className={`absolute inset-0 pointer-events-none ${
+                    (b.title || b.subtitle) 
+                      ? 'bg-gradient-to-r from-black/85 via-black/50 to-transparent' 
+                      : 'bg-gradient-to-t from-black/40 via-transparent to-transparent'
+                  }`} />
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded text-[8px] font-bold text-white uppercase tracking-wider z-20">
+                    Vista Previa
                   </div>
+
+                  {/* Texto superpuesto en la vista previa del administrador */}
+                  {(b.title || b.subtitle || b.badge) && (
+                    <div className="relative z-10 px-6 max-w-sm space-y-1">
+                      {b.badge && (
+                        <div className="inline-block px-1.5 py-0.5 bg-[#0052FF]/20 border border-[#0052FF]/30 text-[#4d8aff] text-[7px] md:text-[8px] font-black uppercase rounded">
+                          {b.badge}
+                        </div>
+                      )}
+                      {b.title && (
+                        <div className="text-white font-black text-xs md:text-sm leading-tight drop-shadow">
+                          {b.title}
+                        </div>
+                      )}
+                      {b.subtitle && (
+                        <div className="text-slate-300 text-[8px] md:text-[9px] line-clamp-2 leading-tight drop-shadow">
+                          {b.subtitle}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1332,6 +1357,24 @@ function AdminBanners({ toast }) {
                       <input className={inputCls} value={b.linkUrl || ''} onChange={e => updateBanner(b.id, 'linkUrl', e.target.value)} placeholder="https://..." />
                     </Field>
                   </div>
+
+                  {b.imageUrl && (
+                    <div className="bg-white/3 p-4 rounded-xl border border-white/8 space-y-4">
+                      <div className="font-bold text-white text-[10px] sm:text-xs uppercase tracking-wider">Superposición de Texto (Opcional)</div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Field label="Etiqueta / Badge (Ej: ¡OFERTA!)">
+                          <input className={inputCls} value={b.badge || ''} onChange={e => updateBanner(b.id, 'badge', e.target.value)} placeholder="Ej: ¡Nuevo Set!" />
+                        </Field>
+                        <Field label="Título Principal">
+                          <input className={inputCls} value={b.title || ''} onChange={e => updateBanner(b.id, 'title', e.target.value)} placeholder="Ej: Preventas Disponibles" />
+                        </Field>
+                        <Field label="Subtítulo / Descripción Corta">
+                          <input className={inputCls} value={b.subtitle || ''} onChange={e => updateBanner(b.id, 'subtitle', e.target.value)} placeholder="Ej: Asegura tu display al mejor precio." />
+                        </Field>
+                      </div>
+                    </div>
+                  )}
+
                   {b.imageUrl && (
                     <Field label={`Alineación Vertical de Imagen: ${b.alignmentY ?? 50}%`}>
                       <div className="flex items-center gap-4 bg-white/5 p-3.5 rounded-xl border border-white/10">

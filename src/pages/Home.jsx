@@ -135,21 +135,58 @@ export default function Home({
                   </div>
                 </div>
               ) : (
-                /* SLIDE TIPO IMAGEN (Full Bleed) */
+                /* SLIDE TIPO IMAGEN (Full Bleed con Texto Superpuesto Opcional) */
                 <div 
                   className={`relative w-full h-full ${b.linkUrl && b.linkUrl !== '#' ? 'cursor-pointer' : ''}`}
                   onClick={() => { if(b.linkUrl && b.linkUrl !== '#') window.open(b.linkUrl, '_blank') }}
                 >
                   <img 
                     src={b.imageUrl} 
-                    alt="Banner promocional" 
+                    alt={b.title || "Banner promocional"} 
                     className="absolute inset-0 w-full h-full object-cover"
                     style={{ objectPosition: `center ${b.alignmentY ?? 50}%` }}
                     loading={i === 0 ? "eager" : "lazy"}
                     {...(i === 0 ? { fetchpriority: "high" } : {})}
                   />
-                  {/* Gradiente oscuro sutil encima para que las flechas y puntos se vean siempre bien */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                  
+                  {/* Capa de oscurecimiento (más oscura a la izquierda si hay texto para garantizar contraste y legibilidad) */}
+                  <div className={`absolute inset-0 pointer-events-none ${
+                    (b.title || b.subtitle) 
+                      ? 'bg-gradient-to-r from-black/75 via-black/40 to-transparent' 
+                      : 'bg-gradient-to-t from-black/40 via-transparent to-transparent'
+                  }`} />
+
+                  {/* Superposición de Texto Dinámica */}
+                  {(b.title || b.subtitle || b.badge) && (
+                    <div className="absolute inset-0 flex items-center z-10">
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-left">
+                        <div className="max-w-xs sm:max-w-md md:max-w-xl space-y-1.5 sm:space-y-3">
+                          {b.badge && (
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-[#0052FF]/20 backdrop-blur-md rounded-full border border-[#0052FF]/30 text-[#4d8aff] text-[8px] sm:text-[10px] font-black uppercase tracking-wider w-fit">
+                              <span>{b.badge}</span>
+                            </div>
+                          )}
+                          {b.title && (
+                            <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-black tracking-tight text-white leading-tight drop-shadow-md">
+                              {b.title}
+                            </h2>
+                          )}
+                          {b.subtitle && (
+                            <p className="text-slate-200 text-[10px] sm:text-xs md:text-sm font-medium leading-relaxed drop-shadow-sm max-w-[280px] sm:max-w-sm md:max-w-md">
+                              {b.subtitle}
+                            </p>
+                          )}
+                          {b.linkUrl && b.linkUrl !== '#' && (
+                            <div className="pt-1.5 sm:pt-2">
+                              <span className="inline-flex items-center gap-1 bg-[#0052FF] hover:bg-blue-600 text-white font-bold text-[8px] sm:text-[10px] md:text-xs px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl transition-all shadow-md shadow-blue-500/20">
+                                Saber Más →
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
