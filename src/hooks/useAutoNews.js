@@ -190,6 +190,17 @@ const POKEMONALPHA_FALLBACK_NEWS = [
   }
 ];
 
+// Helper to generate a stable hash from a string
+function hashCode(str) {
+  if (!str) return '0';
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+  return Math.abs(hash).toString(36);
+}
+
 // Helper to strip HTML tags and decode basic HTML entities
 function cleanText(text) {
   if (!text) return '';
@@ -310,7 +321,7 @@ export function useAutoNews(newsSourcesParam) {
 
       // --- PARSER PARA EL FEED RSS DE POKÉMON ALPHA ---
       const parsePokemonAlphaRSS = (items) => {
-        return items.map((item, idx) => {
+        return items.map((item) => {
           let cleanContent = item.content || item.description || '';
           
           // Extraer la primera imagen del contenido HTML
@@ -362,7 +373,7 @@ export function useAutoNews(newsSourcesParam) {
           }
 
           return {
-            id: `pokemonalpha-rss-${idx}-${Date.now()}`,
+            id: `auto-news-${hashCode(item.link || item.title)}`,
             title: item.title,
             date: dateStr,
             image: image,

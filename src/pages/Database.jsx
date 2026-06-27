@@ -22,7 +22,9 @@ export default function DatabaseView({
   setDbPage,
   setSelectedCardDetail,
   inquiryList = [],
-  toggleInquiry
+  toggleInquiry,
+  storeStockCards = [], // Recibir stock de la tienda
+  refetch
 }) {
 
   // Sugerencias populares de cartas Pokémon para buscar en la base de datos
@@ -77,7 +79,7 @@ export default function DatabaseView({
           <h4 className="font-bold text-slate-900 dark:text-white">Error de Conexión</h4>
           <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed">{dbError}</p>
           <button
-            onClick={() => setDbSearch(dbSearch)}
+            onClick={refetch}
             className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl cursor-pointer hover:bg-emerald-700"
           >
             Reintentar Búsqueda
@@ -90,6 +92,13 @@ export default function DatabaseView({
             {dbCardsList.map((card, idx) => {
               const isInList = inquiryList.some(item => item.id === card.id);
               const isAd = idx === 5; // Insertar publicidad en la grilla oficial
+
+              // Buscar si la carta está en stock local por coincidencia de nombre
+              const stockItem = storeStockCards.find(sc => 
+                sc.in_stock && 
+                (sc.stock ?? 0) > 0 && 
+                sc.name.trim().toLowerCase() === card.name.trim().toLowerCase()
+              );
 
               return (
                 <React.Fragment key={card.id}>
@@ -123,25 +132,36 @@ export default function DatabaseView({
                         <p className="text-[9px] sm:text-[10px] text-[#0052FF] font-medium">{card.set}</p>
                       </div>
                       
-                      <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
-                        <div className="text-left">
-                          <span className="block text-[8px] text-slate-450 font-bold uppercase">Referencia</span>
-                          <span className="font-extrabold text-slate-700 dark:text-slate-300 text-xs sm:text-sm">
-                            ${card.price.toLocaleString('es-CL')} CLP
+                      {stockItem ? (
+                        <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                          <div className="text-left">
+                            <span className="block text-[8px] text-[#0052FF] font-bold uppercase">En Stock</span>
+                            <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm">
+                              ${stockItem.price.toLocaleString('es-CL')} CLP
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => toggleInquiry(card)}
+                            className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                              isInList
+                                ? 'bg-emerald-500 border-emerald-500 text-white'
+                                : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                            }`}
+                            aria-label={isInList ? "Quitar de bolsa de cotización" : "Agregar a bolsa de cotización"}
+                          >
+                            {isInList ? <Check size={13} className="scale-110" /> : <Plus size={13} className="opacity-60" />}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 text-slate-450">
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                            No disponible
+                          </span>
+                          <span className="text-[9px] font-semibold text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-full">
+                            Solo catálogo
                           </span>
                         </div>
-                        <button
-                          onClick={() => toggleInquiry(card)}
-                          className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                            isInList
-                              ? 'bg-emerald-500 border-emerald-500 text-white'
-                              : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                          }`}
-                          aria-label={isInList ? "Quitar de bolsa de cotización" : "Agregar a bolsa de cotización"}
-                        >
-                          {isInList ? <Check size={13} className="scale-110" /> : <Plus size={13} className="opacity-60" />}
-                        </button>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </React.Fragment>

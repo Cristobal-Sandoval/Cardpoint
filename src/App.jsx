@@ -685,6 +685,10 @@ export default function App() {
   const [dbLoading, setDbLoading] = useState(false);
   const [dbError, setDbError] = useState(null);
   const [dbPage, setDbPage] = useState(1);
+  const [lastFetchedQuery, setLastFetchedQuery] = useState('');
+  const [lastFetchedPage, setLastFetchedPage] = useState(1);
+  const dbCacheRef = useRef({}); // Caché para búsquedas oficiales de la API
+
 
   // Bolsa de Cotización / Modales
   const [inquiryList, setInquiryList] = useState([]);
@@ -719,6 +723,17 @@ export default function App() {
     }
     setSelectedCardDetail(null);
   }, [currentTab]);
+
+  const detailStockItem = useMemo(() => {
+    if (!selectedCardDetail) return null;
+    const isApiCard = typeof selectedCardDetail.id === 'string' && isNaN(Number(selectedCardDetail.id));
+    if (!isApiCard) return selectedCardDetail;
+    return dbCards.find(sc => 
+      sc.in_stock && 
+      (sc.stock ?? 0) > 0 && 
+      sc.name.trim().toLowerCase() === selectedCardDetail.name.trim().toLowerCase()
+    );
+  }, [selectedCardDetail, dbCards]);
 
   const carruselRef = useRef(null);
   const [isPaused, setIsPaused] = useState(false);
@@ -804,8 +819,18 @@ export default function App() {
     return () => cancelAnimationFrame(animationId);
   }, [currentTab, isPaused, carouselCards]);
 
-  const fetchDBCards = async (query, page = 1) => {
+  const fetchDBCards = async (query, page = 1, retryCount = 0) => {
     if (!query.trim()) return;
+    const cacheKey = `${query.trim().toLowerCase()}-${page}`;
+    
+    // Si ya existe en caché, usar los datos guardados sin disparar llamada a red
+    if (dbCacheRef.current[cacheKey]) {
+      setDbCardsList(dbCacheRef.current[cacheKey]);
+      setDbLoading(false);
+      setDbError(null);
+      return;
+    }
+
     setDbLoading(true);
     setDbError(null);
     try {
@@ -813,6 +838,10 @@ export default function App() {
         `https://api.pokemontcg.io/v2/cards?q=name:"*${query.trim()}*"&page=${page}&pageSize=16`
       );
       if (!response.ok) {
+        if (response.status === 429 && retryCount < 1) {
+          await new Promise(r => setTimeout(r, 1500));
+          return fetchDBCards(query, page, retryCount + 1);
+        }
         throw new Error('No se pudo establecer conexión con la base de datos de Pokémon Company.');
       }
       const data = await response.json();
@@ -831,9 +860,15 @@ export default function App() {
         description: `Información oficial de la carta ${card.name} perteneciente a la expansión ${card.set.name}. Tipo principal: ${card.types ? card.types.join(', ') : 'Ninguno'}. Número oficial de set: ${card.number}.`
       }));
       
+      // Guardar en la caché
+      dbCacheRef.current[cacheKey] = formatted;
       setDbCardsList(formatted);
     } catch (err) {
-      setDbError(err.message);
+      if (retryCount < 1) {
+        await new Promise(r => setTimeout(r, 1500));
+        return fetchDBCards(query, page, retryCount + 1);
+      }
+      setDbError("Parece que hay un micro-corte de conexión con la base de datos de Pokémon Company. Por favor, pulsa 'Reintentar Búsqueda' en unos segundos.");
     } finally {
       setDbLoading(false);
     }
@@ -841,12 +876,17 @@ export default function App() {
 
   useEffect(() => {
     if (currentTab === 'database') {
+      if (dbSearch === lastFetchedQuery && dbPage === lastFetchedPage && dbCardsList.length > 0) {
+        return;
+      }
       const delayDebounceFn = setTimeout(() => {
         fetchDBCards(dbSearch, dbPage);
+        setLastFetchedQuery(dbSearch);
+        setLastFetchedPage(dbPage);
       }, 550); 
       return () => clearTimeout(delayDebounceFn);
     }
-  }, [dbSearch, dbPage, currentTab]);
+  }, [dbSearch, dbPage, currentTab, lastFetchedQuery, lastFetchedPage, dbCardsList.length]);
 
   const toggleInquiry = (card) => {
     if (inquiryList.some(item => item.id === card.id)) {
@@ -1179,6 +1219,8 @@ export default function App() {
               setSelectedCardDetail={setSelectedCardDetail}
               inquiryList={inquiryList}
               toggleInquiry={toggleInquiry}
+              storeStockCards={dbCards}
+              refetch={() => fetchDBCards(dbSearch, dbPage)}
             />
           )}
 
@@ -1433,36 +1475,49 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <div className="flex items-end justify-between">
-                  <span className="text-xs text-slate-400 font-bold uppercase">Precio CardPoint:</span>
-                  <span className="font-black text-2xl text-slate-900 dark:text-white">${selectedCardDetail.price.toLocaleString('es-CL')} CLP</span>
+              {!detailStockItem ? (
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 text-center space-y-2 py-2">
+                  <span className="inline-block px-3 py-1 bg-slate-100 dark:bg-slate-800/85 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-lg uppercase tracking-wider">
+                    Solo catálogo de referencia
+                  </span>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-550 leading-normal px-4">
+                    Esta carta no está disponible actualmente en nuestro stock para cotización.
+                  </p>
                 </div>
+              ) : (
+                <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex items-end justify-between">
+                    <span className="text-xs text-slate-400 font-bold uppercase">Precio CardPoint:</span>
+                    <span className="font-black text-2xl text-slate-900 dark:text-white">
+                      ${detailStockItem.price.toLocaleString('es-CL')} CLP
+                    </span>
+                  </div>
 
-                <button
-                  onClick={() => {
-                    toggleInquiry(selectedCardDetail);
-                    setSelectedCardDetail(null);
-                  }}
-                  className={`w-full py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md ${
-                    inquiryList.some(item => item.id === selectedCardDetail.id)
-                      ? 'bg-red-500 text-white shadow-red-500/10 hover:bg-red-600'
-                      : 'bg-[#0052FF] text-white shadow-blue-500/10 hover:bg-blue-700'
-                  }`}
-                >
-                  {inquiryList.some(item => item.id === selectedCardDetail.id) ? (
-                    <>
-                      <X size={14} />
-                      Quitar de la bolsa
-                    </>
-                  ) : (
-                    <>
-                      <Plus size={14} />
-                      Agregar a la bolsa
-                    </>
-                  )}
-                </button>
-              </div>
+                  <button
+                    onClick={() => {
+                      toggleInquiry(selectedCardDetail);
+                      setSelectedCardDetail(null);
+                    }}
+                    className={`w-full py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md ${
+                      inquiryList.some(item => item.id === selectedCardDetail.id)
+                        ? 'bg-red-500 text-white shadow-red-500/10 hover:bg-red-600'
+                        : 'bg-[#0052FF] text-white shadow-blue-500/10 hover:bg-blue-700'
+                    }`}
+                  >
+                    {inquiryList.some(item => item.id === selectedCardDetail.id) ? (
+                      <>
+                        <X size={14} />
+                        Quitar de la bolsa
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={14} />
+                        Agregar a la bolsa
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

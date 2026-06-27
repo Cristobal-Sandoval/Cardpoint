@@ -672,20 +672,55 @@ function AdminNews({ toast }) {
   useEffect(() => { load(); }, []);
 
   const openAdd = () => { setForm({...emptyForm, date: today()}); setEditingItem(null); setShowForm(true); };
-  const openEdit = (item) => { setForm({ ...item }); setEditingItem(item); setShowForm(true); };
+  const openEdit = (item) => {
+    setForm({
+      title: item.title || '',
+      date: item.date || today(),
+      summary: item.summary || '',
+      content: item.content || '',
+      image: item.image || '',
+      published: item.published !== undefined ? item.published : true
+    });
+    setEditingItem(item);
+    setShowForm(true);
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
     let error;
-    if (editingItem) {
+    
+    if (editingItem && !editingItem.isExternal) {
+      // Editar noticia manual existente
       ({ error } = await supabase.from('news').update(form).eq('id', editingItem.id));
     } else {
+      // Crear nueva noticia manual (o importar y editar una autogenerada)
       ({ error } = await supabase.from('news').insert([form]));
+      
+      // Si era una noticia autogenerada, la ocultamos en el feed original para evitar duplicaciones
+      if (editingItem && editingItem.isExternal) {
+        try {
+          const next = hiddenNewsIds.includes(editingItem.id) 
+            ? hiddenNewsIds 
+            : [...hiddenNewsIds, editingItem.id];
+          await updateSetting('hidden_news', next);
+        } catch (hideErr) {
+          console.error("Error al ocultar noticia autogenerada original:", hideErr);
+        }
+      }
     }
+    
     setSaving(false);
     if (error) { toast('Error: ' + error.message, 'error'); return; }
-    toast(editingItem ? 'Noticia actualizada ✓' : 'Noticia publicada ✓', 'success');
+    
+    toast(
+      editingItem && !editingItem.isExternal 
+        ? 'Noticia actualizada ✓' 
+        : editingItem && editingItem.isExternal 
+          ? 'Noticia autogenerada editada y guardada ✓' 
+          : 'Noticia publicada ✓', 
+      'success'
+    );
     setShowForm(false);
     load();
   };
@@ -754,9 +789,16 @@ function AdminNews({ toast }) {
                       </span>
                     )}
                     {item.isExternal ? (
-                      <span className="flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0052FF]/20 text-[#4d8aff] border border-[#0052FF]/30">
-                        Automática
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0052FF]/20 text-[#4d8aff] border border-[#0052FF]/30">
+                          Automática
+                        </span>
+                        {hiddenNewsIds.includes(item.id) && (
+                          <span className="flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-900/50 text-red-400 border border-red-500/30">
+                            Ocultada
+                          </span>
+                        )}
+                      </div>
                     ) : (
                       <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${item.published ? 'bg-green-900/50 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
                         {item.published ? 'Publicada' : 'Borrador'}
@@ -767,9 +809,14 @@ function AdminNews({ toast }) {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {item.isExternal ? (
-                    <button onClick={() => toggleHideAutoNews(item.id)} title={hiddenNewsIds.includes(item.id) ? 'Mostrar en tienda' : 'Ocultar de tienda'} className={`p-2 rounded-lg bg-white/5 transition-all ${hiddenNewsIds.includes(item.id) ? 'text-red-400 hover:bg-red-600/20' : 'text-slate-400 hover:text-green-400 hover:bg-green-600/20'}`}>
-                      {hiddenNewsIds.includes(item.id) ? <IcoEyeOff /> : <IcoEye />}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => toggleHideAutoNews(item.id)} title={hiddenNewsIds.includes(item.id) ? 'Mostrar en tienda' : 'Ocultar de tienda'} className={`p-2 rounded-lg bg-white/5 transition-all ${hiddenNewsIds.includes(item.id) ? 'text-red-400 hover:bg-red-600/20' : 'text-slate-400 hover:text-green-400 hover:bg-green-600/20'}`}>
+                        {hiddenNewsIds.includes(item.id) ? <IcoEyeOff /> : <IcoEye />}
+                      </button>
+                      <button onClick={() => openEdit(item)} title="Editar y guardar copia local" className="p-2 rounded-lg bg-white/5 hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 transition-all">
+                        <IcoEdit />
+                      </button>
+                    </div>
                   ) : (
                     <>
                       <button 
