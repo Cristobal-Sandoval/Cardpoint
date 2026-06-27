@@ -29,6 +29,13 @@ const IcoChevronRight = () => <Icon d="m9 18 6-6-6-6" dSize="16" />;
 const IcoUpload       = () => <Icon d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />;
 const IcoCamera       = () => <Icon d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10" />;
 const IcoPin         = () => <Icon d="M12 17v5M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.78-3.5A2 2 0 0 1 15 9.24V5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v4.24c0 .43-.14.85-.4 1.2l-2.78 3.5a2 2 0 0 0-.44 1.24z" />;
+const IcoDatabase    = () => (
+  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+    <ellipse cx="12" cy="5" rx="9" ry="3"/>
+    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+    <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>
+  </svg>
+);
 
 // ── RARITY OPTIONS ───────────────────────────────────────────────────────────
 const RARITIES = ['Común', 'Poco Común', 'Rara', 'Doble Rara', 'Ultra Rara', 'Ilustración Rara', 'Especial Ilustración Rara', 'Ultra Rara Secreta', 'Secreta Dorada', 'Hyper Rara'];
@@ -1574,6 +1581,46 @@ export default function AdminApp() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const [dbStats, setDbStats] = useState({ sizeMB: 0, limitMB: 500, realData: false, loading: true });
+
+  const fetchDatabaseSize = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_db_size');
+      if (!error && data && data.db_size_bytes) {
+        const sizeBytes = data.db_size_bytes;
+        const sizeMB = parseFloat((sizeBytes / (1024 * 1024)).toFixed(2));
+        setDbStats({ sizeMB, limitMB: 500, realData: true, loading: false });
+        return;
+      }
+    } catch (rpcErr) {
+      console.warn("RPC no disponible, usando estimación:", rpcErr);
+    }
+
+    try {
+      const { count: cardsCount } = await supabase.from('cards').select('*', { count: 'exact', head: true });
+      const { count: newsCount } = await supabase.from('news').select('*', { count: 'exact', head: true });
+      const { count: tournamentsCount } = await supabase.from('tournaments').select('*', { count: 'exact', head: true });
+
+      // Estimación: 40MB Postgres base + 120KB por carta + 250KB por noticia + 10KB por torneo
+      const estimatedBytes = (40 * 1024 * 1024) + 
+                             ((cardsCount || 0) * 120 * 1024) + 
+                             ((newsCount || 0) * 250 * 1024) + 
+                             ((tournamentsCount || 0) * 10 * 1024);
+      
+      const sizeMB = parseFloat((estimatedBytes / (1024 * 1024)).toFixed(2));
+      setDbStats({ sizeMB, limitMB: 500, realData: false, loading: false });
+    } catch (err) {
+      console.error("Error estimando espacio:", err);
+      setDbStats(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  useEffect(() => {
+    if (session) {
+      fetchDatabaseSize();
+    }
+  }, [session, activeSection]);
+
   const showToast = (message, type = 'success') => {
     setToastState({ message, type, key: Date.now() });
   };
@@ -1696,6 +1743,54 @@ export default function AdminApp() {
           <div className="flex-1">
             <h1 className="text-sm font-bold text-slate-300 capitalize">{navItems.find(n => n.id === activeSection)?.label}</h1>
           </div>
+          
+          {/* Indicador de Espacio en Base de Datos */}
+          <div className="hidden sm:flex items-center gap-3 px-3.5 py-1.5 bg-white/3 border border-white/8 rounded-xl text-xs text-slate-300 relative group cursor-pointer hover:bg-white/5 transition-all" title="Espacio de Base de Datos Supabase">
+            <IcoDatabase />
+            <div className="flex flex-col text-[10px] leading-tight">
+              <span className="font-semibold text-slate-400">Espacio BD</span>
+              <span className="font-bold text-slate-200">
+                {dbStats.loading ? 'Cargando...' : `${dbStats.sizeMB} MB / ${dbStats.limitMB} MB`}
+              </span>
+            </div>
+            
+            {!dbStats.loading && (
+              <div className="w-12 h-1.5 bg-white/10 rounded-full overflow-hidden flex-shrink-0">
+                <div 
+                  className={`h-full rounded-full transition-all ${
+                    (dbStats.sizeMB / dbStats.limitMB) > 0.8 ? 'bg-red-500' : (dbStats.sizeMB / dbStats.limitMB) > 0.5 ? 'bg-amber-500' : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${Math.min(100, (dbStats.sizeMB / dbStats.limitMB) * 100)}%` }}
+                />
+              </div>
+            )}
+
+            {/* Tooltip con explicación y detalles */}
+            <div className="absolute right-0 top-11 w-64 p-3 bg-[#0f1117] border border-white/10 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 text-[10px] text-slate-400 space-y-2 pointer-events-none leading-relaxed">
+              <div className="font-bold text-slate-200 flex items-center justify-between">
+                <span>Estado de Supabase</span>
+                <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${dbStats.realData ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                  {dbStats.realData ? 'Tiempo Real' : 'Estimado'}
+                </span>
+              </div>
+              <p>Límite gratuito de Supabase: 500 MB de base de datos Postgres.</p>
+              <div className="border-t border-white/5 pt-2">
+                <strong>¿Cómo ver el tamaño exacto en tiempo real?</strong>
+                <p className="mt-1">Ejecuta esta función SQL en tu consola de Supabase:</p>
+                <div className="bg-black/50 p-1.5 rounded text-[8.5px] font-mono text-emerald-400 overflow-x-auto mt-1 select-all whitespace-pre">
+{`CREATE OR REPLACE FUNCTION get_db_size()
+RETURNS json AS $$
+BEGIN
+  RETURN json_build_object(
+    'db_size_bytes', pg_database_size(current_database())
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;`}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="w-8 h-8 rounded-full bg-[#0052FF]/20 border border-[#0052FF]/30 flex items-center justify-center text-[#4d8aff] text-xs font-black">
             {session.user.email?.[0]?.toUpperCase()}
           </div>
