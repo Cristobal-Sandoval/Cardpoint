@@ -1019,8 +1019,7 @@ export default function App() {
                 { id: 'home', label: 'Inicio' },
                 { id: 'catalog', label: 'En Stock' },
                 { id: 'news', label: 'Noticias' },
-                { id: 'tournaments', label: 'Torneos' },
-                { id: 'how-to-buy', label: 'Nosotros' }
+                { id: 'tournaments', label: 'Torneos' }
               ].map((item) => {
                 const isActive = currentTab === item.id && !selectedNews;
                 return (
