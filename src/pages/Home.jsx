@@ -62,6 +62,27 @@ export default function Home({
   setCurrentTab,
   setSelectedNews
 }) {
+  // Seleccionar 3 cartas aleatorias deterministas para el abanico del primer banner
+  const randomPromoCards = useMemo(() => {
+    if (!dbCards || dbCards.length === 0) return [];
+    const pool = dbCards.filter(c => c.image);
+    if (pool.length === 0) return [];
+    
+    const seed = pool.length + (pool[0]?.id || 0);
+    const getPseudoRandom = (idx) => {
+      const x = Math.sin(seed + idx) * 10000;
+      return x - Math.floor(x);
+    };
+    
+    const shuffled = [...pool].sort((a, b) => {
+      const hashA = getPseudoRandom(a.id || 1);
+      const hashB = getPseudoRandom(b.id || 2);
+      return hashA - hashB;
+    });
+    
+    return [shuffled[0], shuffled[1] || shuffled[0], shuffled[2] || shuffled[0]];
+  }, [dbCards]);
+
   return (
     <div className="space-y-16">
       
@@ -113,24 +134,55 @@ export default function Home({
 
                     {/* Imágenes de cartas en abanico */}
                     <div className="hidden lg:flex items-center justify-center relative h-[260px]">
-                      <img 
-                        src={b.images[2]} 
-                        alt="Carta Pokémon TCG destacada de fondo" 
-                        loading="eager" 
-                        className="absolute w-[130px] rounded-xl shadow-2xl border border-white/20 rotate-[-20deg] -translate-x-28 translate-y-8 opacity-80" 
-                      />
-                      <img 
-                        src={b.images[0]} 
-                        alt="Carta Pokémon TCG destacada derecha" 
-                        loading="eager" 
-                        className="absolute w-[145px] rounded-xl shadow-2xl border border-white/30 rotate-[12deg] translate-x-20 translate-y-10" 
-                      />
-                      <img 
-                        src={b.images[1]} 
-                        alt="Carta Pokémon TCG destacada central" 
-                        loading="eager" 
-                        className="absolute w-[155px] rounded-xl shadow-2xl border border-white/40 -rotate-5 z-10" 
-                      />
+                      {randomPromoCards.length === 3 ? (
+                        <>
+                          <img 
+                            src={randomPromoCards[2].image} 
+                            alt={`Carta Pokémon: ${randomPromoCards[2].name}`} 
+                            loading="eager" 
+                            onClick={() => setSelectedCardDetail(randomPromoCards[2])}
+                            onError={(e) => { e.target.onerror = null; e.target.src = "https://images.pokemontcg.io/cardback.png"; }}
+                            className="absolute w-[130px] rounded-xl shadow-2xl border border-white/20 rotate-[-20deg] -translate-x-28 translate-y-8 opacity-80 cursor-pointer hover:scale-110 hover:-translate-y-2 hover:opacity-100 transition-all duration-300 z-0" 
+                          />
+                          <img 
+                            src={randomPromoCards[0].image} 
+                            alt={`Carta Pokémon: ${randomPromoCards[0].name}`} 
+                            loading="eager" 
+                            onClick={() => setSelectedCardDetail(randomPromoCards[0])}
+                            onError={(e) => { e.target.onerror = null; e.target.src = "https://images.pokemontcg.io/cardback.png"; }}
+                            className="absolute w-[145px] rounded-xl shadow-2xl border border-white/30 rotate-[12deg] translate-x-20 translate-y-10 cursor-pointer hover:scale-110 hover:-translate-y-2 transition-all duration-300 z-10" 
+                          />
+                          <img 
+                            src={randomPromoCards[1].image} 
+                            alt={`Carta Pokémon: ${randomPromoCards[1].name}`} 
+                            loading="eager" 
+                            onClick={() => setSelectedCardDetail(randomPromoCards[1])}
+                            onError={(e) => { e.target.onerror = null; e.target.src = "https://images.pokemontcg.io/cardback.png"; }}
+                            className="absolute w-[155px] rounded-xl shadow-2xl border border-white/40 -rotate-5 cursor-pointer hover:scale-110 hover:-translate-y-2 transition-all duration-300 z-20" 
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <img 
+                            src={b.images[2]} 
+                            alt="Carta Pokémon TCG destacada de fondo" 
+                            loading="eager" 
+                            className="absolute w-[130px] rounded-xl shadow-2xl border border-white/20 rotate-[-20deg] -translate-x-28 translate-y-8 opacity-80" 
+                          />
+                          <img 
+                            src={b.images[0]} 
+                            alt="Carta Pokémon TCG destacada derecha" 
+                            loading="eager" 
+                            className="absolute w-[145px] rounded-xl shadow-2xl border border-white/30 rotate-[12deg] translate-x-20 translate-y-10" 
+                          />
+                          <img 
+                            src={b.images[1]} 
+                            alt="Carta Pokémon TCG destacada central" 
+                            loading="eager" 
+                            className="absolute w-[155px] rounded-xl shadow-2xl border border-white/40 -rotate-5 z-10" 
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -449,7 +501,7 @@ export default function Home({
               visibleNewsList.slice(0, 3).map((n) => (
                 <div 
                   key={n.id}
-                  onClick={() => { setSelectedNews(n); setCurrentTab('news'); window.scrollTo(0, 0); }}
+                  onClick={() => { setSelectedNews(n); window.scrollTo(0, 0); }}
                   className="flex gap-4 p-3 rounded-2xl border cursor-pointer transition-all hover:border-[#0052FF]/40 bg-white dark:bg-[#121824] border-slate-100 dark:border-slate-800"
                 >
                   <div className="w-20 sm:w-24 aspect-[4/3] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-950 flex-shrink-0">

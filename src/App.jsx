@@ -753,6 +753,44 @@ export default function App() {
     setSelectedCardDetail(null);
   }, [currentTab]);
 
+  // Sincronizar noticia seleccionada con el parámetro "id" de la URL (Deep linking)
+  useEffect(() => {
+    if (currentTab === 'news') {
+      const queryParams = new URLSearchParams(location.search);
+      const idFromUrl = queryParams.get('id');
+      
+      if (idFromUrl) {
+        if (newsList.length > 0) {
+          const found = newsList.find(n => n.id === idFromUrl);
+          if (found) {
+            if (!selectedNews || selectedNews.id !== found.id) {
+              setSelectedNews(found);
+            }
+          } else if (!newsLoading) {
+            // Si el id no existe en la lista cargada, limpiar la URL
+            navigate('/news', { replace: true });
+          }
+        }
+      } else {
+        if (selectedNews) {
+          setSelectedNews(null);
+        }
+      }
+    }
+  }, [location.search, currentTab, newsList, newsLoading]);
+
+  // Manejador para actualizar la URL al seleccionar una noticia
+  const handleSetSelectedNews = (n) => {
+    setSelectedNews(n);
+    if (n) {
+      navigate(`/news?id=${n.id}`);
+    } else {
+      if (location.pathname.startsWith('/news')) {
+        navigate('/news');
+      }
+    }
+  };
+
   const detailStockItem = useMemo(() => {
     if (!selectedCardDetail) return null;
     const isApiCard = typeof selectedCardDetail.id === 'string' && isNaN(Number(selectedCardDetail.id));
@@ -1182,7 +1220,7 @@ export default function App() {
               setIsPaused={setIsPaused}
               carouselCards={carouselCards}
               setCurrentTab={setCurrentTab}
-              setSelectedNews={setSelectedNews}
+              setSelectedNews={handleSetSelectedNews}
             />
           )}
 
@@ -1216,7 +1254,7 @@ export default function App() {
               theme={theme}
               newsLoading={newsLoading}
               selectedNews={selectedNews}
-              setSelectedNews={setSelectedNews}
+              setSelectedNews={handleSetSelectedNews}
               loadingFullContent={loadingFullContent}
               visibleNewsList={visibleNewsList}
               newsPage={newsPage}
@@ -1384,6 +1422,7 @@ export default function App() {
                   loading="lazy"
                   onLoad={() => setModalImageLoading(false)}
                   onClick={() => setIsImageZoomed(true)}
+                  onError={(e) => { e.target.onerror = null; e.target.src = "https://images.pokemontcg.io/cardback.png"; }}
                   className="w-full max-h-[250px] sm:max-h-[300px] md:max-h-[360px] object-contain transform hover:scale-105 transition-transform duration-300 cursor-zoom-in" 
                 />
               </div>

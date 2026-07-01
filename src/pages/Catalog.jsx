@@ -198,6 +198,7 @@ export default function Catalog({
                         loading="lazy"
                         decoding="async"
                         className="w-full h-full object-contain p-3 sm:p-4 transform hover:scale-105 transition-transform duration-300"
+                        onError={(e) => { e.target.onerror = null; e.target.src = "https://images.pokemontcg.io/cardback.png"; }}
                       />
                       <span className="absolute bottom-2 right-2 bg-[#0052FF] text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">
                         {card.condition}
