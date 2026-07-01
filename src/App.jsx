@@ -854,6 +854,27 @@ export default function App() {
     }
   }, [theme]);
 
+  // Carga dinámica de Microsoft Clarity
+  useEffect(() => {
+    const clarityId = adminSettings.clarity_id;
+    if (!clarityId || clarityId === 'YOUR_CLARITY_ID_HERE') return;
+
+    const scriptId = 'microsoft-clarity-script';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.type = 'text/javascript';
+      script.innerHTML = `
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "${clarityId}");
+      `;
+      document.head.appendChild(script);
+    }
+  }, [adminSettings.clarity_id]);
+
   const activeBanners = useMemo(() => {
     const activeCustom = customBanners.filter(b => b.active !== false);
     return activeCustom.length > 0 ? activeCustom : HERO_BANNERS;
@@ -1012,8 +1033,11 @@ export default function App() {
   };
 
   const copyInquiryToClipboard = () => {
-    const listText = inquiryList.map(card => `- ${card.name} (${card.condition}) - $${card.price.toLocaleString('es-CL')} CLP`).join('\n');
-    const total = inquiryList.reduce((acc, curr) => acc + curr.price, 0);
+    const listText = inquiryList.map(card => {
+      const activePrice = card.is_offer && card.offer_price ? card.offer_price : card.price;
+      return `- ${card.name} (${card.condition}) - $${activePrice.toLocaleString('es-CL')} CLP`;
+    }).join('\n');
+    const total = inquiryList.reduce((acc, curr) => acc + (curr.is_offer && curr.offer_price ? curr.offer_price : curr.price), 0);
     
     let message = '';
     if (appliedCoupon) {
@@ -1080,7 +1104,7 @@ export default function App() {
     return filteredCards.slice(start, start + cardsPerPage);
   }, [filteredCards, cardPage]);
 
-  const totalInquiryValue = inquiryList.reduce((sum, item) => sum + item.price, 0);
+  const totalInquiryValue = inquiryList.reduce((sum, item) => sum + (item.is_offer && item.offer_price ? item.offer_price : item.price), 0);
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-300 font-sans theme-transition ${theme === 'dark' ? 'bg-[#0a0d14] text-[#f1f5f9]' : 'bg-[#fafbfe] text-[#1e293b]'}`}>
@@ -1371,7 +1395,7 @@ export default function App() {
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      <span className="font-bold text-xs text-slate-900 dark:text-white">${card.price.toLocaleString('es-CL')}</span>
+                      <span className="font-bold text-xs text-slate-900 dark:text-white">${(card.is_offer && card.offer_price ? card.offer_price : card.price).toLocaleString('es-CL')}</span>
                       <button 
                         onClick={() => toggleInquiry(card)}
                         className="text-red-500 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-500/5 cursor-pointer"
@@ -1662,9 +1686,20 @@ export default function App() {
                 <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                   <div className="flex items-end justify-between">
                     <span className="text-xs text-slate-400 font-bold uppercase">Precio CardPoint:</span>
-                    <span className="font-black text-2xl text-slate-900 dark:text-white">
-                      ${detailStockItem.price.toLocaleString('es-CL')} CLP
-                    </span>
+                    {detailStockItem.is_offer && detailStockItem.offer_price ? (
+                      <div className="text-right">
+                        <span className="text-xs text-slate-400 line-through block leading-tight">
+                          ${detailStockItem.price.toLocaleString('es-CL')} CLP
+                        </span>
+                        <span className="font-black text-2xl text-red-550 block leading-tight">
+                          ${detailStockItem.offer_price.toLocaleString('es-CL')} CLP
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="font-black text-2xl text-slate-900 dark:text-white">
+                        ${detailStockItem.price.toLocaleString('es-CL')} CLP
+                      </span>
+                    )}
                   </div>
 
                   <button

@@ -264,8 +264,13 @@ export default function Catalog({
                       <span className="absolute bottom-2 left-2 bg-purple-600/90 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow uppercase">
                         {card.idioma || 'ES'}
                       </span>
+                      {card.is_offer && card.offer_price && (
+                        <span className="absolute top-2 right-2 bg-red-650 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wide border border-white/20 z-10 animate-pulse">
+                          🔥 Oferta
+                        </span>
+                      )}
                       {card.is_reverse && (
-                        <span className="absolute top-2 right-2 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wide border border-white/20">
+                        <span className={`absolute ${card.is_offer && card.offer_price ? 'top-8' : 'top-2'} right-2 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wide border border-white/20 z-10`}>
                           REVERSE
                         </span>
                       )}
@@ -292,9 +297,20 @@ export default function Catalog({
                             <span className="font-extrabold text-red-500 text-xs sm:text-sm">AGOTADO</span>
                           ) : (
                             <div className="flex flex-col">
-                              <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm">
-                                ${card.price.toLocaleString('es-CL')} CLP
-                              </span>
+                              {card.is_offer && card.offer_price ? (
+                                <>
+                                  <span className="text-[10px] text-slate-400 line-through leading-tight">
+                                    ${card.price.toLocaleString('es-CL')}
+                                  </span>
+                                  <span className="font-extrabold text-red-505 dark:text-red-400 text-xs sm:text-sm leading-tight">
+                                    ${card.offer_price.toLocaleString('es-CL')} CLP
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm">
+                                  ${card.price.toLocaleString('es-CL')} CLP
+                                </span>
+                              )}
                               {(card.stock || 1) > 1 && <span className="text-[8px] sm:text-[9px] text-slate-400 font-medium tracking-tight">x{card.stock} disp.</span>}
                             </div>
                           )}

@@ -212,7 +212,7 @@ function AdminCards({ toast }) {
   const [editingCard, setEditingCard] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const emptyForm = { name: '', set: 'Escarlata y Púrpura', set_code: '', rarity: 'Rara', price: '', condition: 'NM', image: '', real_photo: '', description: '', in_stock: true, idioma: 'Español', is_reverse: false, is_league: false, stock: 1 };
+  const emptyForm = { name: '', set: 'Escarlata y Púrpura', set_code: '', rarity: 'Rara', price: '', condition: 'NM', image: '', real_photo: '', description: '', in_stock: true, idioma: 'Español', is_reverse: false, is_league: false, stock: 1, is_offer: false, offer_price: '' };
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [apiSearching, setApiSearching] = useState(false);
@@ -324,12 +324,16 @@ function AdminCards({ toast }) {
   useEffect(() => { load(); }, []);
 
   const openAdd = () => { setForm(emptyForm); setEditingCard(null); setApiResults([]); setShowForm(true); };
-  const openEdit = (card) => { setForm({ ...card, idioma: card.idioma || 'Español', is_reverse: !!card.is_reverse, is_league: !!card.is_league, stock: card.stock ?? 1 }); setEditingCard(card); setApiResults([]); setShowForm(true); };
+  const openEdit = (card) => { setForm({ ...card, idioma: card.idioma || 'Español', is_reverse: !!card.is_reverse, is_league: !!card.is_league, stock: card.stock ?? 1, is_offer: !!card.is_offer, offer_price: card.offer_price || '' }); setEditingCard(card); setApiResults([]); setShowForm(true); };
 
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const payload = { ...form, price: parseInt(form.price) || 0 };
+    const payload = { 
+      ...form, 
+      price: parseInt(form.price) || 0,
+      offer_price: form.is_offer && form.offer_price ? parseInt(form.offer_price) || 0 : null
+    };
     let error;
     if (editingCard) {
       ({ error } = await supabase.from('cards').update(payload).eq('id', editingCard.id));
@@ -421,7 +425,16 @@ function AdminCards({ toast }) {
                     </td>
                     <td className="px-3 py-2 sm:px-4 sm:py-3 text-slate-400 text-xs sm:text-sm max-w-[100px] sm:max-w-[140px] truncate">{card.set}</td>
                     <td className="px-3 py-2 sm:px-4 sm:py-3 text-slate-400 text-[11px] sm:text-xs max-w-[100px] sm:max-w-[140px] truncate">{card.rarity}</td>
-                    <td className="px-3 py-2 sm:px-4 sm:py-3 text-green-400 font-bold whitespace-nowrap text-xs sm:text-sm">${(card.price || 0).toLocaleString('es-CL')}</td>
+                    <td className="px-3 py-2 sm:px-4 sm:py-3 text-green-400 font-bold whitespace-nowrap text-xs sm:text-sm">
+                      {card.is_offer && card.offer_price ? (
+                        <div className="flex flex-col text-left">
+                          <span className="text-[10px] text-slate-500 line-through leading-tight">${(card.price || 0).toLocaleString('es-CL')}</span>
+                          <span className="text-red-400 font-black leading-tight">${(card.offer_price || 0).toLocaleString('es-CL')}</span>
+                        </div>
+                      ) : (
+                        <span>${(card.price || 0).toLocaleString('es-CL')}</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 sm:px-4 sm:py-3">
                       <span className="px-1.5 py-0.5 bg-blue-900/40 text-blue-300 text-[10px] sm:text-xs rounded-lg font-bold">
                         {card.condition}
@@ -596,7 +609,25 @@ function AdminCards({ toast }) {
                 </label>
               </div>
             </div>
-            <Field label="Precio (CLP)"><input className={inputCls} type="number" required min="0" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="Ej: 89990" /></Field>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label="Precio Normal (CLP)">
+                <input className={inputCls} type="number" required min="0" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="Ej: 5000" />
+              </Field>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none pt-6">
+                  <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 ${form.is_offer ? 'bg-red-500' : 'bg-slate-600'}`} onClick={() => setForm({...form, is_offer: !form.is_offer})}>
+                    <div className={`w-5 h-5 bg-white rounded-full mt-0.5 transition-transform ${form.is_offer ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
+                  </div>
+                  <span className="text-xs font-semibold text-slate-300 whitespace-nowrap">🔥 Poner en Oferta</span>
+                </label>
+              </div>
+            </div>
+
+            {form.is_offer && (
+              <Field label="Precio Oferta (CLP)">
+                <input className={inputCls} type="number" required min="0" value={form.offer_price} onChange={e => setForm({...form, offer_price: e.target.value})} placeholder="Ej: 3990" />
+              </Field>
+            )}
             <Field label="URL de Imagen (API / Oficial)">
               <input className={inputCls} value={form.image} onChange={e => setForm({...form, image: e.target.value})} placeholder="https://images.pokemontcg.io/..." />
             </Field>
@@ -1471,6 +1502,10 @@ function AdminCoupons({ toast }) {
   const [newDiscount, setNewDiscount] = useState('10');
   const [newActive, setNewActive] = useState(true);
 
+  // States for Microsoft Clarity
+  const [clarityId, setClarityId] = useState('');
+  const [savingClarity, setSavingClarity] = useState(false);
+
   const load = async () => {
     setLoading(true);
     try {
@@ -1486,10 +1521,37 @@ function AdminCoupons({ toast }) {
       } else if (data?.data && Array.isArray(data.data)) {
         setCoupons(data.data);
       }
+
+      // Cargar Clarity ID
+      const { data: clarityData } = await supabase
+        .from('admin_settings')
+        .select('data')
+        .eq('id', 'clarity_id')
+        .single();
+      if (clarityData?.data) {
+        setClarityId(clarityData.data);
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveClarityId = async () => {
+    setSavingClarity(true);
+    try {
+      const { error } = await supabase
+        .from('admin_settings')
+        .upsert({ id: 'clarity_id', data: clarityId, updated_at: new Date().toISOString() });
+        
+      if (error) throw error;
+      toast('success', 'ID de Clarity guardado correctamente');
+    } catch (err) {
+      console.error(err);
+      toast('error', 'Error al guardar el ID de Clarity');
+    } finally {
+      setSavingClarity(false);
     }
   };
 
@@ -1651,6 +1713,33 @@ function AdminCoupons({ toast }) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Integración Microsoft Clarity */}
+      <div className="bg-white/3 border border-white/8 rounded-2xl p-6 mt-6 space-y-4">
+        <div>
+          <h3 className="font-bold text-white text-sm">Integración de Microsoft Clarity</h3>
+          <p className="text-slate-400 text-xs mt-1">Inserta tu ID de Proyecto de Microsoft Clarity para grabar sesiones de usuario y analizar el comportamiento de forma gratuita.</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 items-end">
+          <div className="flex-1">
+            <label className="text-slate-400 text-[10px] uppercase font-bold block mb-1.5">ID del Proyecto Clarity</label>
+            <input
+              type="text"
+              placeholder="Ej: xcsrkj7sws"
+              value={clarityId}
+              onChange={(e) => setClarityId(e.target.value.trim())}
+              className="w-full bg-[#0c0e16] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#0052FF]"
+            />
+          </div>
+          <button
+            onClick={saveClarityId}
+            disabled={savingClarity}
+            className="bg-[#0052FF] hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-900/20"
+          >
+            {savingClarity ? 'Guardando...' : 'Guardar ID'}
+          </button>
+        </div>
       </div>
     </div>
   );
