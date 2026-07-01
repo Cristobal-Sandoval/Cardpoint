@@ -1670,7 +1670,6 @@ export default function App() {
                   <button
                     onClick={() => {
                       toggleInquiry(selectedCardDetail);
-                      setSelectedCardDetail(null);
                     }}
                     className={`w-full py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md ${
                       inquiryList.some(item => item.id === selectedCardDetail.id)
@@ -1690,6 +1689,19 @@ export default function App() {
                       </>
                     )}
                   </button>
+
+                  {inquiryList.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setSelectedCardDetail(null);
+                        setShowInquiryModal(true);
+                      }}
+                      className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-800 dark:text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200/50 dark:border-slate-700/50"
+                    >
+                      <ShoppingBag size={14} />
+                      Ver bolsa de cotización ({inquiryList.length})
+                    </button>
+                  )}
 
                   <div className="text-center pt-1">
                     <a 
