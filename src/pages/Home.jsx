@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   Sparkles, 
   ChevronRight, 
@@ -68,9 +68,22 @@ export default function Home({
     const pool = dbCards.filter(c => c.image);
     if (pool.length === 0) return [];
     
-    const seed = pool.length + (pool[0]?.id || 0);
-    const getPseudoRandom = (idx) => {
-      const x = Math.sin(seed + idx) * 10000;
+    // Función simple de hash para convertir UUIDs de Supabase en enteros consistentes
+    const getStringHash = (str) => {
+      let hash = 0;
+      if (!str) return hash;
+      const s = String(str);
+      for (let i = 0; i < s.length; i++) {
+        hash = (hash << 5) - hash + s.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash);
+    };
+
+    const seed = pool.length + getStringHash(pool[0]?.id);
+    const getPseudoRandom = (val) => {
+      const numericVal = typeof val === 'number' ? val : getStringHash(val);
+      const x = Math.sin(seed + numericVal) * 10000;
       return x - Math.floor(x);
     };
     
