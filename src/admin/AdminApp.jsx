@@ -50,6 +50,7 @@ const IcoEye        = () => <Icon d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7
 const IcoEyeOff     = () => <Icon d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22" />;
 const IcoImage      = () => <Icon d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21" />;
 const IcoMegaphone  = () => <Icon d="m3 11 18-5v12L3 14v-3zM11.6 16.8a3 3 0 1 1-5.8-1.6" />;
+const IcoTag        = () => <Icon d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82zM7 7h.01" />;
 const IcoChevronLeft  = () => <Icon d="m15 18-6-6 6-6" dSize="16" />;
 const IcoChevronRight = () => <Icon d="m9 18 6-6-6-6" dSize="16" />;
 const IcoUpload       = () => <Icon d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />;
@@ -1458,6 +1459,204 @@ function AdminBanners({ toast }) {
 }
 
 // ============================================================
+// COUPONS ADMIN SECTION
+// ============================================================
+function AdminCoupons({ toast }) {
+  const [coupons, setCoupons] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  // States for new coupon form
+  const [newCode, setNewCode] = useState('');
+  const [newDiscount, setNewDiscount] = useState('10');
+  const [newActive, setNewActive] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('admin_settings')
+        .select('data')
+        .eq('id', 'coupons')
+        .single();
+        
+      if (error) {
+        console.warn("No coupons key found in admin_settings, initializing empty.");
+        setCoupons([]);
+      } else if (data?.data && Array.isArray(data.data)) {
+        setCoupons(data.data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const save = async (updatedList) => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('admin_settings')
+        .upsert({ id: 'coupons', data: updatedList, updated_at: new Date().toISOString() });
+        
+      if (error) throw error;
+      setCoupons(updatedList);
+      toast('success', 'Cupones guardados correctamente');
+    } catch (err) {
+      console.error(err);
+      toast('error', 'Error al guardar los cupones');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const handleAddCoupon = () => {
+    const code = newCode.toUpperCase().trim();
+    if (!code) {
+      toast('error', 'El código de cupón no puede estar vacío');
+      return;
+    }
+    const discountVal = Number(newDiscount);
+    if (isNaN(discountVal) || discountVal <= 0 || discountVal > 100) {
+      toast('error', 'El descuento debe ser un número entre 1 y 100');
+      return;
+    }
+
+    if (coupons.some(c => c.code.toUpperCase() === code)) {
+      toast('error', 'Ya existe un cupón con este código');
+      return;
+    }
+
+    const newCoupon = {
+      code,
+      discount: discountVal,
+      active: newActive,
+      id: Math.random().toString(36).substring(2, 9)
+    };
+
+    const updated = [newCoupon, ...coupons];
+    save(updated);
+    
+    // Clear inputs
+    setNewCode('');
+    setNewDiscount('10');
+    setNewActive(true);
+  };
+
+  const handleToggleActive = (id) => {
+    const updated = coupons.map(c => c.id === id ? { ...c, active: !c.active } : c);
+    save(updated);
+  };
+
+  const handleDeleteCoupon = (id) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este cupón?')) {
+      const updated = coupons.filter(c => c.id !== id);
+      save(updated);
+    }
+  };
+
+  return (
+    <div className="max-w-3xl font-sans">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Gestión de Cupones</h1>
+          <p className="text-slate-400 text-sm mt-1">Crea y administra códigos de descuento para la bolsa de cotizaciones de tus clientes.</p>
+        </div>
+      </div>
+
+      {/* Formulario Agregar Cupón */}
+      <div className="bg-white/3 border border-white/8 rounded-2xl p-6 mb-6 space-y-4">
+        <h3 className="font-bold text-white text-sm">Crear Nuevo Cupón</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div>
+            <label className="text-slate-400 text-[10px] uppercase font-bold block mb-1.5">Código del Cupón</label>
+            <input
+              type="text"
+              placeholder="Ej: PROMO15"
+              value={newCode}
+              onChange={(e) => setNewCode(e.target.value)}
+              className="w-full bg-[#0c0e16] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#0052FF] uppercase"
+            />
+          </div>
+          <div>
+            <label className="text-slate-400 text-[10px] uppercase font-bold block mb-1.5">Descuento (%)</label>
+            <input
+              type="number"
+              min="1"
+              max="100"
+              placeholder="15"
+              value={newDiscount}
+              onChange={(e) => setNewDiscount(e.target.value)}
+              className="w-full bg-[#0c0e16] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#0052FF]"
+            />
+          </div>
+          <button
+            onClick={handleAddCoupon}
+            disabled={saving}
+            className="bg-[#0052FF] hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-900/20"
+          >
+            <IcoPlus />
+            Crear Cupón
+          </button>
+        </div>
+      </div>
+
+      {/* Listado de Cupones */}
+      <div className="bg-white/3 border border-white/8 rounded-2xl p-6">
+        <h3 className="font-bold text-white text-sm mb-4">Cupones Registrados</h3>
+        
+        {loading ? (
+          <div className="text-center py-8 text-slate-500 text-sm">Cargando cupones...</div>
+        ) : coupons.length === 0 ? (
+          <div className="text-center py-12 text-slate-550 border border-dashed border-white/10 rounded-xl text-xs">
+            No tienes cupones creados aún. Ingresa un código arriba para empezar.
+          </div>
+        ) : (
+          <div className="divide-y divide-white/5 space-y-3">
+            {coupons.map((coupon, idx) => (
+              <div key={coupon.id || idx} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                <div>
+                  <span className="font-black text-sm text-white tracking-wider bg-white/5 px-2.5 py-1 rounded-lg border border-white/8 mr-3 uppercase">{coupon.code}</span>
+                  <span className="text-xs text-slate-300 font-bold">-{coupon.discount}% de descuento</span>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  {/* Botón Toggle Estado */}
+                  <button
+                    onClick={() => handleToggleActive(coupon.id)}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all cursor-pointer ${
+                      coupon.active
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
+                        : 'bg-slate-500/10 text-slate-400 border border-slate-500/20 hover:bg-slate-500/20'
+                    }`}
+                  >
+                    {coupon.active ? 'Activo' : 'Inactivo'}
+                  </button>
+
+                  {/* Botón Eliminar */}
+                  <button
+                    onClick={() => handleDeleteCoupon(coupon.id)}
+                    className="p-2 text-slate-500 hover:text-red-400 hover:bg-white/5 rounded-lg transition-all cursor-pointer"
+                    title="Eliminar cupón"
+                  >
+                    <IcoTrash />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // AD SETTINGS ADMIN SECTION
 // ============================================================
 function AdminAdSettings({ toast }) {
@@ -1759,6 +1958,7 @@ export default function AdminApp() {
     { id: 'tournaments', label: 'Torneos', icon: <IcoTrophy /> },
     { id: 'banners', label: 'Banners', icon: <IcoImage /> },
     { id: 'ad', label: 'Anuncio', icon: <IcoMegaphone /> },
+    { id: 'coupons', label: 'Cupones', icon: <IcoTag /> },
   ];
 
   return (
@@ -1916,6 +2116,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
           {activeSection === 'tournaments' && <AdminTournaments toast={showToast} />}
           {activeSection === 'banners'     && <AdminBanners toast={showToast} />}
           {activeSection === 'ad'          && <AdminAdSettings toast={showToast} />}
+          {activeSection === 'coupons'     && <AdminCoupons toast={showToast} />}
         </div>
       </main>
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 
 export function useAdmin() {
-  const [adminSettings, setAdminSettings] = useState({ hidden_news: [], pinned_news: [], custom_banners: [], news_sources: { pokemon: true, tcgnews: true, autogenerate: true } });
+  const [adminSettings, setAdminSettings] = useState({ coupons: [], hidden_news: [], pinned_news: [], custom_banners: [], news_sources: { pokemon: true, tcgnews: true, autogenerate: true } });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -15,8 +15,9 @@ export function useAdmin() {
         // Ignorar el error en local/desarrollo si la tabla no existe aún para evitar colgar la app
         console.warn("No se pudo cargar admin_settings de Supabase:", error);
       } else if (data) {
-        const settings = { hidden_news: [], pinned_news: [], custom_banners: [], tournaments_override: [], sponsored_ad: null, news_sources: { pokemon: true, tcgnews: true, autogenerate: true } };
+        const settings = { coupons: [], hidden_news: [], pinned_news: [], custom_banners: [], tournaments_override: [], sponsored_ad: null, news_sources: { pokemon: true, tcgnews: true, autogenerate: true } };
         data.forEach(row => {
+          if (row.id === 'coupons') settings.coupons = row.data;
           if (row.id === 'hidden_news') settings.hidden_news = row.data;
           if (row.id === 'pinned_news') settings.pinned_news = row.data;
           if (row.id === 'custom_banners') settings.custom_banners = row.data;

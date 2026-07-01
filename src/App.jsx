@@ -988,13 +988,6 @@ export default function App() {
     setInquiryList([]);
   };
 
-  // Cupones de descuento válidos
-  const VALID_COUPONS = {
-    'CARDPOINT10': { code: 'CARDPOINT10', discount: 0.10, desc: '10% de descuento en singles' },
-    'SINGLESCONCE': { code: 'SINGLESCONCE', discount: 0.05, desc: '5% de descuento en singles' },
-    'BIOCP15': { code: 'BIOCP15', discount: 0.15, desc: '15% de descuento en singles' }
-  };
-
   const handleApplyCoupon = (code) => {
     const cleanCode = code.toUpperCase().trim();
     if (!cleanCode) {
@@ -1002,13 +995,19 @@ export default function App() {
       setCouponError('');
       return;
     }
-    const found = VALID_COUPONS[cleanCode];
+    
+    const dbCoupons = adminSettings.coupons || [];
+    const found = dbCoupons.find(c => c.active && c.code.toUpperCase() === cleanCode);
+    
     if (found) {
-      setAppliedCoupon(found);
+      setAppliedCoupon({
+        code: found.code,
+        discount: Number(found.discount) / 100
+      });
       setCouponError('');
     } else {
       setAppliedCoupon(null);
-      setCouponError('Cupón inválido');
+      setCouponError('Cupón inválido o inactivo');
     }
   };
 
@@ -1402,7 +1401,7 @@ export default function App() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="Ej: CARDPOINT10, BIOCP15..."
+                      placeholder="Ingresar código de cupón..."
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value)}
                       className="flex-grow px-3 py-1.5 text-xs rounded-xl border bg-white dark:bg-[#0c0e16] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-[#0052FF] uppercase"
