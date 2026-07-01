@@ -1506,6 +1506,12 @@ function AdminCoupons({ toast }) {
   const [clarityId, setClarityId] = useState('');
   const [savingClarity, setSavingClarity] = useState(false);
 
+  // States for GTM & Meta Pixel
+  const [gtmId, setGtmId] = useState('');
+  const [pixelId, setPixelId] = useState('');
+  const [savingGtm, setSavingGtm] = useState(false);
+  const [savingPixel, setSavingPixel] = useState(false);
+
   const load = async () => {
     setLoading(true);
     try {
@@ -1531,10 +1537,64 @@ function AdminCoupons({ toast }) {
       if (clarityData?.data) {
         setClarityId(clarityData.data);
       }
+
+      // Cargar GTM ID
+      const { data: gtmData } = await supabase
+        .from('admin_settings')
+        .select('data')
+        .eq('id', 'gtm_id')
+        .single();
+      if (gtmData?.data) {
+        setGtmId(gtmData.data);
+      }
+
+      // Cargar Pixel ID
+      const { data: pixelData } = await supabase
+        .from('admin_settings')
+        .select('data')
+        .eq('id', 'pixel_id')
+        .single();
+      if (pixelData?.data) {
+        setPixelId(pixelData.data);
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveGtmId = async () => {
+    setSavingGtm(true);
+    try {
+      const { error } = await supabase
+        .from('admin_settings')
+        .upsert({ id: 'gtm_id', data: gtmId, updated_at: new Date().toISOString() });
+        
+      if (error) throw error;
+      toast('success', 'ID de Google Tag Manager guardado');
+    } catch (err) {
+      console.error(err);
+      toast('error', 'Error al guardar el ID de GTM');
+    } finally {
+      setSavingGtm(false);
+    }
+  };
+
+  const savePixelId = async () => {
+    setSavingPixel(true);
+    try {
+      const { error } = await supabase
+        .from('admin_settings')
+        .upsert({ id: 'pixel_id', data: pixelId, updated_at: new Date().toISOString() });
+        
+      if (error) throw error;
+      toast('success', 'ID de Meta Pixel guardado');
+    } catch (err) {
+      console.error(err);
+      toast('error', 'Error al guardar el ID de Meta Pixel');
+    } finally {
+      setSavingPixel(false);
     }
   };
 
@@ -1715,30 +1775,94 @@ function AdminCoupons({ toast }) {
         )}
       </div>
 
-      {/* Integración Microsoft Clarity */}
-      <div className="bg-white/3 border border-white/8 rounded-2xl p-6 mt-6 space-y-4">
+      {/* Integración de Analíticas y Marketing */}
+      <div className="bg-white/3 border border-white/8 rounded-2xl p-6 mt-6 space-y-6">
         <div>
-          <h3 className="font-bold text-white text-sm">Integración de Microsoft Clarity</h3>
-          <p className="text-slate-400 text-xs mt-1">Inserta tu ID de Proyecto de Microsoft Clarity para grabar sesiones de usuario y analizar el comportamiento de forma gratuita.</p>
+          <h3 className="font-bold text-white text-sm">Configuración de Analíticas y Marketing</h3>
+          <p className="text-slate-400 text-xs mt-1">Conecta herramientas avanzadas para medir tráfico, grabar visitas y optimizar campañas publicitarias de tu tienda.</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 items-end">
-          <div className="flex-1">
-            <label className="text-slate-400 text-[10px] uppercase font-bold block mb-1.5">ID del Proyecto Clarity</label>
-            <input
-              type="text"
-              placeholder="Ej: xcsrkj7sws"
-              value={clarityId}
-              onChange={(e) => setClarityId(e.target.value.trim())}
-              className="w-full bg-[#0c0e16] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#0052FF]"
-            />
+        
+        <div className="space-y-6 divide-y divide-white/5">
+          {/* 1. Google Tag Manager */}
+          <div className="pt-0 space-y-3">
+            <h4 className="font-bold text-[#4d8aff] text-xs uppercase tracking-wider flex items-center gap-1.5">
+              <span>📊</span> Google Tag Manager (GTM)
+            </h4>
+            <p className="text-slate-400 text-[11px] leading-relaxed">Pega tu ID de contenedor para cargar Google Tag Manager. Te permite instalar Google Analytics 4, hacer tracking de conversiones y administrar etiquetas en un solo lugar.</p>
+            <div className="flex flex-col sm:flex-row gap-3 items-end">
+              <div className="flex-1">
+                <label className="text-slate-400 text-[9px] uppercase font-bold block mb-1">ID de Contenedor GTM</label>
+                <input
+                  type="text"
+                  placeholder="Ej: GTM-XXXXXXX"
+                  value={gtmId}
+                  onChange={(e) => setGtmId(e.target.value.trim().toUpperCase())}
+                  className="w-full bg-[#0c0e16] border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-[#0052FF]"
+                />
+              </div>
+              <button
+                onClick={saveGtmId}
+                disabled={savingGtm}
+                className="bg-[#0052FF] hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-2 px-5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-900/20"
+              >
+                {savingGtm ? 'Guardando...' : 'Guardar GTM'}
+              </button>
+            </div>
           </div>
-          <button
-            onClick={saveClarityId}
-            disabled={savingClarity}
-            className="bg-[#0052FF] hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-900/20"
-          >
-            {savingClarity ? 'Guardando...' : 'Guardar ID'}
-          </button>
+
+          {/* 2. Meta Pixel */}
+          <div className="pt-4 space-y-3 border-t border-white/5">
+            <h4 className="font-bold text-pink-400 text-xs uppercase tracking-wider flex items-center gap-1.5">
+              <span>📸</span> Meta Pixel (Facebook/Instagram Ads)
+            </h4>
+            <p className="text-slate-400 text-[11px] leading-relaxed">Conecta tu Pixel de Facebook ingresando tu ID de Pixel. Es fundamental para optimizar campañas pagadas de Instagram, registrar visitas procedentes de anuncios y medir el retorno de inversión.</p>
+            <div className="flex flex-col sm:flex-row gap-3 items-end">
+              <div className="flex-1">
+                <label className="text-slate-400 text-[9px] uppercase font-bold block mb-1">ID de Pixel de Meta</label>
+                <input
+                  type="text"
+                  placeholder="Ej: 123456789012345"
+                  value={pixelId}
+                  onChange={(e) => setPixelId(e.target.value.trim())}
+                  className="w-full bg-[#0c0e16] border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-[#0052FF]"
+                />
+              </div>
+              <button
+                onClick={savePixelId}
+                disabled={savingPixel}
+                className="bg-[#0052FF] hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-2 px-5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-900/20"
+              >
+                {savingPixel ? 'Guardando...' : 'Guardar Pixel'}
+              </button>
+            </div>
+          </div>
+
+          {/* 3. Microsoft Clarity */}
+          <div className="pt-4 space-y-3 border-t border-white/5">
+            <h4 className="font-bold text-emerald-400 text-xs uppercase tracking-wider flex items-center gap-1.5">
+              <span>👁️</span> Microsoft Clarity
+            </h4>
+            <p className="text-slate-400 text-[11px] leading-relaxed">Graba sesiones anónimas de tus usuarios para ver cómo navegan, dónde hacen clic y detectar problemas de experiencia.</p>
+            <div className="flex flex-col sm:flex-row gap-3 items-end">
+              <div className="flex-1">
+                <label className="text-slate-400 text-[9px] uppercase font-bold block mb-1">ID del Proyecto Clarity</label>
+                <input
+                  type="text"
+                  placeholder="Ej: xfheeraaaz"
+                  value={clarityId}
+                  onChange={(e) => setClarityId(e.target.value.trim())}
+                  className="w-full bg-[#0c0e16] border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-[#0052FF]"
+                />
+              </div>
+              <button
+                onClick={saveClarityId}
+                disabled={savingClarity}
+                className="bg-[#0052FF] hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-2 px-5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-900/20"
+              >
+                {savingClarity ? 'Guardando...' : 'Guardar Clarity'}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
