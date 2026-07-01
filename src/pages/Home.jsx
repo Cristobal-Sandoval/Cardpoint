@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { 
   Sparkles, 
   ChevronRight, 
@@ -62,38 +62,21 @@ export default function Home({
   setCurrentTab,
   setSelectedNews
 }) {
-  // Seleccionar 3 cartas aleatorias deterministas para el abanico del primer banner
-  const randomPromoCards = useMemo(() => {
-    if (!dbCards || dbCards.length === 0) return [];
-    const pool = dbCards.filter(c => c.image);
-    if (pool.length === 0) return [];
-    
-    // Función simple de hash para convertir UUIDs de Supabase en enteros consistentes
-    const getStringHash = (str) => {
-      let hash = 0;
-      if (!str) return hash;
-      const s = String(str);
-      for (let i = 0; i < s.length; i++) {
-        hash = (hash << 5) - hash + s.charCodeAt(i);
-        hash |= 0;
-      }
-      return Math.abs(hash);
-    };
+  const [randomPromoCards, setRandomPromoCards] = useState([]);
 
-    const seed = pool.length + getStringHash(pool[0]?.id);
-    const getPseudoRandom = (val) => {
-      const numericVal = typeof val === 'number' ? val : getStringHash(val);
-      const x = Math.sin(seed + numericVal) * 10000;
-      return x - Math.floor(x);
-    };
-    
-    const shuffled = [...pool].sort((a, b) => {
-      const hashA = getPseudoRandom(a.id || 1);
-      const hashB = getPseudoRandom(b.id || 2);
-      return hashA - hashB;
-    });
-    
-    return [shuffled[0], shuffled[1] || shuffled[0], shuffled[2] || shuffled[0]];
+  // Seleccionar 3 cartas aleatorias al azar en cada recarga o cambio de catálogo
+  useEffect(() => {
+    if (dbCards && dbCards.length > 0) {
+      const pool = dbCards.filter(c => c.image);
+      if (pool.length > 0) {
+        const shuffled = [...pool].sort(() => 0.5 - Math.random());
+        setRandomPromoCards([
+          shuffled[0], 
+          shuffled[1] || shuffled[0], 
+          shuffled[2] || shuffled[0]
+        ]);
+      }
+    }
   }, [dbCards]);
 
   return (
