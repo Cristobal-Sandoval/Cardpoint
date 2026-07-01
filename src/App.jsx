@@ -1732,17 +1732,7 @@ export default function App() {
                   <p className="text-[11px] text-slate-400 dark:text-slate-550 leading-normal px-4">
                     Esta carta no está disponible actualmente en nuestro stock para cotización.
                   </p>
-                  <div className="px-4 pt-1">
-                    <a 
-                      href={getTcgPlayerUrl(selectedCardDetail)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-2.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <ExternalLink size={12} className="text-slate-400" />
-                      Buscar disponibilidad en TCGplayer
-                    </a>
-                  </div>
+                  
                 </div>
               ) : (
                 <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -1800,17 +1790,6 @@ export default function App() {
                     </button>
                   )}
 
-                  <div className="text-center pt-1">
-                    <a 
-                      href={getTcgPlayerUrl(selectedCardDetail)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-[#0052FF] transition-all font-medium"
-                    >
-                      <ExternalLink size={10} />
-                      Ver precio de referencia en TCGplayer
-                    </a>
-                  </div>
                 </div>
               )}
             </div>
