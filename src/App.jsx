@@ -728,6 +728,11 @@ export default function App() {
   const [isImageZoomed, setIsImageZoomed] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
 
+  // Cupones de descuento
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState('');
+
   // UI/UX Loader state for card detail image loading
   const [modalImageLoading, setModalImageLoading] = useState(true);
 
@@ -983,10 +988,42 @@ export default function App() {
     setInquiryList([]);
   };
 
+  // Cupones de descuento válidos
+  const VALID_COUPONS = {
+    'CARDPOINT10': { code: 'CARDPOINT10', discount: 0.10, desc: '10% de descuento en singles' },
+    'SINGLESCONCE': { code: 'SINGLESCONCE', discount: 0.05, desc: '5% de descuento en singles' },
+    'BIOCP15': { code: 'BIOCP15', discount: 0.15, desc: '15% de descuento en singles' }
+  };
+
+  const handleApplyCoupon = (code) => {
+    const cleanCode = code.toUpperCase().trim();
+    if (!cleanCode) {
+      setAppliedCoupon(null);
+      setCouponError('');
+      return;
+    }
+    const found = VALID_COUPONS[cleanCode];
+    if (found) {
+      setAppliedCoupon(found);
+      setCouponError('');
+    } else {
+      setAppliedCoupon(null);
+      setCouponError('Cupón inválido');
+    }
+  };
+
   const copyInquiryToClipboard = () => {
     const listText = inquiryList.map(card => `- ${card.name} (${card.condition}) - $${card.price.toLocaleString('es-CL')} CLP`).join('\n');
     const total = inquiryList.reduce((acc, curr) => acc + curr.price, 0);
-    const message = `¡Hola Cardpoint! Me interesan las siguientes cartas que vi en su catálogo web:\n\n${listText}\n\nTotal estimado: $${total.toLocaleString('es-CL')} CLP\n\n¿Me confirman disponibilidad para coordinar transferencia?`;
+    
+    let message = '';
+    if (appliedCoupon) {
+      const discountAmount = Math.round(total * appliedCoupon.discount);
+      const finalTotal = total - discountAmount;
+      message = `¡Hola Cardpoint! Me interesan las siguientes cartas que vi en su catálogo web:\n\n${listText}\n\nTotal bruto: $${total.toLocaleString('es-CL')} CLP\nCupón aplicado: ${appliedCoupon.code} (-${appliedCoupon.discount * 100}%)\nTotal con descuento: $${finalTotal.toLocaleString('es-CL')} CLP\n\n¿Me confirman disponibilidad para coordinar transferencia?`;
+    } else {
+      message = `¡Hola Cardpoint! Me interesan las siguientes cartas que vi en su catálogo web:\n\n${listText}\n\nTotal estimado: $${total.toLocaleString('es-CL')} CLP\n\n¿Me confirman disponibilidad para coordinar transferencia?`;
+    }
     
     navigator.clipboard.writeText(message).then(() => {
       setCopiedText(true);
@@ -1356,15 +1393,76 @@ export default function App() {
 
             {/* Acciones */}
             <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-4">
+              {/* Cupón de Descuento */}
+              {inquiryList.length > 0 && (
+                <div className="border-b border-slate-200/40 dark:border-slate-800/40 pb-3.5 space-y-2">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase">
+                    <span>Cupón de Descuento:</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Ej: CARDPOINT10, BIOCP15..."
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value)}
+                      className="flex-grow px-3 py-1.5 text-xs rounded-xl border bg-white dark:bg-[#0c0e16] border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-[#0052FF] uppercase"
+                    />
+                    <button
+                      onClick={() => handleApplyCoupon(couponInput)}
+                      className="px-3.5 py-1.5 bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+                  {couponError && (
+                    <p className="text-[10px] text-red-500 font-semibold">{couponError}</p>
+                  )}
+                  {appliedCoupon && (
+                    <div className="flex items-center justify-between p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black">
+                        ✓ {appliedCoupon.code} aplicado (-{appliedCoupon.discount * 100}%)
+                      </span>
+                      <button 
+                        onClick={() => {
+                          setAppliedCoupon(null);
+                          setCouponInput('');
+                          setCouponError('');
+                        }}
+                        className="text-emerald-600 dark:text-emerald-400 hover:text-red-500 p-0.5"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs text-slate-400 font-bold uppercase">
+                <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase">
                   <span>Cartas seleccionadas:</span>
                   <span>{inquiryList.length}</span>
                 </div>
-                <div className="flex items-center justify-between text-slate-900 dark:text-white">
-                  <span className="font-black text-sm">Valor Total Estimado:</span>
-                  <span className="font-black text-lg text-[#0052FF]">${totalInquiryValue.toLocaleString('es-CL')} CLP</span>
-                </div>
+                {appliedCoupon ? (
+                  <>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase">
+                      <span>Subtotal bruto:</span>
+                      <span>${totalInquiryValue.toLocaleString('es-CL')} CLP</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-[#0052FF] font-bold uppercase">
+                      <span>Descuento ({appliedCoupon.discount * 100}%):</span>
+                      <span>-${Math.round(totalInquiryValue * appliedCoupon.discount).toLocaleString('es-CL')} CLP</span>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-900 dark:text-white pt-1.5 border-t border-dashed border-slate-200 dark:border-slate-800">
+                      <span className="font-black text-sm">Valor Total Estimado:</span>
+                      <span className="font-black text-lg text-[#0052FF]">${(totalInquiryValue - Math.round(totalInquiryValue * appliedCoupon.discount)).toLocaleString('es-CL')} CLP</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between text-slate-900 dark:text-white">
+                    <span className="font-black text-sm">Valor Total Estimado:</span>
+                    <span className="font-black text-lg text-[#0052FF]">${totalInquiryValue.toLocaleString('es-CL')} CLP</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

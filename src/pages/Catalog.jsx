@@ -34,6 +34,30 @@ export default function Catalog({
   paginatedCards
 }) {
 
+  const [showAutocomplete, setShowAutocomplete] = React.useState(false);
+
+  // Obtener sugerencias de autocompletado en base al stock real
+  const autocompleteSuggestions = React.useMemo(() => {
+    if (!searchQuery || searchQuery.trim().length < 2 || !catalogCards) return [];
+    const query = searchQuery.toLowerCase().trim();
+    
+    const matchedNames = catalogCards
+      .filter(c => c.name && c.name.toLowerCase().includes(query))
+      .map(c => c.name);
+      
+    return [...new Set(matchedNames)].slice(0, 5);
+  }, [searchQuery, catalogCards]);
+
+  React.useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.relative.w-full.max-w-lg')) {
+        setShowAutocomplete(false);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, []);
+
   // Sugerencias populares de cartas Pokémon
   const SUGGESTIONS = ["Pikachu", "Charizard", "Lugia", "Mewtwo", "Arceus", "Greninja"];
 
@@ -97,18 +121,52 @@ export default function Catalog({
             type="text"
             placeholder="Buscar Charizard, Pikachu, Mascarada, Crown Zenith..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowAutocomplete(true);
+            }}
+            onFocus={() => setShowAutocomplete(true)}
             className="w-full pl-11 pr-10 py-3.5 rounded-2xl border-0 bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0052FF] transition-all"
             aria-label="Buscar cartas"
           />
           {searchQuery && (
             <button 
-              onClick={() => setSearchQuery('')}
+              onClick={() => {
+                setSearchQuery('');
+                setShowAutocomplete(false);
+              }}
               className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
               aria-label="Limpiar búsqueda"
             >
               <X size={16} />
             </button>
+          )}
+
+          {/* Menú de Autocompletado Flotante */}
+          {showAutocomplete && autocompleteSuggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-[#111723] border border-slate-200/85 dark:border-slate-800 rounded-2xl shadow-xl z-20 overflow-hidden text-left">
+              <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-850 text-[9px] font-black text-[#0052FF] uppercase tracking-wider bg-slate-50/50 dark:bg-slate-900/10">
+                Sugerencias en Stock
+              </div>
+              <ul className="divide-y divide-slate-100 dark:divide-slate-850">
+                {autocompleteSuggestions.map((suggestion) => (
+                  <li key={suggestion}>
+                    <button
+                      onClick={() => {
+                        setSearchQuery(suggestion);
+                        setShowAutocomplete(false);
+                        setSelectedRarity('Todas');
+                        setCardPage(1);
+                      }}
+                      className="w-full px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-900 text-xs text-slate-700 dark:text-slate-350 font-bold flex items-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <Search size={12} className="text-slate-400" />
+                      {suggestion}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
       </div>
