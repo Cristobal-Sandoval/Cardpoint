@@ -791,6 +791,22 @@ export default function App() {
     }
   };
 
+  // Generar URL de TCGPlayer con tracking de afiliados de Impact
+  const getTcgPlayerUrl = (card) => {
+    if (!card) return '';
+    const query = `${card.name} ${card.set || ''}`.trim();
+    const encodedQuery = encodeURIComponent(query);
+    // Cambiar por tu ID de afiliado de Impact cuando sea aprobada
+    const affiliateId = 'YOUR_AFFILIATE_ID_HERE';
+    
+    const targetUrl = `https://www.tcgplayer.com/search/pokemon/product?q=${encodedQuery}&utm_campaign=affiliate&utm_medium=cardpoint&utm_source=impact`;
+    
+    if (affiliateId && affiliateId !== 'YOUR_AFFILIATE_ID_HERE') {
+      return `https://tcgplayer.pxf.io/c/${affiliateId}/subID/marketplace?u=${encodeURIComponent(targetUrl)}`;
+    }
+    return targetUrl;
+  };
+
   const detailStockItem = useMemo(() => {
     if (!selectedCardDetail) return null;
     const isApiCard = typeof selectedCardDetail.id === 'string' && isNaN(Number(selectedCardDetail.id));
@@ -1524,13 +1540,26 @@ export default function App() {
               </div>
 
               {!detailStockItem ? (
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 text-center space-y-2 py-2">
-                  <span className="inline-block px-3 py-1 bg-slate-100 dark:bg-slate-800/85 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-lg uppercase tracking-wider">
-                    Solo catálogo de referencia
-                  </span>
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 text-center space-y-3 py-2">
+                  <div>
+                    <span className="inline-block px-3 py-1 bg-slate-100 dark:bg-slate-800/85 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-lg uppercase tracking-wider">
+                      Solo catálogo de referencia
+                    </span>
+                  </div>
                   <p className="text-[11px] text-slate-400 dark:text-slate-550 leading-normal px-4">
                     Esta carta no está disponible actualmente en nuestro stock para cotización.
                   </p>
+                  <div className="px-4 pt-1">
+                    <a 
+                      href={getTcgPlayerUrl(selectedCardDetail)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <ExternalLink size={12} className="text-slate-400" />
+                      Buscar disponibilidad en TCGplayer
+                    </a>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -1564,6 +1593,18 @@ export default function App() {
                       </>
                     )}
                   </button>
+
+                  <div className="text-center pt-1">
+                    <a 
+                      href={getTcgPlayerUrl(selectedCardDetail)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-[#0052FF] transition-all font-medium"
+                    >
+                      <ExternalLink size={10} />
+                      Ver precio de referencia en TCGplayer
+                    </a>
+                  </div>
                 </div>
               )}
             </div>
