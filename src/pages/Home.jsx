@@ -449,7 +449,7 @@ export default function Home({
               visibleNewsList.slice(0, 3).map((n) => (
                 <div 
                   key={n.id}
-                  onClick={() => { setSelectedNews(n); setCurrentTab('news'); }}
+                  onClick={() => { setSelectedNews(n); setCurrentTab('news'); window.scrollTo(0, 0); }}
                   className="flex gap-4 p-3 rounded-2xl border cursor-pointer transition-all hover:border-[#0052FF]/40 bg-white dark:bg-[#121824] border-slate-100 dark:border-slate-800"
                 >
                   <div className="w-20 sm:w-24 aspect-[4/3] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-950 flex-shrink-0">
