@@ -194,6 +194,7 @@ function AdminCards({ toast }) {
   const [apiResults, setApiResults] = useState([]);
   const [apiSearchError, setApiSearchError] = useState(null); // null | 'no_results' | 'timeout' | 'error'
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [fixingImageCardId, setFixingImageCardId] = useState(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [adminSearch, setAdminSearch] = useState('');
@@ -260,6 +261,31 @@ function AdminCards({ toast }) {
       rarity: card.rarity || prev.rarity
     }));
     setApiResults([]);
+  };
+
+  const handleFixCardImage = async (card) => {
+    if (!card?.name || fixingImageCardId) return;
+    setFixingImageCardId(card.id);
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch(
+        `https://api.pokemontcg.io/v2/cards?q=name:"${card.name}"&pageSize=1`,
+        { signal: controller.signal }
+      );
+      clearTimeout(timeout);
+      if (!res.ok) { toast('Error al consultar API', 'error'); return; }
+      const data = await res.json();
+      const result = data.data?.[0];
+      if (!result?.images?.large) { toast('No se encontró imagen en la API', 'error'); return; }
+      const { error } = await supabase.from('cards').update({ image: result.images.large }).eq('id', card.id);
+      if (error) { toast('Error al guardar: ' + error.message, 'error'); return; }
+      loadCards();
+      toast(`Imagen actualizada: ${card.name} ✓`, 'success');
+    } catch (err) {
+      toast('Error de conexión con la API', 'error');
+    }
+    setFixingImageCardId(null);
   };
 
   // Upload real photo to ImgBB (free, unlimited)
@@ -423,6 +449,7 @@ function AdminCards({ toast }) {
                     </td>
                     <td className="px-3 py-2 sm:px-4 sm:py-3">
                       <div className="flex gap-2">
+                        <button onClick={() => handleFixCardImage(card)} disabled={fixingImageCardId === card.id} title="Resetear imagen desde API" className="p-1.5 sm:p-2 rounded-lg bg-white/5 hover:bg-emerald-600/20 text-slate-400 hover:text-emerald-400 transition-all disabled:opacity-40"><IcoImage /></button>
                         <button onClick={() => openEdit(card)} className="p-1.5 sm:p-2 rounded-lg bg-white/5 hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 transition-all"><IcoEdit /></button>
                         <button onClick={() => setDeleteTarget(card)} className="p-1.5 sm:p-2 rounded-lg bg-white/5 hover:bg-red-600/20 text-slate-400 hover:text-red-400 transition-all"><IcoTrash /></button>
                       </div>
