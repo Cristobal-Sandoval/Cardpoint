@@ -49,12 +49,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://bmtcibfokmrdihubwepv.supabase.co" crossorigin>
     <link rel="preconnect" href="https://images.pokemontcg.io" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
     
     <!-- SEO and Social Media Meta Tags -->
     <meta name="google-site-verification" content="9jFEoVD43E3CtDmX1OeMcQl51PiiV7N_vaBmv162xr4" />
     <meta name="description" content="Especialistas en cartas sueltas (singles) de Pokémon TCG en Concepción, Chile. Explora nuestro catálogo en stock real, realiza cotizaciones, revisa próximos torneos y busca en la base de datos oficial." />
-    <meta name="keywords" content="Pokémon TCG, cartas pokemon, singles pokemon, Concepción, Chile, cartas sueltas, comprar cartas pokemon, torneos pokemon" />
     <meta name="author" content="CardPoint" />
     
     <!-- Open Graph / Facebook -->
@@ -73,10 +74,10 @@
   </head>
   <body>
     <div id="root">
-      <!-- Contenido pre-renderizado estático para indexación SEO (Reemplazado por React al cargar) -->
-      <div style="opacity: 0; width: 0; height: 0; overflow: hidden; position: absolute; pointer-events: none;">
+      <!-- Contenido SEO visible solo para crawlers / screen-readers (sr-only pattern aceptado por Google) -->
+      <div style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;">
         <h1>CardPoint - Tienda de Singles de Pokémon TCG en Concepción, Chile</h1>
-        <p>Especialistas en <strong>cartas sueltas (singles)</strong> de Pokémon TCG con stock real en Concepción. Compra, vende y cotiza cartas individuales de colecciones clásicas y de última generación.</p>
+        <p>Especialistas en cartas sueltas (singles) de Pokémon TCG con stock real en Concepción. Compra, vende y cotiza cartas individuales de colecciones clásicas y de última generación.</p>
         <h2>Singles Pokémon TCG en Concepción</h2>
         <ul>
           <li>Catálogo completo con stock real y precios actualizados.</li>

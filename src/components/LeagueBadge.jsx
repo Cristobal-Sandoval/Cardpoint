@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function LeagueBadge({ className = "" }) {
   return (
     <div className={`flex flex-col items-center gap-0.5 select-none z-10 ${className}`}>

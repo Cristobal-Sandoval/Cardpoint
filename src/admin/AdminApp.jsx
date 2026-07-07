@@ -3,32 +3,7 @@ import { supabase } from '../supabaseClient';
 import { useAutoNews } from '../hooks/useAutoNews';
 import { useAdmin } from '../hooks/useAdmin';
 import { HERO_BANNERS } from '../constants/banners';
-
-// Helper para parsear fechas de noticias (soportando formatos ISO y texto en español "26 de junio de 2026")
-const parseNewsDate = (dateStr) => {
-  if (!dateStr) return 0;
-  const parsed = Date.parse(dateStr);
-  if (!isNaN(parsed)) return parsed;
-  const clean = dateStr.toLowerCase().replace(/\bde\b/g, '').replace(/\s+/g, ' ').trim();
-  const months = {
-    'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
-    'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
-    'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12',
-    'ene': '01', 'feb': '02', 'mar': '03', 'abr': '04', 'may': '05', 'jun': '06',
-    'jul': '07', 'ago': '08', 'sep': '09', 'oct': '10', 'nov': '11', 'dic': '12'
-  };
-  const match = clean.match(/^(\d{1,2})\s+([a-z]+)\s+(\d{4})$/);
-  if (match) {
-    const day = match[1].padStart(2, '0');
-    const monthNum = months[match[2]];
-    const year = match[3];
-    if (monthNum) {
-      const parsedIso = Date.parse(`${year}-${monthNum}-${day}T12:00:00`);
-      if (!isNaN(parsedIso)) return parsedIso;
-    }
-  }
-  return 0;
-};
+import { parseNewsDate } from '../utils/dateUtils';
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 const Icon = ({ d, size = 20 }) => (
@@ -722,6 +697,9 @@ function AdminNews({ toast }) {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [quickImageEdit, setQuickImageEdit] = useState(null);
+  const [quickImageUrl, setQuickImageUrl] = useState('');
+  const [quickImageSaving, setQuickImageSaving] = useState(false);
 
   const emptyForm = { title: '', date: today(), summary: '', content: '', image: '', published: true };
   const [form, setForm] = useState(emptyForm);
@@ -844,6 +822,32 @@ function AdminNews({ toast }) {
     await updateSetting('hidden_news', next);
   };
 
+  const handleQuickImageSave = async () => {
+    if (!quickImageEdit || !quickImageUrl) return;
+    setQuickImageSaving(true);
+    const { error } = await supabase.from('news').insert([{
+      title: quickImageEdit.title,
+      date: quickImageEdit.date,
+      summary: quickImageEdit.summary || '',
+      content: quickImageEdit.content || '',
+      image: quickImageUrl,
+      published: true
+    }]);
+    if (!error) {
+      const next = hiddenNewsIds.includes(quickImageEdit.id)
+        ? hiddenNewsIds
+        : [...hiddenNewsIds, quickImageEdit.id];
+      await updateSetting('hidden_news', next);
+      toast('Imagen actualizada ✓', 'success');
+    } else {
+      toast('Error: ' + error.message, 'error');
+    }
+    setQuickImageSaving(false);
+    setQuickImageEdit(null);
+    setQuickImageUrl('');
+    load();
+  };
+
   const combinedNews = useMemo(() => {
     const list = [...news, ...autoNews];
     return list.sort((a, b) => {
@@ -915,7 +919,10 @@ function AdminNews({ toast }) {
                       <button onClick={() => toggleHideAutoNews(item.id)} title={hiddenNewsIds.includes(item.id) ? 'Mostrar en tienda' : 'Ocultar de tienda'} className={`p-2 rounded-lg bg-white/5 transition-all ${hiddenNewsIds.includes(item.id) ? 'text-red-400 hover:bg-red-600/20' : 'text-slate-400 hover:text-green-400 hover:bg-green-600/20'}`}>
                         {hiddenNewsIds.includes(item.id) ? <IcoEyeOff /> : <IcoEye />}
                       </button>
-                      <button onClick={() => openEdit(item)} title="Editar y guardar copia local" className="p-2 rounded-lg bg-white/5 hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 transition-all">
+                      <button onClick={() => { setQuickImageEdit(item); setQuickImageUrl(item.image || ''); }} title="Cambiar solo la imagen" className="p-2 rounded-lg bg-white/5 hover:bg-green-600/20 text-slate-400 hover:text-green-400 transition-all">
+                        <IcoImage />
+                      </button>
+                      <button onClick={() => openEdit(item)} title="Editar todo (crea copia local)" className="p-2 rounded-lg bg-white/5 hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 transition-all">
                         <IcoEdit />
                       </button>
                     </div>
@@ -979,6 +986,32 @@ function AdminNews({ toast }) {
             </div>
           )}
 
+        </div>
+      )}
+
+      {/* Editor rápido de imagen */}
+      {quickImageEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setQuickImageEdit(null)}>
+          <div className="bg-[#0b1120] border border-white/10 rounded-3xl p-6 w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-white mb-1">Cambiar imagen</h3>
+            <p className="text-xs text-slate-400 mb-4 truncate">{quickImageEdit.title}</p>
+            {quickImageEdit.image && (
+              <img src={quickImageEdit.image} alt="Actual" className="w-full aspect-[21/9] object-cover rounded-xl mb-4 border border-white/5" onError={e => { e.target.style.display = 'none' }} />
+            )}
+            <input
+              className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-[#0052FF] transition-all mb-4"
+              value={quickImageUrl}
+              onChange={e => setQuickImageUrl(e.target.value)}
+              placeholder="https://ejemplo.com/imagen.jpg"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setQuickImageEdit(null)} className="flex-1 py-2.5 rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 text-sm font-medium transition-all">Cancelar</button>
+              <button onClick={handleQuickImageSave} disabled={quickImageSaving || !quickImageUrl} className="flex-1 py-2.5 rounded-xl bg-[#0052FF] hover:bg-blue-500 text-white text-sm font-semibold transition-all disabled:opacity-50">
+                {quickImageSaving ? 'Guardando...' : 'Guardar imagen'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

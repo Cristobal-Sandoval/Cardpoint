@@ -24,6 +24,10 @@
         {
           "key": "Strict-Transport-Security",
           "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://*.clarity.ms https://www.googletagmanager.com https://connect.facebook.net https://api.rss2json.com https://*.pokemontcg.io; img-src 'self' data: blob: https://*.pokemontcg.io https://images.unsplash.com https://assets.pokemon.com https://*.clarity.ms https://www.facebook.com https://mcdn.pokemon.com https://pokemonalpha.es https://www.tcgnews.cl; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://api.pokemontcg.io https://api.rss2json.com https://*.clarity.ms; frame-src 'self' https://www.googletagmanager.com; media-src 'self' https://*.clarity.ms"
         }
       ]
     }

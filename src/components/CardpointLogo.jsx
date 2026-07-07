@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function CardpointLogo({ className = "h-14", showText = true }) {
   return (
     <div className={`flex flex-col items-center justify-center ${className}`}>

@@ -1,12 +1,14 @@
-import React from 'react';
-import { 
-  Search, 
-  X, 
-  ChevronRight, 
-  ChevronLeft, 
-  Plus, 
-  Check, 
-  HelpCircle 
+
+import { useState, useMemo, useEffect, Fragment } from 'react';
+import {
+  Search,
+  X,
+  ChevronRight,
+  ChevronLeft,
+  Plus,
+  Check,
+  HelpCircle,
+  Flame
 } from 'lucide-react';
 import GoogleAdSlot from '../components/GoogleAdSlot';
 import LeagueBadge from '../components/LeagueBadge';
@@ -34,10 +36,10 @@ export default function Catalog({
   paginatedCards
 }) {
 
-  const [showAutocomplete, setShowAutocomplete] = React.useState(false);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
 
   // Obtener sugerencias de autocompletado en base al stock real
-  const autocompleteSuggestions = React.useMemo(() => {
+  const autocompleteSuggestions = useMemo(() => {
     if (!searchQuery || searchQuery.trim().length < 2 || !catalogCards) return [];
     const query = searchQuery.toLowerCase().trim();
     
@@ -48,7 +50,7 @@ export default function Catalog({
     return [...new Set(matchedNames)].slice(0, 5);
   }, [searchQuery, catalogCards]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleOutsideClick = (e) => {
       if (!e.target.closest('.relative.w-full.max-w-lg')) {
         setShowAutocomplete(false);
@@ -238,7 +240,7 @@ export default function Catalog({
               const isAdPosition = index === 3; // Mostrar publicidad en la 4ta tarjeta
 
               return (
-                <React.Fragment key={card.id}>
+                <Fragment key={card.id}>
                   {isAdPosition && (
                     <GoogleAdSlot format="card" className="col-span-1" />
                   )}
@@ -266,7 +268,7 @@ export default function Catalog({
                       </span>
                       {card.is_offer && card.offer_price && (
                         <span className="absolute top-2 right-2 bg-red-650 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wide border border-white/20 z-10 animate-pulse">
-                          🔥 Oferta
+                          <Flame size={11} className="inline" /> Oferta
                         </span>
                       )}
                       {card.is_reverse && (
@@ -331,7 +333,7 @@ export default function Catalog({
                       </div>
                     </div>
                   </div>
-                </React.Fragment>
+                </Fragment>
               );
             })}
           </div>

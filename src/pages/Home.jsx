@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Sparkles, 
   ChevronRight, 
@@ -9,32 +9,13 @@ import {
   Shield, 
   Coins, 
   Info,
-  Check
+  Check,
+  Star,
+  Clock
 } from 'lucide-react';
 import GoogleAdSlot from '../components/GoogleAdSlot';
 import LeagueBadge from '../components/LeagueBadge';
-
-// Componente SVG local de Instagram
-function Instagram({ size = 24, className = "" }) {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-    </svg>
-  );
-}
+import InstagramIcon from '../components/InstagramIcon';
 
 export default function Home({
   theme,
@@ -103,9 +84,9 @@ export default function Home({
                     style={{ background: `linear-gradient(135deg, ${b.bgFrom} 0%, ${b.bgTo} 100%)` }}
                   />
                   {/* Estrellitas decorativas */}
-                  <div className="absolute top-6 left-8 text-white/15 text-4xl font-black select-none">★</div>
-                  <div className="absolute bottom-10 left-16 text-white/10 text-2xl font-black select-none">★</div>
-                  <div className="absolute top-10 right-[45%] text-white/10 text-xl select-none">✦</div>
+                  <div className="absolute top-6 left-8 text-white/15 select-none"><Star size={36} fill="currentColor" /></div>
+                  <div className="absolute bottom-10 left-16 text-white/10 select-none"><Star size={24} fill="currentColor" /></div>
+                  <div className="absolute top-10 right-[45%] text-white/10 select-none"><Sparkles size={20} /></div>
 
                   {/* Contenido */}
                   <div className="relative z-20 grid grid-cols-1 lg:grid-cols-2 gap-6 items-center px-8 sm:px-12 py-10 w-full">
@@ -494,7 +475,7 @@ export default function Home({
             ) : visibleNewsList.length === 0 ? (
               <p className="text-sm text-slate-400">No hay noticias publicadas aún.</p>
             ) : (
-              visibleNewsList.slice(0, 3).map((n) => (
+              visibleNewsList.slice(0, 4).map((n) => (
                 <div 
                   key={n.id}
                   onClick={() => { setSelectedNews(n); window.scrollTo(0, 0); }}
@@ -582,9 +563,9 @@ export default function Home({
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
-                      <span className="flex items-center gap-1">🛡️ {t.format}</span>
-                      <span className="flex items-center gap-1">📍 {t.location}</span>
-                      <span className="flex items-center gap-1">🕒 {t.time}</span>
+                      <span className="flex items-center gap-1"><Shield size={13} /> {t.format}</span>
+                      <span className="flex items-center gap-1"><MapPin size={13} /> {t.location}</span>
+                      <span className="flex items-center gap-1"><Clock size={13} /> {t.time}</span>
                     </div>
                   </div>
                 </div>
@@ -604,7 +585,7 @@ export default function Home({
           {/* Info */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/10 flex-shrink-0">
-              <Instagram size={20} />
+              <InstagramIcon size={20} />
             </div>
             <div>
               <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white leading-tight">Síguenos en Instagram</h3>
@@ -641,7 +622,7 @@ export default function Home({
             rel="noreferrer"
             className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl shadow-lg transition-all flex items-center gap-2 text-xs sm:text-sm cursor-pointer flex-shrink-0"
           >
-            <Instagram size={16} />
+            <InstagramIcon size={16} />
             Ir a Instagram
           </a>
         </div>

@@ -6,7 +6,7 @@ const TCGNEWS_FALLBACK_NEWS = [
     "id": "tcgnews-fallback-0",
     "title": "Pokémon TCG Pocket: Maravillas Cotidianas, la expansión donde los Pokémon descansan y disfrutan",
     "date": "2026-06-24",
-    "image": "https://www.tcgnews.cl/noticia/imagenes/330/mediana.avif",
+    "image": "https://pokemonalpha.es/wp-content/uploads/2026/06/cartas-tcg-pocket-maravillas-cotidianas.webp",
     "summary": "Maravillas Cotidianas es una expansión de Pokémon TCG Pocket centrada en cartas con ilustraciones tiernas y relajadas de Pikachu, Piplup, Snorlax, Greedent y Sylveon.",
     "content": "<p class=\"noti-p\"><strong>Pokémon TCG Pocket sumará una nueva expansión antes de cerrar junio.</strong> The Pokémon Company International anunció <strong>Maravillas Cotidianas (</strong><strong>Everyday Wonders)</strong>, colección que llegará al juego móvil el <strong>lunes 29 de junio de 2026 a las 21:00 horas de Chile continental</strong>.</p><p class=\"noti-p\">La expansión estará protagonizada por Pokémon como <strong>Pikachu, Piplup, Snorlax, Greedent y Sylveon</strong>, con una propuesta visual centrada en ilustraciones coloridas, tiernas y más relajadas dentro del universo de Pokémon.</p>",
     "sourceUrl": "https://www.tcgnews.cl/noticia/pokemon-tcg-pocket-maravillas-cotidianas-la-expansion-donde-los-pokemon-descansan-y-disfrutan",
@@ -18,7 +18,7 @@ const TCGNEWS_FALLBACK_NEWS = [
     "id": "tcgnews-fallback-1",
     "title": "Un nuevo registro en Japón vuelve a poner al Team Rocket en el radar de Pokémon",
     "date": "2026-06-24",
-    "image": "https://www.tcgnews.cl/noticia/imagenes/328/mediana.avif",
+    "image": "https://pokemonalpha.es/wp-content/uploads/2026/06/Sendero-de-Leyendas-Pokemon-GO-Fest-2026.jpg",
     "summary": "Un nuevo registro de marca en Japón relacionado con el Team Rocket abrió preguntas entre jugadores y coleccionistas, aunque por ahora no existe anuncio oficial de una nueva expansión de Pokémon TCG.",
     "content": "<p class=\"noti-p\"><strong>El Team Rocket sabe aparecer justo cuando parecía que la conversación iba por otro lado.</strong> Esta vez no fue por una carta revelada ni por un anuncio oficial de The Pokémon Company, sino por un nuevo registro de marca en Japón que comenzó a generar preguntas entre jugadores y coleccionistas.</p>",
     "sourceUrl": "https://www.tcgnews.cl/noticia/un-nuevo-registro-en-japon-vuelve-a-poner-al-team-rocket-en-el-radar-de-pokemon",
@@ -30,7 +30,7 @@ const TCGNEWS_FALLBACK_NEWS = [
     "id": "tcgnews-fallback-2",
     "title": "Mega Rayquaza lidera el adelanto de nuevas expansiones de Pokémon TCG",
     "date": "2026-06-24",
-    "image": "https://www.tcgnews.cl/noticia/imagenes/322/mediana.avif",
+    "image": "https://pokemonalpha.es/wp-content/uploads/2026/05/Siempre-Adelante-Forever-Forward-Portada-Pokemon-GO.jpg",
     "summary": "Pokémon compartió un nuevo adelanto oficial protagonizado por Mega Rayquaza, conectando próximos lanzamientos de Pokémon TCG Pocket y del TCG físico.",
     "content": "<p class=\"noti-p\">Pokémon sorprendió a la comunidad con un nuevo adelanto oficial publicado a través de sus canales en X y YouTube. El video tiene como protagonista a <strong>Mega Rayquaza</strong>, uno de los Pokémon más reconocidos de la franquicia y una figura clave dentro de la historia de las Mega Evoluciones.</p>",
     "sourceUrl": "https://www.tcgnews.cl/noticia/mega-rayquaza-lidera-el-adelanto-de-nuevas-expansiones-de-pokemon-tcg",
@@ -46,7 +46,7 @@ const POKEMON_FALLBACK_NEWS = [
     "title": "Ven a bailar con el nuevo POKÉTOON",
     "summary": "Prepárate para vivir una explosión de ternura en Pawmi, Pawmo y Pawmot en YouTube.",
     "date": "2026-06-25",
-    "image": "/og-image.png",
+    "image": "https://pokemonalpha.es/wp-content/uploads/2026/06/Sirfetchd-y-pichu-portada-aardman-1024x576.jpg",
     "content": "<p class=\"noti-p\"><strong>¡Una nueva entrega de POKÉTOON ha llegado a YouTube!</strong> Prepárate para bailar y sonreír con las divertidas aventuras de Pawmi, Pawmo y Pawmot en este nuevo corto animado lleno de ritmo y diversión.</p><p class=\"noti-p\">En esta adorable historia, una niña que está de pícnic con su padre se encuentra con estos tres dinámicos Pokémon bailando con una sincronía increíble, desatando una tarde llena de risas y música.</p>",
     "sourceUrl": "https://www.pokemon.com/el/noticias/ven-a-bailar-con-el-nuevo-corto-de-poketoon-en-youtube",
     "sourceName": "Pokémon Oficial",
@@ -89,6 +89,22 @@ const POKEMON_FALLBACK_NEWS = [
     "isExternal": true,
     "hasFullContent": true
   }
+];
+
+// Pool de imágenes Pokémon verificadas como respaldo
+const FALLBACK_IMAGES = [
+  'https://pokemonalpha.es/wp-content/uploads/2026/06/Sendero-de-Leyendas-Pokemon-GO-Fest-2026.jpg',
+  'https://pokemonalpha.es/wp-content/uploads/2026/07/julio-recompensas-tcg-pocket-1024x742.webp',
+  'https://pokemonalpha.es/wp-content/uploads/2026/07/Akari-y-Manaphy.webp',
+  'https://pokemonalpha.es/wp-content/uploads/2026/06/Escoge-tu-camino-Pokemon-GO-Portada.jpg',
+  'https://pokemonalpha.es/wp-content/uploads/2026/06/cartas-tcg-pocket-maravillas-cotidianas.webp',
+  'https://pokemonalpha.es/wp-content/uploads/2026/06/Sirfetchd-y-pichu-portada-aardman-1024x576.jpg',
+  'https://pokemonalpha.es/wp-content/uploads/2022/06/pokemon-go-julio-2022-resumen-eventos.png',
+  'https://pokemonalpha.es/wp-content/uploads/2026/05/Siempre-Adelante-Forever-Forward-Portada-Pokemon-GO.jpg',
+  'https://pokemonalpha.es/wp-content/uploads/2023/03/teraincursion-7-cristal-negro-1024x576.webp',
+  'https://mcdn.pokemon.com/image/upload/c_limit,w_1439/f_auto/q_auto:best/v1/live/pcom-cms/static-assets/cms3/es/img/video-games/tiles/tcg-pocket/2026/06/24/pokemon-tcg-pocket-169-es.png',
+  'https://mcdn.pokemon.com/image/upload/c_limit,w_1439/f_auto/q_auto:best/v1/live/pcom-cms/static-assets/cms3/us/img/misc/tiles/pokemonxp/2026/06/23/pokemonxp-169.png',
+  'https://mcdn.pokemon.com/image/upload/c_limit,w_1439/f_auto/q_auto:best/v1/live/pcom-cms/static-assets/cms3/us/img/video-games/tiles/pokemon-go/2026/06/23/pokemon-go-169.jpg',
 ];
 
 const POKEMONALPHA_FALLBACK_NEWS = [
@@ -156,7 +172,7 @@ const POKEMONALPHA_FALLBACK_NEWS = [
     "id": "pokemonalpha-fallback-5",
     "title": "Mega-Rayquaza llegará a Pokémon TCG estándar y Pocket a lo largo de este año",
     "date": "2026-06-21",
-    "image": "https://pokemonalpha.es/wp-content/uploads/2026/06/cartas-tcg-pocket-maravillas-cotidianas.webp",
+    "image": "https://pokemonalpha.es/wp-content/uploads/2026/06/Escoge-tu-camino-Pokemon-GO-Portada.jpg",
     "summary": "Esta doble expansión llegará primero a Pokémon TCG Pocket, el próximo mes de julio. Permitirá disfrutar de una expansión con Rayquaza.",
     "content": "<p class=\"noti-p\"><strong>El dragón legendario Rayquaza será la estrella indiscutible del juego de cartas coleccionables de Pokémon.</strong> The Pokémon Company ha anunciado una estrategia conjunta de lanzamientos que llevará la temática de Mega-Rayquaza tanto al juego digital para móviles Pokémon TCG Pocket como al formato físico de cartas coleccionables tradicionales.</p><p class=\"noti-p\">La primera parte de esta doble expansión digital llegará en julio de 2026 bajo el nombre de <em>“Ruler of the Skies”</em> (Gobernante de los Cielos), introduciendo una gran cantidad de cartas exclusivas y sobres de mejora en la aplicación móvil Pokémon TCG Pocket. Esta expansión contará con mecánicas aceleradas adaptadas al formato digital.</p><p class=\"noti-p\">Posteriormente, el 6 de noviembre de 2026 se lanzará a nivel mundial la expansión física de cartas titulada <em>“Megaevolución-Delta Reign”</em>, que adaptará la temática y mecánicas de Mega-Rayquaza al formato físico competitivo estándar. De esta manera, los jugadores de ambas plataformas podrán disfrutar de la majestuosidad de Rayquaza y sus poderosas evoluciones a lo largo del año.</p>",
     "sourceUrl": "https://pokemonalpha.es/2026/06/mega-rayquaza-pokemon-tcg-pocket/",
@@ -180,7 +196,7 @@ const POKEMONALPHA_FALLBACK_NEWS = [
     "id": "pokemonalpha-fallback-7",
     "title": "Embarcaos en un Sendero de leyendas camino al Pokémon GO Fest 2026",
     "date": "2026-06-19",
-    "image": "https://pokemonalpha.es/wp-content/uploads/2026/05/Siempre-Adelante-Forever-Forward-Portada-Pokemon-GO.jpg",
+    "image": "https://pokemonalpha.es/wp-content/uploads/2026/07/julio-recompensas-tcg-pocket-1024x742.webp",
     "summary": "Sendero de Leyendas será el nuevo evento de Pokémon GO que nos preparará para el Pokémon GO Fest 2026: Global.",
     "content": "<p class=\"noti-p\"><strong>El camino de preparación para el mayor festival de Pokémon GO del año ha sido revelado.</strong> Niantic ha presentado el evento especial <em>\"Sendero de Leyendas\"</em>, diseñado específicamente para preparar a toda la comunidad de entrenadores para el multitudinario Pokémon GO Fest 2026: Global, el cual promete traer sorpresas increíbles.</p><p class=\"noti-p\">El evento dará inicio el lunes 6 de julio de 2026 a las 00:01 y se prolongará hasta el viernes 10 de julio a las 23:59 (hora local). Durante este periodo, los jugadores disfrutarán de bonificaciones extraordinarias como la eliminación del límite de pases de incursión remotos, mayor efectividad de captura con las Honor Ball en incursiones y caramelos++ garantizados por intercambios para entrenadores de nivel 31 en adelante.</p><p class=\"noti-p\">En el apartado de incursiones, una inmensa alineación de Pokémon legendarios regresará a los gimnasios: Articuno, Zapdos, Moltres, Raikou, Entei, Suicune, Lugia, Ho-Oh, Rayquaza y Dialga/Palkia en su forma Origen, entre muchos otros. Cada día a las 18:00 hora local se celebrará una Hora de Incursiones con rotaciones de estos Pokémon, brindando una oportunidad inmejorable para conseguir sus variantes variocolor antes del fin de semana global.</p>",
     "sourceUrl": "https://pokemonalpha.es/2026/06/sendero-leyendas-camino-pokemon-go-fest-2026/",
@@ -190,15 +206,15 @@ const POKEMONALPHA_FALLBACK_NEWS = [
   }
 ];
 
-// Helper to generate a stable hash from a string
+// Helper to generate a stable numeric hash from a string
 function hashCode(str) {
-  if (!str) return '0';
+  if (!str) return 0;
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = (hash << 5) - hash + str.charCodeAt(i);
     hash |= 0; // Convert to 32bit integer
   }
-  return Math.abs(hash).toString(36);
+  return Math.abs(hash);
 }
 
 // Helper to strip HTML tags and decode basic HTML entities
@@ -256,7 +272,7 @@ export function useAutoNews(newsSourcesParam) {
 
   useEffect(() => {
     const fetchAllNews = async () => {
-      const CACHE_KEY = 'cardpoint_news_rss_v9';
+      const CACHE_KEY = 'cardpoint_news_rss_v11';
       const CACHE_EXPIRY = 10 * 60 * 1000; // 10 minutos (actualización más frecuente)
 
       // 1. Cargar preferencias de fuentes desde Supabase o parámetro
@@ -320,46 +336,18 @@ export function useAutoNews(newsSourcesParam) {
       };
 
       // --- PARSER PARA EL FEED RSS DE POKÉMON ALPHA ---
-      const parsePokemonAlphaRSS = (items) => {
-        return items.map((item) => {
+      const parsePokemonAlphaRSS = async (items) => {
+        // Primera pasada: extraer info básica y detectar items sin imagen
+        const parsed = items.map((item) => {
           let cleanContent = item.content || item.description || '';
           
-          // Extraer la primera imagen del contenido HTML
-          let image = '';
-          const imgMatch = cleanContent.match(/<img[^>]+src="([^">]+)"/);
-          if (imgMatch) {
-            image = imgMatch[1];
-          }
-
-          // Si no tiene imagen, asignar una temática estable según el título y categorías
+          let image = item.thumbnail || '';
+          
           if (!image) {
-            const categories = (item.categories || []).map(c => c.toLowerCase());
-            const titleLower = (item.title || '').toLowerCase();
-            
-            if (titleLower.includes('rayquaza')) {
-              image = 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/xy06/xy06-169.jpg';
-            } else if (titleLower.includes('charizard')) {
-              image = 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv03/sv03-169.jpg';
-            } else if (titleLower.includes('pikachu')) {
-              image = 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv04/sv04-169.jpg';
-            } else if (titleLower.includes('mew')) {
-              image = 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/series/sv03pt5/sv03pt5-169.jpg';
-            } else if (categories.includes('pokémon go') || categories.includes('go') || titleLower.includes('go')) {
-              image = 'https://assets.pokemon.com/assets/cms2/img/misc/countries/es/country_detail_pokemon_go.jpg';
-            } else if (categories.includes('jcc pokémon') || categories.includes('tcg') || categories.includes('pocket') || titleLower.includes('tcg') || titleLower.includes('cartas') || titleLower.includes('pocket')) {
-              image = 'https://assets.pokemon.com/assets/cms2/img/trading-card-game/tcg-homepage-featured-169-es.jpg';
-            } else if (categories.includes('masters') || titleLower.includes('masters') || titleLower.includes('ex')) {
-              image = 'https://assets.pokemon.com/assets/cms2/img/video-games/pokemon-masters/pokemon-masters-169.jpg';
-            } else if (categories.includes('escarlata') || categories.includes('púrpura') || titleLower.includes('escarlata') || titleLower.includes('púrpura') || titleLower.includes('teraincursión')) {
-              image = 'https://assets.pokemon.com/assets/cms2/img/video-games/pokemon-scarlet-and-pokemon-violet/pokemon-scarlet-and-pokemon-violet-169.jpg';
-            } else if (categories.includes('anime') || titleLower.includes('anime') || titleLower.includes('serie') || titleLower.includes('poketoon') || titleLower.includes('corto')) {
-              image = 'https://assets.pokemon.com/assets/cms2/img/watch-pokemon-tv/seasons/season26/season26_169_es.jpg';
-            } else {
-              image = 'https://assets.pokemon.com/assets/cms2/img/misc/countries/es/country_detail_pokemon_tv.jpg'; // Fallback oficial genérico
-            }
+            const imgMatch = cleanContent.match(/<img[^>]+(?:src|srcset)="([^">\s,]+)/);
+            if (imgMatch) image = imgMatch[1];
           }
 
-          // Remover scripts si hubiera
           cleanContent = cleanContent
             .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
             .trim();
@@ -368,23 +356,53 @@ export function useAutoNews(newsSourcesParam) {
 
           let summary = item.description || '';
           summary = summary.replace(/<[^>]*>/g, '').trim();
-          if (summary.length > 150) {
-            summary = summary.substring(0, 150) + "...";
-          }
+          if (summary.length > 150) summary = summary.substring(0, 150) + "...";
 
           return {
-            id: `auto-news-${hashCode(item.link || item.title)}`,
-            title: item.title,
-            date: dateStr,
-            image: image,
-            summary: summary || item.title,
-            content: cleanContent,
-            sourceUrl: item.link,
-            sourceName: 'Pokémon Alpha',
-            isExternal: true,
-            hasFullContent: true // Ya tiene todo el HTML, no requiere fetch diferido
+            item,
+            parsed: {
+              id: `auto-news-${hashCode(item.link || item.title)}`,
+              title: item.title,
+              date: dateStr,
+              image: image,
+              summary: summary || item.title,
+              content: cleanContent,
+              sourceUrl: item.link,
+              sourceName: 'Pokémon Alpha',
+              isExternal: true,
+              hasFullContent: true
+            },
+            needsOG: !image && !!item.link
           };
         });
+
+        // Segunda pasada: obtener OG image vía Vercel API route (server-side, sin CORS)
+        await Promise.allSettled(parsed.map(async (p) => {
+          if (!p.needsOG) return;
+          try {
+            const ogUrl = '/api/og-proxy?url=' + encodeURIComponent(p.item.link);
+            const ogRes = await fetch(ogUrl, { signal: AbortSignal.timeout(8000) });
+            if (ogRes.ok) {
+              const data = await ogRes.json();
+              if (data.image) p.parsed.image = data.image;
+            }
+          } catch {}
+        }));
+
+        // Tercera pasada: pool sin duplicados para los que siguen sin imagen
+        const usedImages = new Set();
+        parsed.forEach((p) => {
+          if (!p.parsed.image) {
+            let idx = hashCode(p.item.title) % FALLBACK_IMAGES.length;
+            while (usedImages.has(idx)) {
+              idx = (idx + 1) % FALLBACK_IMAGES.length;
+            }
+            usedImages.add(idx);
+            p.parsed.image = FALLBACK_IMAGES[idx];
+          }
+        });
+
+        return parsed.map(p => p.parsed);
       };
 
       // --- EJECUCIÓN DEL FETCH AL RSS ---
@@ -399,7 +417,7 @@ export function useAutoNews(newsSourcesParam) {
         if (res.ok) {
           const json = await res.json();
           if (json.status === 'ok' && json.items && json.items.length > 0) {
-            allCollectedNews = parsePokemonAlphaRSS(json.items);
+            allCollectedNews = await parsePokemonAlphaRSS(json.items);
             success = true;
             console.log(`useAutoNews: Éxito al obtener ${allCollectedNews.length} noticias desde Pokémon Alpha RSS`);
           }
@@ -408,13 +426,18 @@ export function useAutoNews(newsSourcesParam) {
         console.warn("useAutoNews: Error consultando feed RSS de Pokémon Alpha:", e.message);
       }
 
-      // Si falla, usar fallback local de Pokémon Alpha
-      if (!success) {
-        console.log("useAutoNews: Cargando noticias de fallback locales de Pokémon Alpha");
-        allCollectedNews = POKEMONALPHA_FALLBACK_NEWS.map(n => ({
-          ...n,
-          hasFullContent: true
-        }));
+      // Combinar con fallbacks para maximizar cantidad de noticias
+      const fallbacks = [
+        ...TCGNEWS_FALLBACK_NEWS,
+        ...POKEMON_FALLBACK_NEWS,
+        ...POKEMONALPHA_FALLBACK_NEWS
+      ];
+      const existingTitles = new Set(allCollectedNews.map(n => n.title));
+      for (const fb of fallbacks) {
+        if (!existingTitles.has(fb.title)) {
+          allCollectedNews.push({ ...fb, hasFullContent: true });
+          existingTitles.add(fb.title);
+        }
       }
 
       // Ordenar por fecha descendente

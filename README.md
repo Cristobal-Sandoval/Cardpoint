@@ -1,4 +1,4 @@
-# Cardpoint.cl 🃏 (v1.0.5)
+# Cardpoint.cl 🃏 (v1.0.6)
 
 Plataforma oficial de **Cardpoint Concepción**, una aplicación web moderna diseñada para la exhibición, catalogación y gestión de cartas sueltas (singles) de **Pokémon TCG** en Chile. 
 
@@ -28,10 +28,13 @@ La arquitectura del proyecto está optimizada para la velocidad, la responsivida
 *   **Normalización de Formatos:** El sistema limpia automáticamente ceros a la izquierda en los números de las cartas (ej. `"018"` ➔ `"18"`) y mapea códigos de expansión estándar a los identificadores correctos de la base de datos (ej. `TWM` ➔ `sv6`, `PRE` ➔ `sv8pt5`).
 *   **Interfaz de Control Detallada:** Paso 2 de previsualización que muestra miniaturas, nombres de cartas, rarezas y precios sugeridos. Incluye **checkboxes individuales** para permitir al administrador seleccionar qué cartas específicas publicar y cuáles omitir antes de realizar el guardado definitivo.
 
-### 📰 2. Integración de Noticias de Pokémon Alpha
-*   **Proveedor de Contenidos:** Integración simplificada orientada exclusivamente a **Pokémon Alpha** como fuente oficial, garantizando artículos de alta calidad en español.
-*   **Lectura Completa Enriquecida:** Los usuarios acceden a artículos completos en lugar de resúmenes. Los enlaces a las fuentes originales son sutiles, situados elegantemente en la esquina inferior del contenido sin marcos intrusivos.
-*   **Estrategia de Caché Avanzada:** Uso de claves de almacenamiento local versionadas para forzar la actualización de imágenes y contenido real en los navegadores de los visitantes.
+### 📰 2. Noticias Automáticas con Imágenes Reales
+*   **Fuente RSS:** Consume el feed de **Pokémon Alpha** (`pokemonalpha.es/feed/`) vía `api.rss2json.com`.
+*   **Extracción de Imágenes:** Las noticias que no incluyen `<img>` en su contenido RSS obtienen su `og:image` real mediante extracción server-side a través de una **Vercel Function** (`/api/og-proxy`). En desarrollo local, un middleware de Vite replica el mismo comportamiento.
+*   **Fallback Inteligente:** Si falla la extracción vía proxy, se asigna una imagen única del pool de respaldo (sin duplicados entre noticias).
+*   **Datos de Respaldo:** Noticias predefinidas de **Pokémon oficial**, **Pokémon Alpha** y **TCG News** como contenido base cuando el RSS no responde.
+*   **Editor Rápido de Imagen:** Panel admin permite cambiar la imagen de cualquier noticia automática con un clic (crea copia local en Supabase).
+*   **Caché Versionada:** Clave `cardpoint_news_rss_vN` en localStorage para forzar refresco de contenido en navegadores.
 
 ### 🔍 3. Catálogo y Stock Físico Inteligente
 *   **Ordenamiento por Rarity (Default):** El catálogo ordena las cartas de manera predeterminada priorizando las rarezas superiores a *Ultra Rara* (Hyper Raras, Secretas Doradas, etc.), seguidas por las cartas *Raras*, *Doble Raras* y finalmente rarezas comunes. Si coinciden en rareza, se ordenan de mayor a menor precio.
@@ -41,7 +44,11 @@ La arquitectura del proyecto está optimizada para la velocidad, la responsivida
 ### 🚀 4. Optimización de Rendimiento (Web Vitals) y SEO
 *   **Preconexión de Servidores:** Preconexiones DNS y TCP agregadas para `images.pokemontcg.io`, acelerando la descarga del arte oficial de las cartas en el buscador.
 *   **Metadatos Sociales Dinámicos:** Hook `useSEO` mejorado para actualizar en tiempo real los tags de OpenGraph (`og:*`) y Twitter Cards en el DOM, permitiendo previsualizaciones visuales exactas en enlaces compartidos (por ejemplo, al enviar noticias o detalles de catálogo).
+*   **IntersectionObserver:** Implementado en la sección de noticias del landing para animaciones de entrada solo cuando el elemento es visible.
+*   **Google Fonts asíncrono:** Carga de tipografías con `display=swap` y `preconnect` para evitar bloqueo de renderizado.
+*   **Safe Area:** Respeto de `env(safe-area-inset-*)` para dispositivos con notch.
 *   **Páginas Indexables:** Creación de archivos estáticos `robots.txt` y `sitemap.xml` para guiar a los rastreadores web sobre las rutas válidas, impidiendo el indexado de la ruta privada `/acceso-privado-cp/*`.
+*   **CSP Limpia:** Content Security Policy depurada, eliminando proxies CORS externos no utilizados (`allorigins.win`, `corsproxy.io`, `codetabs.com`).
 
 ---
 

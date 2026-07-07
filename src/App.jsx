@@ -1,5 +1,5 @@
 // CardPoint v1.0.2 - Vercel Rebuild Trigger
-import React, { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCards } from './hooks/useCards';
 import { useNews } from './hooks/useNews';
@@ -22,69 +22,25 @@ import {
   Layers,
   Sparkles,
   BookOpen,
-  MapPin
+  MapPin,
+  Palette,
+  Camera,
+  Trophy,
+  Cat
 } from 'lucide-react';
 
 import CardpointLogo from './components/CardpointLogo';
 import LeagueBadge from './components/LeagueBadge';
 import GoogleAdSlot from './components/GoogleAdSlot';
+import InstagramIcon from './components/InstagramIcon';
+import { parseNewsDate } from './utils/dateUtils';
 
-// Carga perezosa de vistas públicas de CardPoint
 const Home = lazy(() => import('./pages/Home'));
 const Catalog = lazy(() => import('./pages/Catalog'));
 const News = lazy(() => import('./pages/News'));
 const Tournaments = lazy(() => import('./pages/Tournaments'));
 const HowToBuy = lazy(() => import('./pages/HowToBuy'));
 
-// Helper para parsear fechas de noticias (soportando formatos ISO y texto en español "26 de junio de 2026")
-const parseNewsDate = (dateStr) => {
-  if (!dateStr) return 0;
-  const parsed = Date.parse(dateStr);
-  if (!isNaN(parsed)) return parsed;
-  const clean = dateStr.toLowerCase().replace(/\bde\b/g, '').replace(/\s+/g, ' ').trim();
-  const months = {
-    'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
-    'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
-    'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12',
-    'ene': '01', 'feb': '02', 'mar': '03', 'abr': '04', 'may': '05', 'jun': '06',
-    'jul': '07', 'ago': '08', 'sep': '09', 'oct': '10', 'nov': '11', 'dic': '12'
-  };
-  const match = clean.match(/^(\d{1,2})\s+([a-z]+)\s+(\d{4})$/);
-  if (match) {
-    const day = match[1].padStart(2, '0');
-    const monthNum = months[match[2]];
-    const year = match[3];
-    if (monthNum) {
-      const parsedIso = Date.parse(`${year}-${monthNum}-${day}T12:00:00`);
-      if (!isNaN(parsedIso)) return parsedIso;
-    }
-  }
-  return 0;
-};
-
-// SVG de Icono de Instagram
-function Instagram({ size = 24, className = "" }) {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-    </svg>
-  );
-}
-
-// Rarezas y prioridades de ordenamiento
 const RARITIES = [
   { id: 'Todas', name: 'Todas' },
   { id: 'Común', name: 'Común' },
@@ -354,25 +310,6 @@ export default function App() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // Carga dinámica diferida de Google AdSense (Deshabilitado temporalmente a petición del usuario)
-  /*
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const timer = setTimeout(() => {
-      const scriptId = 'google-adsense-script';
-      if (!document.getElementById(scriptId)) {
-        const script = document.createElement('script');
-        script.id = scriptId;
-        script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2882896493327968";
-        script.async = true;
-        script.crossOrigin = "anonymous";
-        document.head.appendChild(script);
-      }
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
-  */
 
   useEffect(() => {
     if (activeAds.length <= 1) return;
@@ -971,11 +908,32 @@ export default function App() {
   useEffect(() => {
     if (currentTab !== 'home' || isPaused) return;
 
-    let animationId;
     const el = carruselRef.current;
     if (!el) return;
 
+    let animationId;
+    let isVisible = true;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting;
+        if (!isVisible && animationId) {
+          cancelAnimationFrame(animationId);
+          animationId = undefined;
+        } else if (isVisible && !animationId) {
+          animationId = requestAnimationFrame(smoothScroll);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(el);
+
     const smoothScroll = () => {
+      if (!isVisible) {
+        animationId = undefined;
+        return;
+      }
       const setWidth = el.scrollWidth / 3;
       if (setWidth > 0) {
         el.scrollLeft += 0.70; 
@@ -987,7 +945,10 @@ export default function App() {
     };
 
     animationId = requestAnimationFrame(smoothScroll);
-    return () => cancelAnimationFrame(animationId);
+    return () => {
+      cancelAnimationFrame(animationId);
+      observer.disconnect();
+    };
   }, [currentTab, isPaused, carouselCards]);
 
   const fetchDBCards = async (query, page = 1, retryCount = 0) => {
@@ -1171,6 +1132,11 @@ export default function App() {
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-300 font-sans theme-transition ${theme === 'dark' ? 'bg-[#0a0d14] text-[#f1f5f9]' : 'bg-[#fafbfe] text-[#1e293b]'}`}>
       
+      {/* Skip to content link (accesibilidad) */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:bg-[#0052FF] focus:text-white focus:p-4 focus:rounded-xl focus:font-bold focus:text-sm">
+        Saltar al contenido principal
+      </a>
+
       {/* 0. ESPACIO DE GOOGLE ADSENSE SUPERIOR BANNER */}
       {currentAd && (
         <div
@@ -1239,6 +1205,7 @@ export default function App() {
                         ? 'text-[#0052FF] font-black bg-[#0052FF]/10' 
                         : 'text-slate-605 dark:text-slate-300 hover:text-[#0052FF] dark:hover:text-[#0052FF]'
                     }`}
+                    aria-current={isActive ? 'page' : undefined}
                   >
                     {item.label}
                   </button>
@@ -1255,7 +1222,7 @@ export default function App() {
                 rel="noreferrer"
                 className="hidden lg:flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-pink-600 transition-colors"
               >
-                <Instagram size={15} className="text-pink-500" />
+                <InstagramIcon size={15} className="text-pink-500" />
                 <span>@cardpoint.cl</span>
               </a>
 
@@ -1293,7 +1260,7 @@ export default function App() {
       </header>
 
       {/* NAVEGACIÓN COMPACTA MÓVIL */}
-      <div className={`md:hidden fixed bottom-0 left-0 right-0 z-45 border-t flex justify-around items-center px-2 py-3 transition-colors ${theme === 'dark' ? 'bg-[#0f172a]/95 border-slate-800' : 'bg-white/95 border-slate-100'} backdrop-blur-md shadow-lg`}>
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 z-45 border-t flex justify-around items-center px-2 py-3 pb-safe transition-colors ${theme === 'dark' ? 'bg-[#0f172a]/95 border-slate-800' : 'bg-white/95 border-slate-100'} backdrop-blur-md shadow-lg`}>
         {[
           { id: 'home', label: 'Inicio', icon: Sparkles },
           { id: 'catalog', label: 'Stock', icon: Layers },
@@ -1315,6 +1282,7 @@ export default function App() {
                   ? 'text-[#0052FF] font-bold scale-105' 
                   : 'text-slate-400 dark:text-slate-500 text-xs'
               }`}
+              aria-current={isActive ? 'page' : undefined}
             >
               <Icon size={18} />
               <span className="text-[10px]">{item.label}</span>
@@ -1324,7 +1292,7 @@ export default function App() {
       </div>
 
       {/* CONTENIDO PRINCIPAL DE LA PÁGINA */}
-      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-16 md:mb-0">
+      <main id="main-content" className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-safe mb-16 md:mb-0">
         
         {/* Renderizado de Páginas modulares cargadas con Suspense */}
         <Suspense fallback={
@@ -1505,7 +1473,7 @@ export default function App() {
                   {appliedCoupon && (
                     <div className="flex items-center justify-between p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
                       <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black">
-                        ✓ {appliedCoupon.code} aplicado (-{appliedCoupon.discount * 100}%)
+                        <Check size={10} className="inline" /> {appliedCoupon.code} aplicado (-{appliedCoupon.discount * 100}%)
                       </span>
                       <button 
                         onClick={() => {
@@ -1575,7 +1543,7 @@ export default function App() {
                     onClick={openInstagramInquiry}
                     className="w-1/2 py-2.5 border border-pink-500/30 hover:bg-pink-500/5 disabled:opacity-50 text-pink-500 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <Instagram size={14} />
+                    <InstagramIcon size={14} />
                     Ir a Instagram
                   </button>
                   <button
@@ -1635,7 +1603,7 @@ export default function App() {
                       !showRealPhoto ? 'bg-white dark:bg-slate-700 text-[#0052FF] shadow-sm' : 'text-slate-405 hover:text-slate-600'
                     }`}
                   >
-                    🎨 Arte Oficial
+                    <Palette size={14} className="inline" /> Arte Oficial
                   </button>
                   <button
                     onClick={() => setShowRealPhoto(true)}
@@ -1643,7 +1611,7 @@ export default function App() {
                       showRealPhoto ? 'bg-white dark:bg-slate-700 text-green-500 shadow-sm' : 'text-slate-405 hover:text-slate-600'
                     }`}
                   >
-                    📸 Foto Real
+                    <Camera size={14} className="inline" /> Foto Real
                   </button>
                 </div>
               )}
@@ -1665,12 +1633,12 @@ export default function App() {
                       )}
                       {selectedCardDetail.is_reverse && (
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-505/30 uppercase">
-                          ✨ Reverse Holo
+                          <Sparkles size={12} className="inline" /> Reverse Holo
                         </span>
                       )}
                       {selectedCardDetail.is_league && (
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-505/30 uppercase flex items-center gap-1">
-                          🏆 De Liga
+                          <Trophy size={12} className="inline" /> De Liga
                         </span>
                       )}
                     </div>
@@ -1892,7 +1860,7 @@ export default function App() {
             <div>
               <p className="font-bold text-slate-800 dark:text-slate-200">CardPoint.cl</p>
               <p className="text-[10px] text-slate-400">© 2026 Cardpoint. Todos los derechos reservados.</p>
-              <p className="text-[9px] text-slate-550 mt-0.5">hecho por 🐱</p>
+              <p className="text-[9px] text-slate-550 mt-0.5">hecho por <Cat size={12} className="inline" /></p>
             </div>
           </div>
 

@@ -57,11 +57,28 @@
 }
 
 /* Smooth transition for theme colors */
-.theme-transition,
-.theme-transition *,
-.theme-transition *:before,
-.theme-transition *:after {
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, fill 0.3s ease, stroke 0.3s ease, box-shadow 0.3s ease !important;
+html.theme-transition {
+  transition: background-color 0.25s ease;
+}
+html.theme-transition body,
+html.theme-transition header,
+html.theme-transition footer,
+html.theme-transition main,
+html.theme-transition div,
+html.theme-transition nav,
+html.theme-transition section,
+html.theme-transition article {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+/* Safe area insets for modern mobile devices */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 /* --- Google AdSense Auto-Collapse Rules --- */

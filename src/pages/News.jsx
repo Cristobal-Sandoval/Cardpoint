@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { 
   ArrowLeft, 
   Calendar, 
@@ -36,7 +36,7 @@ export default function News({
               alt={`Imagen destacada de noticia: ${selectedNews.title}`} 
               loading="lazy" 
               className="w-full h-full object-cover" 
-              onError={(e) => { e.target.onerror = null; e.target.src = "/og-image.png"; }}
+onError={(e) => { e.target.onerror = null; e.target.src = "/og-image.png"; }}
             />
           </div>
 
@@ -108,7 +108,7 @@ export default function News({
                 </div>
               ))
             ) : (
-              visibleNewsList.slice((newsPage - 1) * 6, newsPage * 6).map((n) => (
+              visibleNewsList.slice((newsPage - 1) * 12, newsPage * 12).map((n) => (
                 <article 
                   key={n.id} 
                   onClick={() => { setSelectedNews(n); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
@@ -153,7 +153,7 @@ export default function News({
           </div>
 
           {/* Controles de Paginación de 44px (WCAG 2.1) */}
-          {visibleNewsList.length > 6 && (
+          {visibleNewsList.length > 12 && (
             <div className="flex justify-center items-center gap-2 mt-12 pt-8 border-t border-slate-100 dark:border-slate-800">
               <button 
                 onClick={() => {
@@ -167,7 +167,7 @@ export default function News({
                 <ChevronLeft size={18} />
               </button>
               
-              {Array.from({ length: Math.ceil(visibleNewsList.length / 6) }, (_, i) => i + 1).map(page => (
+              {Array.from({ length: Math.ceil(visibleNewsList.length / 12) }, (_, i) => i + 1).map(page => (
                 <button
                   key={page}
                   onClick={() => {
@@ -188,7 +188,7 @@ export default function News({
 
               <button 
                 onClick={() => {
-                  setNewsPage(p => Math.min(Math.ceil(visibleNewsList.length / 6), p + 1));
+                  setNewsPage(p => Math.min(Math.ceil(visibleNewsList.length / 12), p + 1));
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 disabled={newsPage === Math.ceil(visibleNewsList.length / 6)}

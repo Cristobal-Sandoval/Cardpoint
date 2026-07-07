@@ -1,4 +1,5 @@
-import React from 'react';
+
+import { Fragment } from 'react';
 import { 
   Database, 
   Search, 
@@ -101,7 +102,7 @@ export default function DatabaseView({
               );
 
               return (
-                <React.Fragment key={card.id}>
+                <Fragment key={card.id}>
                   {isAd && (
                     <GoogleAdSlot format="card" className="col-span-1" />
                   )}
@@ -164,7 +165,7 @@ export default function DatabaseView({
                       )}
                     </div>
                   </div>
-                </React.Fragment>
+                </Fragment>
               );
             })}
           </div>
