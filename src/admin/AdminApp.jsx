@@ -195,6 +195,7 @@ function AdminCards({ toast }) {
   const [apiSearchError, setApiSearchError] = useState(null); // null | 'no_results' | 'timeout' | 'error'
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [fixingImageCardId, setFixingImageCardId] = useState(null);
+  const [fixAllState, setFixAllState] = useState(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [adminSearch, setAdminSearch] = useState('');
@@ -280,12 +281,44 @@ function AdminCards({ toast }) {
       if (!result?.images?.large) { toast('No se encontró imagen en la API', 'error'); return; }
       const { error } = await supabase.from('cards').update({ image: result.images.large }).eq('id', card.id);
       if (error) { toast('Error al guardar: ' + error.message, 'error'); return; }
-      loadCards();
+      load();
       toast(`Imagen actualizada: ${card.name} ✓`, 'success');
     } catch (err) {
       toast('Error de conexión con la API', 'error');
     }
     setFixingImageCardId(null);
+  };
+
+  const handleFixAllImages = async () => {
+    if (!cards?.length || fixAllState) return;
+    const state = { total: cards.length, completed: 0, errors: 0, stopped: false };
+    setFixAllState(state);
+    for (const card of cards) {
+      if (state.stopped) break;
+      if (!card.name) { state.completed++; setFixAllState({...state}); continue; }
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const query = `name:"${card.name}"${card.set_code ? ` set.id:"${card.set_code}"` : ''}`;
+        const res = await fetch(
+          `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}&pageSize=1`,
+          { signal: controller.signal }
+        );
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          const result = data.data?.[0];
+          if (result?.images?.large) {
+            await supabase.from('cards').update({ image: result.images.large }).eq('id', card.id);
+          }
+        }
+      } catch {}
+      state.completed++;
+      setFixAllState({...state});
+      if (state.completed % 15 === 0) await new Promise(r => setTimeout(r, 2000));
+    }
+    load();
+    setTimeout(() => setFixAllState(null), 3000);
   };
 
   // Upload real photo to ImgBB (free, unlimited)
@@ -390,11 +423,26 @@ function AdminCards({ toast }) {
           <button onClick={() => setShowBulkImport(true)} className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-emerald-950/30 whitespace-nowrap">
             <IcoUpload /> Importar en Lote
           </button>
+          <button onClick={handleFixAllImages} disabled={!!fixAllState} className="flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-amber-950/30 whitespace-nowrap disabled:opacity-50">
+            <IcoImage /> {fixAllState ? `Reparando... ${fixAllState.completed}/${fixAllState.total}` : 'Reparar Imágenes'}
+          </button>
           <button onClick={openAdd} className="flex items-center justify-center gap-2 bg-[#0052FF] hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-900/30 whitespace-nowrap">
             <IcoPlus /> Nueva Carta
           </button>
         </div>
       </div>
+
+      {fixAllState && (
+        <div className="mb-4 bg-amber-900/20 border border-amber-600/30 rounded-xl p-4">
+          <div className="flex items-center justify-between text-xs text-amber-300 mb-2">
+            <span>Reparando imágenes desde la API Pokémon...</span>
+            <span>{fixAllState.completed} / {fixAllState.total}</span>
+          </div>
+          <div className="h-2 bg-amber-950/50 rounded-full overflow-hidden">
+            <div className="h-full bg-amber-500 rounded-full transition-all duration-300" style={{ width: `${(fixAllState.completed / fixAllState.total) * 100}%` }} />
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center h-48 text-slate-500">Cargando cartas...</div>
