@@ -1863,7 +1863,17 @@ export default function App() {
             <div>
               <p className="font-bold text-slate-800 dark:text-slate-200">CardPoint.cl</p>
               <p className="text-[10px] text-slate-400">© 2026 Cardpoint. Todos los derechos reservados.</p>
-              <p className="text-[9px] text-slate-550 mt-0.5">hecho por <Cat size={12} className="inline" /></p>
+              <p className="text-[9px] text-slate-550 mt-0.5">
+                hecho por{' '}
+                <a 
+                  href="https://cristobalsandoval-portafolio.vercel.app/" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="hover:text-[#0052FF] transition-colors inline-flex items-center"
+                >
+                  <Cat size={12} className="inline" />
+                </a>
+              </p>
             </div>
           </div>
 
