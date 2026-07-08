@@ -1137,6 +1137,8 @@ export default function App() {
         Saltar al contenido principal
       </a>
 
+      {/* CONTENEDOR PEGAJOSO DE CABECERA Y ANUNCIO */}
+      <div className="sticky top-0 z-40 w-full flex flex-col shadow-sm">
       {/* 0. ESPACIO DE GOOGLE ADSENSE SUPERIOR BANNER */}
       {currentAd && (
         <div
@@ -1174,7 +1176,7 @@ export default function App() {
       )}
 
       {/* HEADER PRINCIPAL */}
-      <header className={`sticky top-0 z-40 border-b backdrop-blur-md transition-colors ${theme === 'dark' ? 'bg-[#0f172a]/95 border-slate-800' : 'bg-white/95 border-slate-100'} shadow-sm`}>
+        <header className={`border-b backdrop-blur-md transition-colors ${theme === 'dark' ? 'bg-[#0f172a]/95 border-slate-800' : 'bg-white/95 border-slate-100'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-24">
             
@@ -1258,6 +1260,7 @@ export default function App() {
           </div>
         </div>
       </header>
+      </div>
 
       {/* NAVEGACIÓN COMPACTA MÓVIL */}
       <div className={`md:hidden fixed bottom-0 left-0 right-0 z-45 border-t flex justify-around items-center px-2 py-3 pb-safe transition-colors ${theme === 'dark' ? 'bg-[#0f172a]/95 border-slate-800' : 'bg-white/95 border-slate-100'} backdrop-blur-md shadow-lg`}>
