@@ -317,7 +317,7 @@ export default function App() {
     // En desktop (donde la marquesina no se anima), usamos el tiempo recomendado de 30 segundos.
     if (isMobile) return;
 
-    const duration = 14000; // Configurado a 14 segundos a petición del usuario
+    const duration = 12000; // Configurado a 12 segundos a petición del usuario
     const interval = setInterval(() => {
       setCurrentAdIndex(prev => (prev + 1) % activeAds.length);
     }, duration);
