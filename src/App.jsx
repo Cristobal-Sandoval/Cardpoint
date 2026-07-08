@@ -313,7 +313,11 @@ export default function App() {
 
   useEffect(() => {
     if (activeAds.length <= 1) return;
-    const duration = isMobile ? 24000 : 30000;
+    // En mobile, el cambio al próximo anuncio se maneja mediante el evento onAnimationIteration de la marquesina.
+    // En desktop (donde la marquesina no se anima), usamos el tiempo recomendado de 30 segundos.
+    if (isMobile) return;
+
+    const duration = 30000;
     const interval = setInterval(() => {
       setCurrentAdIndex(prev => (prev + 1) % activeAds.length);
     }, duration);
@@ -1157,6 +1161,11 @@ export default function App() {
               onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
               onTouchStart={e => { e.currentTarget.style.animationPlayState = 'paused'; }}
               onTouchEnd={e => { e.currentTarget.style.animationPlayState = 'running'; }}
+              onAnimationIteration={() => {
+                if (isMobile) {
+                  setCurrentAdIndex(prev => (prev + 1) % activeAds.length);
+                }
+              }}
             >
               {currentAd.text}
             </div>
