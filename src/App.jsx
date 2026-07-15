@@ -1062,7 +1062,21 @@ export default function App() {
   const copyInquiryToClipboard = () => {
     const listText = inquiryList.map(card => {
       const activePrice = card.is_offer && card.offer_price ? card.offer_price : card.price;
-      return `- ${card.name} (${card.condition}) - $${activePrice.toLocaleString('es-CL')} CLP`;
+
+      const details = [];
+      const code = card.set_code || card.setCode;
+      if (code) details.push(code);
+
+      if (card.is_reverse) details.push('Reverse Holo');
+      if (card.is_league) details.push('De Liga');
+
+      const lang = card.idioma || card.language;
+      if (lang) details.push(lang);
+
+      if (card.condition) details.push(card.condition);
+
+      const detailsStr = details.length > 0 ? ` (${details.join(', ')})` : '';
+      return `- ${card.name}${detailsStr} - $$${activePrice.toLocaleString('es-CL')} CLP`;
     }).join('\n');
     const total = inquiryList.reduce((acc, curr) => acc + (curr.is_offer && curr.offer_price ? curr.offer_price : curr.price), 0);
     
