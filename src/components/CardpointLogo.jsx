@@ -8,7 +8,7 @@ export default function CardpointLogo({ className = "h-14", showText = true }) {
           x="34" y="24" width="38" height="58" rx="5" 
           transform="rotate(-15 34 24)" 
           stroke="currentColor" 
-          className="text-slate-950 dark:text-white fill-white " 
+          className="text-slate-950 fill-white" 
           strokeWidth="4" 
         />
         {/* Carta Derecha */}
@@ -16,14 +16,14 @@ export default function CardpointLogo({ className = "h-14", showText = true }) {
           x="90" y="14" width="38" height="58" rx="5" 
           transform="rotate(15 90 14)" 
           stroke="currentColor" 
-          className="text-slate-950 dark:text-white fill-white " 
+          className="text-slate-950 fill-white" 
           strokeWidth="4" 
         />
         {/* Carta Central */}
         <rect 
           x="58" y="14" width="44" height="64" rx="6" 
           stroke="currentColor" 
-          className="text-slate-950 dark:text-white fill-white " 
+          className="text-slate-950 fill-white" 
           strokeWidth="4.5" 
         />
         {/* Brillo/Estrella de 4 puntas azul en el centro */}
