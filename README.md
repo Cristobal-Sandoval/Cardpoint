@@ -1,4 +1,4 @@
-# Cardpoint.cl 🃏 (v1.0.6)
+# Cardpoint.cl 🃏 (v1.1.0)
 
 Plataforma oficial de **Cardpoint Concepción**, una aplicación web moderna diseñada para la exhibición, catalogación y gestión de cartas sueltas (singles) de **Pokémon TCG** en Chile. 
 
@@ -49,6 +49,15 @@ La arquitectura del proyecto está optimizada para la velocidad, la responsivida
 *   **Safe Area:** Respeto de `env(safe-area-inset-*)` para dispositivos con notch.
 *   **Páginas Indexables:** Creación de archivos estáticos `robots.txt` y `sitemap.xml` para guiar a los rastreadores web sobre las rutas válidas, impidiendo el indexado de la ruta privada `/acceso-privado-cp/*`.
 *   **CSP Limpia:** Content Security Policy depurada, eliminando proxies CORS externos no utilizados (`allorigins.win`, `corsproxy.io`, `codetabs.com`).
+*   **Cabecera Pegajosa Unificada:** Envoltura de la barra de anuncios patrocinados y el menú principal en un contenedor sticky unificado (`sticky top-0 z-40 w-full flex flex-col shadow-sm`) que no se oculta al desplazar la pantalla.
+*   **Rotación Inteligente de Anuncios:** 
+    *   En Desktop: Rotación optimizada a **12 segundos**.
+    *   En Mobile: Transición reactiva al próximo anuncio ligada al evento nativo `onAnimationIteration` de la marquesina. El cambio ocurre exactamente al finalizar el recorrido del texto, respetando las pausas por cursor (*hover*) o tacto.
+*   **Copiar Lista Enriquecida:** El botón "Copiar Lista" en la Bolsa de Cotización ahora exporta un listado detallado conteniendo: Código de set/edición, estado de reverso (*Reverse Holo*), versión promocional (*De Liga*), idioma de la carta y condición, evitando errores en la confirmación de stock.
+*   **Diseño Oscuro Pulido:**
+    *   Fusión de Fondos de Imagen: Corrección de la clase inválida `slate-955` por `dark:bg-[#121824]` en los contenedores de cartas para lograr que las cartas con transparencias floten integradas al color de la tarjeta.
+    *   Logotipo SVG Integrado: Preservación de bordes oscuros (`text-slate-950`) y fondo blanco en las cartas del logotipo en todos los temas, evitando que se fundan en un bloque blanco en el modo oscuro.
+    *   Enlace en Pie de Página: Redirección interactiva en el icono de gatito del footer hacia el portafolio del desarrollador ([https://cristobalsandoval-portafolio.vercel.app/](https://cristobalsandoval-portafolio.vercel.app/)).
 
 ---
 
