@@ -334,7 +334,7 @@ export default function Home({
                   className="w-[210px] sm:w-[230px] flex-shrink-0 rounded-2xl border overflow-hidden flex flex-col transition-all hover:shadow-lg hover:-translate-y-0.5 bg-white dark:bg-[#121824] border-slate-200 dark:border-slate-800"
                 >
                   <div 
-                    className="relative aspect-[3/4] bg-slate-50 dark:bg-slate-955 overflow-hidden cursor-pointer" 
+                    className="relative aspect-[3/4] bg-slate-50/30 dark:bg-[#121824] overflow-hidden cursor-pointer" 
                     onClick={() => { setSelectedCardDetail(card); setShowRealPhoto(false); }}
                   >
                     <img 
