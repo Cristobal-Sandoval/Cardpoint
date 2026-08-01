@@ -2540,118 +2540,192 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     }
   };
 
+  const parseImportLine = (line, fallbackLanguage) => {
+    const trimmed = line.trim();
+    if (!trimmed) return null;
+
+    let parts = [];
+    if (trimmed.includes('|')) {
+      parts = trimmed.split('|').map(p => p.trim()).filter(Boolean);
+    } else if (trimmed.includes(',')) {
+      parts = trimmed.split(',').map(p => p.trim()).filter(Boolean);
+    }
+
+    let name = '';
+    let setCodeRaw = '';
+    let numberRaw = '';
+    let stock = 1;
+    let price = 0;
+    let condition = 'NM';
+    let extraTokens = [];
+
+    if (parts.length >= 2) {
+      // Delimited format
+      const isFirstPartSetCode = /^[a-zA-Z0-9]{2,8}$/.test(parts[0]) && /^(\d+|[a-zA-Z0-9-]+)(\/\d+)?$/.test(parts[1]);
+      if (isFirstPartSetCode) {
+        // e.g. "MegEn | 18" or "WHITla, 018, 2, 5000"
+        setCodeRaw = parts[0];
+        numberRaw = parts[1];
+        if (parts[2]) stock = parseInt(parts[2], 10) || 1;
+        if (parts[3]) price = parseInt(parts[3].replace(/[$.]/g, ''), 10) || 0;
+        if (parts[4]) condition = parts[4];
+        extraTokens = parts.slice(5);
+      } else if (parts.length >= 3) {
+        // e.g. "Carmine | TWM | 180 | 1 | 5000"
+        name = parts[0];
+        setCodeRaw = parts[1];
+        numberRaw = parts[2];
+        if (parts[3]) stock = parseInt(parts[3], 10) || 1;
+        if (parts[4]) price = parseInt(parts[4].replace(/[$.]/g, ''), 10) || 0;
+        if (parts[5]) condition = parts[5];
+        extraTokens = parts.slice(6);
+      } else {
+        // 2 parts: e.g. "MegEn, 18"
+        setCodeRaw = parts[0];
+        numberRaw = parts[1];
+      }
+    } else {
+      // Space-separated tokens (e.g. "MegEn 18", "WHITla 018", "1 MegEn 18", "4 Carmine TWM 180")
+      const tokens = trimmed.split(/\s+/);
+      if (tokens.length === 2) {
+        // e.g. "MegEn 18"
+        setCodeRaw = tokens[0];
+        numberRaw = tokens[1];
+      } else if (tokens.length === 3 && /^\d+$/.test(tokens[0])) {
+        // e.g. "1 MegEn 18"
+        stock = parseInt(tokens[0], 10) || 1;
+        setCodeRaw = tokens[1];
+        numberRaw = tokens[2];
+      } else if (tokens.length >= 3) {
+        // e.g. "4 Carmine TWM 180" or "Boss's Orders PAL 172"
+        numberRaw = tokens[tokens.length - 1];
+        setCodeRaw = tokens[tokens.length - 2];
+
+        let startIndex = 0;
+        if (/^\d+$/.test(tokens[0])) {
+          stock = parseInt(tokens[0], 10) || 1;
+          startIndex = 1;
+        }
+        name = tokens.slice(startIndex, tokens.length - 2).join(' ');
+      } else {
+        return null;
+      }
+    }
+
+    if (!setCodeRaw || !numberRaw) return null;
+
+    let setCode = setCodeRaw.toLowerCase();
+    let number = numberRaw.split('/')[0].trim();
+    if (/^0+[1-9]\d*$/.test(number)) {
+      number = number.replace(/^0+/, '');
+    } else if (/^0+$/.test(number)) {
+      number = '0';
+    }
+
+    // Detect language from set suffix (e.g. "MEGes", "MEGen", "WHITla", "WHITes", "WHITen")
+    let idioma = fallbackLanguage;
+    if (setCode.endsWith('la') && setCode.length > 2) {
+      setCode = setCode.slice(0, -2);
+      idioma = 'Español';
+    } else if (setCode.endsWith('es') && setCode.length > 2) {
+      setCode = setCode.slice(0, -2);
+      idioma = 'Español';
+    } else if (setCode.endsWith('en') && setCode.length > 2) {
+      setCode = setCode.slice(0, -2);
+      idioma = 'Inglés';
+    } else if (setCode.endsWith('jp') && setCode.length > 2) {
+      setCode = setCode.slice(0, -2);
+      idioma = 'Japonés';
+    } else if (setCode.endsWith('pt') && setCode.length > 2) {
+      setCode = setCode.slice(0, -2);
+      idioma = 'Portugués';
+    }
+
+    // Map common set code abbreviations
+    const setCodeMapping = {
+      'svi': 'sv1', 'sv01': 'sv1',
+      'pal': 'sv2', 'sv02': 'sv2',
+      'obf': 'sv3', 'sv03': 'sv3',
+      'mew': 'sv3pt5', '151': 'sv3pt5', 'sv35': 'sv3pt5',
+      'par': 'sv4', 'sv04': 'sv4',
+      'paf': 'sv4pt5', 'sv45': 'sv4pt5',
+      'tef': 'sv5', 'sv05': 'sv5',
+      'twm': 'sv6', 'sv06': 'sv6',
+      'sfa': 'sv6pt5', 'sv65': 'sv6pt5',
+      'ste': 'sv7', 'scr': 'sv7', 'sv07': 'sv7',
+      'ssp': 'sv8', 'sv08': 'sv8',
+      'pre': 'sv8pt5', 'sv85': 'sv8pt5',
+      'ssh': 'swsh1', 'rcl': 'swsh2', 'daa': 'swsh3', 'cpa': 'swsh3pt5',
+      'vivid': 'swsh4', 'vv': 'swsh4', 'shf': 'swsh4pt5', 'bst': 'swsh5',
+      'cre': 'swsh6', 'evs': 'swsh7', 'fs': 'swsh8', 'brs': 'swsh9',
+      'asr': 'swsh10', 'lor': 'swsh11', 'sit': 'swsh12', 'crz': 'swsh12pt5', 'cz': 'swsh12pt5'
+    };
+
+    for (const [key, val] of Object.entries(setCodeMapping)) {
+      if (setCode.startsWith(key)) {
+        setCode = val;
+        break;
+      }
+    }
+
+    // Flags and custom rarity
+    let is_reverse = false;
+    let is_league = false;
+    let overriddenRarity = null;
+    const checkTokens = [...parts.slice(3), ...extraTokens];
+    for (const val of checkTokens) {
+      if (val) {
+        const lowerVal = String(val).trim().toLowerCase();
+        if (lowerVal === 'reverse' || lowerVal === 'rev') is_reverse = true;
+        else if (lowerVal === 'liga' || lowerVal === 'league' || lowerVal === 'de liga') is_league = true;
+        else if (lowerVal === 'es' || lowerVal.includes('español')) idioma = 'Español';
+        else if (lowerVal === 'en' || lowerVal.includes('ingles') || lowerVal.includes('inglés')) idioma = 'Inglés';
+        else if (lowerVal === 'jp' || lowerVal.includes('japones') || lowerVal.includes('japonés')) idioma = 'Japonés';
+        else {
+          const matchedRarity = parseRarityPrefix(val);
+          if (matchedRarity) overriddenRarity = matchedRarity;
+        }
+      }
+    }
+
+    return {
+      id: Math.random().toString(36).substr(2, 9),
+      name: name.trim(),
+      setCode,
+      rawSetCode: setCodeRaw,
+      number,
+      stock,
+      price,
+      condition,
+      idioma,
+      is_reverse,
+      is_league,
+      overriddenRarity,
+      selected: true,
+      real_photo: '',
+      status: 'pending',
+      image: '',
+      set: '',
+      rarity: overriddenRarity || 'Rara',
+      description: 'Sin descripción adicional.',
+      apiCard: null
+    };
+  };
+
   const handleProcessList = async () => {
     if (!inputText.trim()) return;
     
-    // Parse
+    // Parse lines
     const lines = inputText.split('\n');
     const parsed = [];
     
     lines.forEach((line) => {
-      const trimmed = line.trim();
-      if (!trimmed) return;
-      
-      let parts = [];
-      if (trimmed.includes('|')) {
-        parts = trimmed.split('|').map(p => p.trim());
-      } else {
-        parts = trimmed.split(',').map(p => p.trim());
-      }
-      if (parts.length < 3) return; // Name, Set Code, Number required
-      
-      const name = parts[0];
-      let setCode = parts[1].toLowerCase();
-      const fullNumber = parts[2];
-      let number = fullNumber.split('/')[0].trim();
-      
-      // Strip leading zeros from purely numeric card numbers or numbers with trailing letters (e.g. "018" -> "18")
-      if (/^0+[1-9]\d*$/.test(number)) {
-        number = number.replace(/^0+/, '');
-      } else if (/^0+$/.test(number)) {
-        number = '0';
-      }
-      
-      const stock = parts[3] ? parseInt(parts[3], 10) || 1 : 1;
-      const price = parts[4] ? parseInt(parts[4].replace(/[$.]/g, ''), 10) || 0 : 0;
-      const condition = parts[5] || 'NM';
-      
-      // Detect language from set suffix (e.g. "MEGes" or "MEGen") or explicit 7th field
-      let idioma = defaultLanguage;
-      if (setCode.endsWith('es') && setCode.length > 2) {
-        setCode = setCode.slice(0, -2);
-        idioma = 'Español';
-      } else if (setCode.endsWith('en') && setCode.length > 2) {
-        setCode = setCode.slice(0, -2);
-        idioma = 'Inglés';
-      }
-      
-      // Map common set abbreviations to official API set IDs (supporting prefixes like twmem -> twm -> sv6)
-      const setCodeMapping = {
-        'svi': 'sv1', 'pal': 'sv2', 'obf': 'sv3', 'mew': 'sv3pt5', 'par': 'sv4', 'paf': 'sv4pt5',
-        'tef': 'sv5', 'twm': 'sv6', 'ste': 'sv7', 'ssp': 'sv8', 'pre': 'sv8pt5'
-      };
-      
-      for (const [key, val] of Object.entries(setCodeMapping)) {
-        if (setCode.startsWith(key)) {
-          setCode = val;
-          break;
-        }
-      }
-      
-      if (parts[6]) {
-        const pLang = parts[6].trim().toLowerCase();
-        if (pLang === 'es' || pLang.includes('español') || pLang.includes('espanol')) idioma = 'Español';
-        else if (pLang === 'en' || pLang.includes('ingles') || pLang.includes('inglés') || pLang.includes('english')) idioma = 'Inglés';
-        else if (pLang === 'jp' || pLang.includes('japones') || pLang.includes('japonés') || pLang.includes('japanese')) idioma = 'Japonés';
-        else idioma = parts[6].trim();
-      }
-      
-      // Detect flags and custom rarity in optional fields (reverse / liga / rarity)
-      let is_reverse = false;
-      let is_league = false;
-      let overriddenRarity = null;
-      for (let j = 3; j < parts.length; j++) {
-        if (parts[j]) {
-          const val = parts[j].trim();
-          const lowerVal = val.toLowerCase();
-          if (lowerVal === 'reverse' || lowerVal === 'rev') {
-            is_reverse = true;
-          } else if (lowerVal === 'liga' || lowerVal === 'league' || lowerVal === 'de liga') {
-            is_league = true;
-          } else {
-            const matchedRarity = parseRarityPrefix(val);
-            if (matchedRarity) {
-              overriddenRarity = matchedRarity;
-            }
-          }
-        }
-      }
-      
-      parsed.push({
-        id: Math.random().toString(36).substr(2, 9),
-        name,
-        setCode,
-        number,
-        stock,
-        price,
-        condition,
-        idioma,
-        is_reverse,
-        is_league,
-        overriddenRarity,
-        selected: true,
-        real_photo: '',
-        status: 'pending',
-        image: '',
-        set: '',
-        rarity: overriddenRarity || 'Rara',
-        description: 'Sin descripción adicional.',
-        apiCard: null
-      });
+      const item = parseImportLine(line, defaultLanguage);
+      if (item) parsed.push(item);
     });
 
     if (parsed.length === 0) {
-      toast('No se encontraron líneas válidas. Formato: Nombre, Set, Número, Cantidad, Precio', 'error');
+      toast('No se encontraron líneas válidas. Ingresa código de set y número (ej: MegEn 18 o TWM 180)', 'error');
       return;
     }
 
@@ -2668,98 +2742,90 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       setImportRows([...updatedRows]);
 
       try {
-        const query = `name:"${row.name}" number:"${row.number}" set.id:"${row.setCode}"`;
-        const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}`);
+        let card = null;
+
+        // 1. Primary Lookup: Search by Set ID and Number ONLY (Direct code lookup)
+        const primaryQuery = `set.id:"${row.setCode}" number:"${row.number}"`;
+        const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(primaryQuery)}`);
         
         if (res.ok) {
           const data = await res.json();
-          const results = data.data || [];
-          if (results.length > 0) {
-            const card = results[0];
-            updatedRows[i] = {
-              ...row,
-              status: 'success',
-              name: card.name,
-              set: card.set?.name || 'Escarlata y Púrpura',
-              setCode: card.set?.id || row.setCode,
-              rarity: row.overriddenRarity || translateRarity(card.rarity),
-              image: card.images?.large || card.images?.small || '',
-              apiCard: card
-            };
-          } else {
-            // Fallback lookup
-            const fallbackQuery = `name:"${row.name}" number:"${row.number}"`;
-            const fbRes = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(fallbackQuery)}`);
-            if (fbRes.ok) {
-              const fbData = await fbRes.json();
-              const fbResults = fbData.data || [];
-              const match = fbResults.find(c => {
-                const setId = (c.set?.id || '').toLowerCase();
-                const setName = (c.set?.name || '').toLowerCase();
-                const userCode = row.setCode.toLowerCase();
-                
-                if (setId.includes(userCode) || setName.includes(userCode)) return true;
-                
-                const fallbackSetMapping = {
-                  'svi': ['sv1', 'scarlet & violet', 'escarlata y púrpura'],
-                  'pal': ['sv2', 'paldea evolved', 'evoluciones en paldea'],
-                  'obf': ['sv3', 'obsidian flames', 'llamas obsidianas'],
-                  'mew': ['sv3pt5', '151'],
-                  'par': ['sv4', 'paradox rift', 'brecha paradójica'],
-                  'paf': ['sv4pt5', 'paldean fates', 'destino de paldea'],
-                  'tef': ['sv5', 'temporal forces', 'fuerzas temporales'],
-                  'twm': ['sv6', 'twilight masquerade', 'mascarada crepuscular'],
-                  'ste': ['sv7', 'stellar crown', 'corona estelar'],
-                  'ssp': ['sv8', 'surging sparks', 'chispas fulgurantes'],
-                  'pre': ['sv8pt5', 'prismatic evolutions', 'evoluciones prismáticas']
-                };
-                
-                const mapKey = Object.keys(fallbackSetMapping).find(k => userCode.startsWith(k));
-                if (mapKey) {
-                  return fallbackSetMapping[mapKey].some(mappedVal => 
-                    setId.includes(mappedVal) || setName.includes(mappedVal)
-                  );
-                }
-                
-                return false;
-              });
-              
-              if (match) {
-                updatedRows[i] = {
-                  ...row,
-                  status: 'success',
-                  name: match.name,
-                  set: match.set?.name || 'Escarlata y Púrpura',
-                  setCode: match.set?.id || row.setCode,
-                  rarity: row.overriddenRarity || translateRarity(match.rarity),
-                  image: match.images?.large || match.images?.small || '',
-                  apiCard: match
-                };
-              } else if (fbResults.length > 0) {
-                const matchFirst = fbResults[0];
-                updatedRows[i] = {
-                  ...row,
-                  status: 'success',
-                  name: matchFirst.name,
-                  set: matchFirst.set?.name || 'Escarlata y Púrpura',
-                  setCode: matchFirst.set?.id || row.setCode,
-                  rarity: row.overriddenRarity || translateRarity(matchFirst.rarity),
-                  image: matchFirst.images?.large || matchFirst.images?.small || '',
-                  apiCard: matchFirst
-                };
-              } else {
-                updatedRows[i] = { ...row, status: 'error' };
+          if (data.data && data.data.length > 0) {
+            card = data.data[0];
+          }
+        }
+
+        // 2. Fallback: Try 3-digit padded number (e.g. 18 -> 018)
+        if (!card && /^\d+$/.test(row.number)) {
+          const paddedNum = row.number.padStart(3, '0');
+          if (paddedNum !== row.number) {
+            const paddedQuery = `set.id:"${row.setCode}" number:"${paddedNum}"`;
+            const pRes = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(paddedQuery)}`);
+            if (pRes.ok) {
+              const pData = await pRes.json();
+              if (pData.data && pData.data.length > 0) {
+                card = pData.data[0];
               }
-            } else {
-              updatedRows[i] = { ...row, status: 'error' };
             }
           }
+        }
+
+        // 3. Fallback: Search by number and filter set by string match
+        if (!card) {
+          const numQuery = `number:"${row.number}"`;
+          const numRes = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(numQuery)}`);
+          if (numRes.ok) {
+            const numData = await numRes.json();
+            const numResults = numData.data || [];
+            const userCode = row.setCode.toLowerCase();
+            const match = numResults.find(c => {
+              const setId = (c.set?.id || '').toLowerCase();
+              const setName = (c.set?.name || '').toLowerCase();
+              return setId.includes(userCode) || setName.includes(userCode);
+            });
+            if (match) card = match;
+            else if (numResults.length > 0) card = numResults[0];
+          }
+        }
+
+        // 4. Fallback: If user provided a name, try querying name + number
+        if (!card && row.name) {
+          const nameQuery = `name:"${row.name}" number:"${row.number}"`;
+          const nRes = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(nameQuery)}`);
+          if (nRes.ok) {
+            const nData = await nRes.json();
+            if (nData.data && nData.data.length > 0) {
+              card = nData.data[0];
+            }
+          }
+        }
+
+        if (card) {
+          updatedRows[i] = {
+            ...row,
+            status: 'success',
+            // Autocomplete official card information from API
+            name: card.name,
+            set: card.set?.name || 'Escarlata y Púrpura',
+            setCode: card.set?.id || row.setCode,
+            rarity: row.overriddenRarity || translateRarity(card.rarity),
+            image: card.images?.large || card.images?.small || '',
+            apiCard: card
+          };
         } else {
-          updatedRows[i] = { ...row, status: 'error' };
+          updatedRows[i] = {
+            ...row,
+            status: 'error',
+            name: row.name || `Carta #${row.number} (${row.setCode.toUpperCase()})`
+          };
         }
       } catch (err) {
         console.error(err);
-        updatedRows[i] = { ...row, status: 'error' };
+        updatedRows[i] = {
+          ...row,
+          status: 'error',
+          name: row.name || `Carta #${row.number} (${row.setCode.toUpperCase()})`
+        };
       }
 
       setProgress(prev => ({ ...prev, current: i + 1 }));
@@ -2928,13 +2994,13 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       {step === 1 && (
         <div className="space-y-4">
           <div className="p-4 bg-white/5 rounded-xl border border-white/5 space-y-2 text-xs text-slate-400">
-            <p className="font-bold text-slate-200">💡 Instrucciones de Formato:</p>
-            <p>Escribe o pega una lista de cartas, una por línea. El formato requerido es (separado por comas `,` o barras `|`):</p>
+            <p className="font-bold text-slate-200">💡 Instrucciones de Importación por Código o Lista:</p>
+            <p>Escribe o pega una lista de cartas. Puedes ingresar <strong>solo el código de set y número</strong> (ej. <code className="text-[#0052FF]">MegEn 18</code> o <code className="text-[#0052FF]">WHITla 018</code>) y el sistema buscará y autocompletará la carta oficial automáticamente.</p>
             <code className="block bg-black/40 p-2 rounded text-[#0052FF] font-mono select-all">
-              Nombre de Carta, Código de Set, Número de Carta, Cantidad (opcional), Precio (opcional), Estado (opcional), Idioma (opcional), Reverso (opcional), Liga (opcional)
+              [CódigoSet] [Número]  ó  [Cantidad] [CódigoSet] [Número]  ó  [Nombre], [Set], [Número], [Stock], [Precio]
             </code>
-            <p className="mt-2 text-[10px]">Ejemplo con comas: <strong className="text-white">Mega Gengar Ex, xy4es, 35, 1, 60000, NM</strong> (detecta Español por el sufijo <strong className="text-[#0052FF]">es</strong> en el set)</p>
-            <p className="text-[10px]">Ejemplo con banderas: <strong className="text-white">Mega Gengar Ex, xy4, 35, 1, 60000, NM, Español, reverse, liga</strong></p>
+            <p className="mt-2 text-[10px]">✨ <strong>Solo código (Recomendado):</strong> <strong className="text-white">MegEn 18</strong> o <strong className="text-white">WHITla 018 2 5000</strong> (autocompleta nombre en inglés/español, set, rareza e ilustración).</p>
+            <p className="text-[10px]">✨ <strong>Idiomas por sufijo:</strong> <strong className="text-white">MegEn</strong> (Inglés), <strong className="text-white">WHITla</strong> / <strong className="text-white">MEGes</strong> (Español), <strong className="text-white">PREjp</strong> (Japonés).</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -2954,7 +3020,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
               rows={8}
               value={inputText}
               onChange={e => setInputText(e.target.value)}
-              placeholder={`Ejemplo:\nCharmander | obf | 026/197 | 3 | 800\nMewtwo V | swsh12 | GG44 | 1 | 39990 | NM`}
+              placeholder={`Ejemplos:\nMegEn 18\nWHITla 018 2 5000\n4 TWM 180\nobf 026 3 800\nCarmine | twm | 180 | 1 | 5000`}
             />
           </Field>
 
