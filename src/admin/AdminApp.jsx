@@ -2560,10 +2560,12 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     let extraTokens = [];
 
     if (parts.length >= 2) {
-      // Delimited format - case-insensitive regex match
-      const isFirstPartSetCode = /^[a-z0-9]{2,8}$/i.test(parts[0]) && /^(\d+|[a-z0-9-]+)(\/\d+)?$/i.test(parts[1]);
+      // Delimited format (e.g. "Carmine | TWM | 180 | 1 | 5000" or "MegEn | 18 | 2 | 5000")
+      const isStandardThreePart = parts.length >= 3 && /^[a-z0-9]{2,6}$/i.test(parts[1]) && /^(\d+|[a-z0-9-]+)(\/\d+)?$/i.test(parts[2]);
+      const isFirstPartSetCode = /^[a-z0-9]{2,6}$/i.test(parts[0]) && /^(\d+|[a-z0-9-]+)(\/\d+)?$/i.test(parts[1]) && !isStandardThreePart;
+      
       if (isFirstPartSetCode) {
-        // e.g. "MegEn | 18" or "WHITla, 018, 2, 5000" or "megen | 18"
+        // e.g. "MegEn | 18" or "WHITla, 018, 2, 5000"
         setCodeRaw = parts[0];
         numberRaw = parts[1];
         if (parts[2]) stock = parseInt(parts[2], 10) || 1;
@@ -2580,7 +2582,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
         if (parts[5]) condition = parts[5];
         extraTokens = parts.slice(6);
       } else {
-        // 2 parts: e.g. "MegEn, 18" or "megen, 18"
+        // 2 parts: e.g. "MegEn, 18"
         setCodeRaw = parts[0];
         numberRaw = parts[1];
       }
