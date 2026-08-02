@@ -108,29 +108,6 @@ const compressImage = (file, maxDimension = 800, quality = 0.85) => {
 // Upload real photo to ImgBB (free, unlimited)
 const IMGBB_KEY = '149aebd904174718dea8f1c5eb444935';
 
-// Verifica si una URL de imagen realmente carga (sin CORS, usando un <img> invisible)
-const verifyImageUrl = (url, timeoutMs = 2000) => {
-  return new Promise((resolve) => {
-    if (!url || typeof window === 'undefined') {
-      resolve(false);
-      return;
-    }
-    const img = new Image();
-    let done = false;
-    const finish = (ok) => {
-      if (done) return;
-      done = true;
-      clearTimeout(timer);
-      img.onload = img.onerror = null;
-      resolve(ok);
-    };
-    const timer = setTimeout(() => finish(false), timeoutMs);
-    img.onload = () => finish(true);
-    img.onerror = () => finish(false);
-    img.src = url;
-  });
-};
-
 // Sube una imagen de carta a ImgBB y devuelve su URL directa
 const uploadCardImage = async (file, folder = 'cards') => {
   if (!file) throw new Error('No se seleccionó archivo');
@@ -2599,26 +2576,6 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     }
   };
 
-  const getSpanishImageUrl = (setCode, number) => {
-    if (!setCode || !number) return null;
-    let folder = setCode.toUpperCase();
-    if (/^SV[1-9]$/i.test(setCode)) {
-      folder = `SV0${setCode.slice(2)}`;
-    } else if (setCode.toLowerCase() === 'sv3pt5') {
-      folder = 'SV03.5';
-    } else if (setCode.toLowerCase() === 'sv4pt5') {
-      folder = 'SV04.5';
-    } else if (setCode.toLowerCase() === 'sv6pt5') {
-      folder = 'SV06.5';
-    } else if (setCode.toLowerCase() === 'sv8pt5') {
-      folder = 'SV08.5';
-    } else if (/^SWSH[1-9]$/i.test(setCode)) {
-      folder = `SWSH0${setCode.slice(4)}`;
-    }
-    const cleanNum = String(number).split('/')[0].trim().replace(/^0+/, '');
-    return `https://assets.pokemon.com/assets/cms2-es-es/img/cards/web/${folder}/${folder}_ES_${cleanNum}.png`;
-  };
-
   const parseImportLine = (line, fallbackLanguage) => {
     const trimmed = line.trim();
     if (!trimmed) return null;
@@ -2814,8 +2771,9 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       try {
         let card = null;
 
-        // 1. Primary Lookup with 4s timeout
-        const primaryQuery = `set.id:"${row.setCode}" number:"${row.number}"`;
+        // 1. Primary Lookup with set.id and set.ptcgoCode OR matching
+        const cleanNum = row.number.replace(/^0+/, '') || '0';
+        const primaryQuery = `(set.id:"${row.setCode}" OR set.ptcgoCode:"${row.setCode}") (number:"${row.number}" OR number:"${cleanNum}")`;
         const res = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(primaryQuery)}`);
         
         if (res && res.ok) {
@@ -2825,24 +2783,9 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
           }
         }
 
-        // 2. Fallback: Try 3-digit padded number (e.g. 18 -> 018)
-        if (!card && /^\d+$/.test(row.number)) {
-          const paddedNum = row.number.padStart(3, '0');
-          if (paddedNum !== row.number) {
-            const paddedQuery = `set.id:"${row.setCode}" number:"${paddedNum}"`;
-            const pRes = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(paddedQuery)}`);
-            if (pRes && pRes.ok) {
-              const pData = await pRes.json();
-              if (pData.data && pData.data.length > 0) {
-                card = pData.data[0];
-              }
-            }
-          }
-        }
-
-        // 3. Fallback: Search by number and filter set / PTCGO code
+        // 2. Fallback: Search by number and match PTCGO / set name
         if (!card) {
-          const numQuery = `number:"${row.number}"`;
+          const numQuery = `number:"${row.number}" OR number:"${cleanNum}"`;
           const numRes = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(numQuery)}`);
           if (numRes && numRes.ok) {
             const numData = await numRes.json();
@@ -2902,24 +2845,6 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       setProgress(prev => ({ ...prev, current: i + 1 }));
       setImportRows([...updatedRows]);
       await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    // Verifica en paralelo las imágenes en español: si el arte español no existe,
-    // usa la imagen en inglés por defecto (evita guardar URLs rotas de assets.pokemon.com)
-    try {
-      const spanishRows = updatedRows
-        .map((r, idx) => ({ r, idx }))
-        .filter(({ r }) => r.status === 'success' && r.idioma === 'Español' && r.image && r.image !== r.fallbackImage && r.image.includes('assets.pokemon.com'));
-
-      await Promise.all(spanishRows.map(async ({ r, idx }) => {
-        const ok = await verifyImageUrl(r.image, 2500);
-        if (!ok && r.fallbackImage) {
-          updatedRows[idx] = { ...r, image: r.fallbackImage, spanishImageFailed: true };
-          setImportRows([...updatedRows]);
-        }
-      }));
-    } catch (err) {
-      console.error('Error verificando imágenes en español:', err);
     }
 
     setProcessing(false);
@@ -3022,9 +2947,6 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
   };
 
   const handleApiPickCard = (card) => {
-    const spanishUrl = manualForm.idioma === 'Español' && card.set?.id
-      ? getSpanishImageUrl(card.set.id, card.number)
-      : null;
     setManualForm({
       ...manualForm,
       name: card.name || manualForm.name,
@@ -3032,7 +2954,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       setCode: (card.set?.id || manualForm.setCode).toUpperCase(),
       number: card.number || manualForm.number,
       rarity: translateRarity(card.rarity),
-      image: spanishUrl || card.images?.large || card.images?.small || manualForm.image
+      image: card.images?.large || card.images?.small || manualForm.image
     });
     toast('Carta encontrada y aplicada ✓', 'success');
   };
