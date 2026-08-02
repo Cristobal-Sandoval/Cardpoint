@@ -60,6 +60,43 @@ const normalizeRarityText = (str) => {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 };
 
+export function getCardSupertype(card) {
+  if (!card) return 'Pokemon';
+  
+  // 1. Explicit field check
+  const st = (card.supertype || card.card_type || card.category || '').toLowerCase();
+  if (st.includes('trainer') || st.includes('entrenador')) return 'Entrenadores';
+  if (st.includes('energy') || st.includes('energía') || st.includes('energia')) return 'Energias';
+  if (st.includes('pokémon') || st.includes('pokemon')) return 'Pokemon';
+
+  // 2. Inspect name and description for Energy / Trainer keywords
+  const name = (card.name || '').toLowerCase();
+  const desc = (card.description || '').toLowerCase();
+
+  // Energy detection
+  if (name.includes('energía') || name.includes('energia') || name.includes('energy')) {
+    return 'Energias';
+  }
+
+  // Trainer keywords
+  const trainerKeywords = [
+    'entrenador', 'partidario', 'objeto', 'estadio', 'herramienta', 
+    'trainer', 'supporter', 'item', 'stadium', 'tool',
+    'juez', 'judge', 'iono', 'nemona', 'nemonía', 'boss', 'órdenes de jefes',
+    'profesor', 'professor', 'ball', 'caramelo', 'camilla', 'recuperación',
+    'capturador', 'interruptor', 'cuerda', 'cambio', 'tambor', 'casco', 'capa',
+    'piedra', 'punzón', 'pocíón', 'pocion', 'vitalidad', 'investigación', 'investigacion'
+  ];
+
+  for (const kw of trainerKeywords) {
+    if (name.includes(kw) || desc.includes(kw)) {
+      return 'Entrenadores';
+    }
+  }
+
+  return 'Pokemon';
+}
+
 const RARITY_PRIORITY = {
   'hyper rara': 1,
   'secreta dorada': 2,
@@ -246,8 +283,19 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300); 
   const [selectedRarity, setSelectedRarity] = useState('Todas');
+  const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [sortBy, setSortBy] = useState('default');
   const [cardPage, setCardPage] = useState(1);
+
+  // Category counts memo
+  const categoryCounts = useMemo(() => {
+    const counts = { Todos: catalogCards.length, Pokemon: 0, Entrenadores: 0, Energias: 0 };
+    catalogCards.forEach(c => {
+      const type = getCardSupertype(c);
+      if (counts[type] !== undefined) counts[type]++;
+    });
+    return counts;
+  }, [catalogCards]);
 
   // Refs to control scrolling to catalog grid on page changes
   const catalogHeaderRef = useRef(null);
@@ -279,7 +327,7 @@ export default function App() {
   // Reset page when search/filters change
   useEffect(() => {
     setCardPage(1);
-  }, [debouncedSearchQuery, selectedRarity, sortBy]);
+  }, [debouncedSearchQuery, selectedRarity, selectedCategory, sortBy]);
 
   // Sistema de Noticias
   const [newsList, setNewsList] = useState([]);
@@ -1117,7 +1165,9 @@ export default function App() {
       const matchesSearch = card.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) || 
                             card.set.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
       const matchesRarity = selectedRarity === 'Todas' || (card.rarity && card.rarity.trim().toLowerCase() === selectedRarity.trim().toLowerCase());
-      return matchesSearch && matchesRarity;
+      const cardType = getCardSupertype(card);
+      const matchesCategory = selectedCategory === 'Todos' || cardType === selectedCategory;
+      return matchesSearch && matchesRarity && matchesCategory;
     }).sort((a, b) => {
       if (sortBy === 'price-low') return a.price - b.price;
       if (sortBy === 'price-high') return b.price - a.price;
@@ -1135,7 +1185,7 @@ export default function App() {
       
       return a.name.localeCompare(b.name);
     });
-  }, [catalogCards, debouncedSearchQuery, selectedRarity, sortBy]);
+  }, [catalogCards, debouncedSearchQuery, selectedRarity, selectedCategory, sortBy]);
 
   const cardsPerPage = 12;
   const totalPages = Math.ceil(filteredCards.length / cardsPerPage);
@@ -1369,6 +1419,9 @@ export default function App() {
               debouncedSearchQuery={debouncedSearchQuery}
               selectedRarity={selectedRarity}
               setSelectedRarity={setSelectedRarity}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              categoryCounts={categoryCounts}
               sortBy={sortBy}
               setSortBy={setSortBy}
               cardPage={cardPage}

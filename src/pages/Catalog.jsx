@@ -25,6 +25,9 @@ export default function Catalog({
   debouncedSearchQuery,
   selectedRarity,
   setSelectedRarity,
+  selectedCategory = 'Todos',
+  setSelectedCategory = () => {},
+  categoryCounts = { Todos: 0, Pokemon: 0, Entrenadores: 0, Energias: 0 },
   sortBy,
   setSortBy,
   cardPage,
@@ -197,6 +200,50 @@ export default function Catalog({
             <option value="name">Nombre: A-Z</option>
           </select>
         </div>
+      </div>
+
+      {/* Filtro de Categoría (Pokémon, Entrenadores, Energías) */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar py-1 border-b border-slate-100 dark:border-slate-800/60 pb-3">
+        <button
+          onClick={() => setSelectedCategory('Todos')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+            selectedCategory === 'Todos'
+              ? 'bg-[#0052FF] text-white shadow-md shadow-blue-500/20'
+              : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:border-[#0052FF]'
+          }`}
+        >
+          <span>🎴</span> Todas ({categoryCounts.Todos || 0})
+        </button>
+        <button
+          onClick={() => setSelectedCategory('Pokemon')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+            selectedCategory === 'Pokemon'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
+              : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:border-amber-500'
+          }`}
+        >
+          <span>⚡</span> Pokémon ({categoryCounts.Pokemon || 0})
+        </button>
+        <button
+          onClick={() => setSelectedCategory('Entrenadores')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+            selectedCategory === 'Entrenadores'
+              ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20 font-black'
+              : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:border-purple-600'
+          }`}
+        >
+          <span>🎒</span> Entrenadores ({categoryCounts.Entrenadores || 0})
+        </button>
+        <button
+          onClick={() => setSelectedCategory('Energias')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+            selectedCategory === 'Energias'
+              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20 font-black'
+              : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:border-emerald-500'
+          }`}
+        >
+          <span>🔋</span> Energías ({categoryCounts.Energias || 0})
+        </button>
       </div>
 
       {/* Filtro de Rarezas */}
