@@ -2815,15 +2815,12 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
 
               const numMatch = cNum === rNum || cNum.replace(/^0+/, '') === rNum.replace(/^0+/, '');
               const setMatch = setId.includes(userCode) || setName.includes(userCode) || setPtCode.includes(userCode) ||
-                               setId.includes(rawUserCode) || setName.includes(rawUserCode) || setPtCode.includes(rawUserCode) ||
-                               userCode.includes(setId) || rawUserCode.includes(setId);
+                               setId.includes(rawUserCode) || setName.includes(rawUserCode) || setPtCode.includes(rawUserCode);
               return numMatch && setMatch;
             });
 
             if (match) {
               card = match;
-            } else if (numResults.length > 0) {
-              card = numResults[0];
             }
           }
         }
