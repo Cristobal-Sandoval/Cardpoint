@@ -105,6 +105,46 @@ const compressImage = (file, maxDimension = 800, quality = 0.85) => {
   });
 };
 
+// Upload real photo to ImgBB (free, unlimited)
+const IMGBB_KEY = '149aebd904174718dea8f1c5eb444935';
+
+// Verifica si una URL de imagen realmente carga (sin CORS, usando un <img> invisible)
+const verifyImageUrl = (url, timeoutMs = 2000) => {
+  return new Promise((resolve) => {
+    if (!url || typeof window === 'undefined') {
+      resolve(false);
+      return;
+    }
+    const img = new Image();
+    let done = false;
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      img.onload = img.onerror = null;
+      resolve(ok);
+    };
+    const timer = setTimeout(() => finish(false), timeoutMs);
+    img.onload = () => finish(true);
+    img.onerror = () => finish(false);
+    img.src = url;
+  });
+};
+
+// Sube una imagen de carta a ImgBB y devuelve su URL directa
+const uploadCardImage = async (file, folder = 'cards') => {
+  if (!file) throw new Error('No se seleccionó archivo');
+  const formData = new FormData();
+  formData.append('image', file);
+  const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
+    method: 'POST',
+    body: formData,
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error?.message || 'Error al subir la imagen');
+  return data.data.display_url || data.data.url;
+};
+
 // ============================================================
 // MODAL BASE
 // ============================================================
@@ -322,7 +362,6 @@ function AdminCards({ toast }) {
   };
 
   // Upload real photo to ImgBB (free, unlimited)
-  const IMGBB_KEY = '149aebd904174718dea8f1c5eb444935';
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -350,9 +389,14 @@ function AdminCards({ toast }) {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from('cards').select('*').order('created_at', { ascending: false });
-    setCards(data || []);
-    setLoading(false);
+    try {
+      const { data } = await supabase.from('cards').select('*').order('created_at', { ascending: false });
+      setCards(data || []);
+    } catch (err) {
+      console.error('Error cargando cartas:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -782,9 +826,14 @@ function AdminNews({ toast }) {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from('news').select('*').order('created_at', { ascending: false });
-    setNews(data || []);
-    setLoading(false);
+    try {
+      const { data } = await supabase.from('news').select('*').order('created_at', { ascending: false });
+      setNews(data || []);
+    } catch (err) {
+      console.error('Error cargando noticias:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -1216,9 +1265,14 @@ function AdminTournaments({ toast }) {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from('tournaments').select('*').order('created_at', { ascending: true });
-    setTournaments(data || []);
-    setLoading(false);
+    try {
+      const { data } = await supabase.from('tournaments').select('*').order('created_at', { ascending: true });
+      setTournaments(data || []);
+    } catch (err) {
+      console.error('Error cargando torneos:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -2480,6 +2534,11 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     is_league: false
   });
 
+  // Búsqueda de cartas en la API Pokémon (para elegir manualmente la carta/imagen)
+  const [apiSearchQuery, setApiSearchQuery] = useState('');
+  const [apiSearchResults, setApiSearchResults] = useState([]);
+  const [apiSearching, setApiSearching] = useState(false);
+
   const translateRarity = (engRarity) => {
     if (!engRarity) return 'Rara';
     const r = engRarity.toLowerCase();
@@ -2751,7 +2810,6 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       const row = updatedRows[i];
       updatedRows[i] = { ...row, status: 'loading' };
       setImportRows([...updatedRows]);
-      setImportRows([...updatedRows]);
 
       try {
         let card = null;
@@ -2846,6 +2904,24 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
+    // Verifica en paralelo las imágenes en español: si el arte español no existe,
+    // usa la imagen en inglés por defecto (evita guardar URLs rotas de assets.pokemon.com)
+    try {
+      const spanishRows = updatedRows
+        .map((r, idx) => ({ r, idx }))
+        .filter(({ r }) => r.status === 'success' && r.idioma === 'Español' && r.image && r.image !== r.fallbackImage && r.image.includes('assets.pokemon.com'));
+
+      await Promise.all(spanishRows.map(async ({ r, idx }) => {
+        const ok = await verifyImageUrl(r.image, 2500);
+        if (!ok && r.fallbackImage) {
+          updatedRows[idx] = { ...r, image: r.fallbackImage, spanishImageFailed: true };
+          setImportRows([...updatedRows]);
+        }
+      }));
+    } catch (err) {
+      console.error('Error verificando imágenes en español:', err);
+    }
+
     setProcessing(false);
   };
 
@@ -2863,7 +2939,105 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     }
   };
 
-  const handleSaveSelectedRows = async () => {
+  const handleRowChange = (id, field, value) => {
+    setImportRows(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
+  };
+
+  const openManualAdd = (idx) => {
+    const row = importRows[idx];
+    if (!row) return;
+    setManualForm({
+      name: row.name || `Carta #${row.number}`,
+      set: row.set || 'Escarlata y Púrpura',
+      setCode: (row.setCode || '').toUpperCase(),
+      number: row.number || '',
+      rarity: row.overriddenRarity || row.rarity || 'Rara',
+      price: row.price || 0,
+      stock: row.stock || 1,
+      condition: row.condition || 'NM',
+      idioma: row.idioma || 'Español',
+      image: row.image || row.fallbackImage || '',
+      real_photo: row.real_photo || '',
+      is_reverse: !!row.is_reverse,
+      is_league: !!row.is_league
+    });
+    setManualAddIndex(idx);
+    setShowManualAddForm(true);
+  };
+
+  const handleSaveManual = (e) => {
+    e.preventDefault();
+    if (manualAddIndex === null) return;
+    setImportRows(prev => {
+      const updated = [...prev];
+      if (updated[manualAddIndex]) {
+        updated[manualAddIndex] = {
+          ...updated[manualAddIndex],
+          ...manualForm,
+          status: 'success'
+        };
+      }
+      return updated;
+    });
+    setShowManualAddForm(false);
+    setManualAddIndex(null);
+    toast('Carta configurada manualmente ✓', 'success');
+  };
+
+  const handleManualFormPhotoUpload = async (e, targetField) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const compressed = await compressImage(file);
+      const publicUrl = await uploadCardImage(compressed, targetField === 'real_photo' ? 'batch_photo' : 'batch_art');
+      setManualForm(prev => ({ ...prev, [targetField]: publicUrl }));
+      toast('Imagen subida correctamente ✓', 'success');
+    } catch (err) {
+      console.error(err);
+      toast('Error al subir imagen: ' + (err?.message || 'Error'), 'error');
+    }
+  };
+
+  const handleApiSearch = async () => {
+    if (!apiSearchQuery.trim()) return;
+    setApiSearching(true);
+    try {
+      const q = apiSearchQuery.trim();
+      const setPart = /^[a-zA-Z0-9]+/.test(q) && manualForm.setCode ? ` set.id:"${manualForm.setCode}"` : '';
+      const res = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(`name:"${q}"${setPart}`)}&pageSize=12`);
+      if (res && res.ok) {
+        const data = await res.json();
+        setApiSearchResults(data.data || []);
+        if ((data.data || []).length === 0) toast('No se encontraron cartas con ese nombre', 'error');
+      } else {
+        toast('No se pudo consultar la API (revisa tu conexión)', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      toast('Error al buscar en la API: ' + (err?.message || 'Error'), 'error');
+    } finally {
+      setApiSearching(false);
+    }
+  };
+
+  const handleApiPickCard = (card) => {
+    const spanishUrl = manualForm.idioma === 'Español' && card.set?.id
+      ? getSpanishImageUrl(card.set.id, card.number)
+      : null;
+    setManualForm({
+      ...manualForm,
+      name: card.name || manualForm.name,
+      set: card.set?.name || manualForm.set,
+      setCode: (card.set?.id || manualForm.setCode).toUpperCase(),
+      number: card.number || manualForm.number,
+      rarity: translateRarity(card.rarity),
+      image: spanishUrl || card.images?.large || card.images?.small || manualForm.image
+    });
+    toast('Carta encontrada y aplicada ✓', 'success');
+  };
+
+  const handlePublish = async () => {
     const selectedRows = importRows.filter(r => r.status === 'success' && r.selected);
     if (selectedRows.length === 0) {
       toast('No hay cartas seleccionadas para guardar', 'error');
@@ -2892,8 +3066,14 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
         idioma: row.idioma || 'Español'
       }));
 
-      const { error } = await supabase.from('cards').insert(cardsToInsert);
-      if (error) throw error;
+      // Insert por lotes (chunks de 100) para no exceder límites de Supabase
+      const CHUNK_SIZE = 100;
+      for (let i = 0; i < cardsToInsert.length; i += CHUNK_SIZE) {
+        const chunk = cardsToInsert.slice(i, i + CHUNK_SIZE);
+        const { error } = await supabase.from('cards').insert(chunk);
+        if (error) throw error;
+        setImportProgress({ current: Math.min(i + chunk.length, cardsToInsert.length), total: cardsToInsert.length });
+      }
 
       setImportProgress({ current: selectedRows.length, total: selectedRows.length });
       toast(`🎉 ${selectedRows.length} cartas importadas correctamente`, 'success');
@@ -2903,12 +3083,16 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
         setStep(1);
         setInputText('');
         setImportRows([]);
-        if (onImportSuccess) onImportSuccess();
+        try {
+          if (onImportSuccess) onImportSuccess();
+        } catch (err) {
+          console.error('Error en onImportSuccess:', err);
+        }
         if (onClose) onClose();
       }, 1200);
     } catch (err) {
       console.error(err);
-      toast('⚠️ Error al publicar cartas en Supabase: ' + err.message, 'error');
+      toast('⚠️ Error al publicar cartas en Supabase: ' + (err?.message || 'Error'), 'error');
       setProcessing(false);
       setStep(2);
     }
@@ -3044,7 +3228,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                   </thead>
                   <tbody>
                     {importRows.map((row, idx) => (
-                      <tr key={row.id} className={`border-b border-white/5 hover:bg-white/2 transition-colors ${!row.selected ? 'opacity-40' : ''}`}>
+                      <tr key={row.id || idx} className={`border-b border-white/5 hover:bg-white/2 transition-colors ${!row.selected ? 'opacity-40' : ''}`}>
                         <td className="px-3 py-3 text-center">
                           <input
                             type="checkbox"
@@ -3066,6 +3250,8 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                                 e.currentTarget.onerror = null;
                                 if (row.fallbackImage && e.currentTarget.src !== row.fallbackImage) {
                                   e.currentTarget.src = row.fallbackImage;
+                                } else {
+                                  e.currentTarget.src = 'https://images.pokemontcg.io/sv6/180_hires.png';
                                 }
                               }}
                               className="w-8 h-10 object-contain" 
@@ -3302,6 +3488,50 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Foto Real</span>
                     <img src={manualForm.real_photo} alt="preview real" className="w-16 h-22 object-cover rounded-lg border-2 border-green-500/40 shadow-md" />
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3 bg-[#0052FF]/5 border border-[#0052FF]/20 rounded-xl space-y-2.5">
+                <div className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">
+                  🔍 ¿No aparece la carta? Búscala en la API Pokémon (se autocompletan nombre, set, rareza e imagen)
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    className={inputCls}
+                    placeholder="Ej: Charizard ex, Pikachu, Tera Crystal..."
+                    value={apiSearchQuery}
+                    onChange={e => setApiSearchQuery(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleApiSearch(); } }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApiSearch}
+                    disabled={apiSearching}
+                    className="flex-shrink-0 px-4 py-2 rounded-xl bg-[#0052FF] hover:bg-blue-500 text-white text-xs font-bold transition-all disabled:opacity-50"
+                  >
+                    {apiSearching ? 'Buscando...' : 'Buscar'}
+                  </button>
+                </div>
+                {apiSearchResults.length > 0 && (
+                  <div className="grid grid-cols-4 sm:grid-cols-6 max-h-48 overflow-y-auto gap-2 pt-1">
+                    {apiSearchResults.map((card) => (
+                      <button
+                        key={card.id}
+                        type="button"
+                        onClick={() => handleApiPickCard(card)}
+                        className="group flex flex-col items-center gap-1 rounded-lg p-1.5 bg-white/5 hover:bg-[#0052FF]/20 border border-white/5 hover:border-[#0052FF]/50 transition-all"
+                        title={`${card.name} (${card.set?.name}) #${card.number}`}
+                      >
+                        <img
+                          src={card.images?.small || card.images?.large}
+                          alt={card.name}
+                          className="w-full object-contain rounded-md"
+                          loading="lazy"
+                        />
+                        <span className="text-[8px] text-slate-400 group-hover:text-white truncate w-full text-center">{card.number} · {card.set?.ptcgoCode || card.set?.id}</span>
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
