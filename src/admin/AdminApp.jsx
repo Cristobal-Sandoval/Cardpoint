@@ -3031,25 +3031,22 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                           />
                         </td>
                         <td className="px-3 py-3 text-center">
-                          {row.image ? (
-                            <img 
-                              src={row.image} 
-                              alt={row.name} 
-                              onError={(e) => {
-                                if (row.fallbackImage && e.target.src !== row.fallbackImage) {
-                                  e.target.src = row.fallbackImage;
-                                }
-                              }}
-                              className="w-8 h-10 object-contain rounded border border-white/10 bg-slate-900" 
-                            />
-                          ) : (
-                            <div className="w-8 h-10 bg-white/5 border border-white/10 rounded flex items-center justify-center text-[10px] text-slate-500 font-black">?</div>
-                          )}
+                          <img 
+                            src={row.image || row.fallbackImage || 'https://images.pokemontcg.io/sv6/180_hires.png'} 
+                            alt={row.name || 'Carta'} 
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              if (row.fallbackImage && e.currentTarget.src !== row.fallbackImage) {
+                                e.currentTarget.src = row.fallbackImage;
+                              }
+                            }}
+                            className="w-8 h-10 object-contain rounded border border-white/10 bg-slate-900" 
+                          />
                         </td>
                         <td className="px-3 py-3">
-                          <p className="font-bold text-white line-clamp-1">{row.name}</p>
-                          <p className="text-[10px] text-slate-500 line-clamp-1">{row.set || row.setCode.toUpperCase()} • #{row.number}</p>
-                          <span className="inline-block mt-0.5 text-[8px] px-1.5 py-0.5 rounded uppercase font-extrabold bg-[#0052FF]/20 text-blue-400 border border-blue-500/20">{row.rarity}</span>
+                          <p className="font-bold text-white line-clamp-1">{row.name || `Carta #${row.number}`}</p>
+                          <p className="text-[10px] text-slate-500 line-clamp-1">{(row.set || row.setCode || '').toUpperCase()} • #{row.number || ''}</p>
+                          <span className="inline-block mt-0.5 text-[8px] px-1.5 py-0.5 rounded uppercase font-extrabold bg-[#0052FF]/20 text-blue-400 border border-blue-500/20">{row.rarity || 'Rara'}</span>
                         </td>
                         <td className="px-3 py-3">
                           <input
@@ -3114,21 +3111,16 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                           </label>
                         </td>
                         <td className="px-3 py-3 text-center">
-                          {row.status === 'success' && (
-                            <span className="text-green-400 font-bold text-[10px]">Listo</span>
-                          )}
-                          {row.status === 'loading' && (
-                            <span className="text-blue-400 animate-pulse text-[10px]">Cargando...</span>
-                          )}
-                          {row.status === 'error' && (
+                          <div className="flex items-center justify-center gap-1">
                             <button
                               type="button"
                               onClick={() => openManualAdd(idx)}
-                              className="px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg text-[10px] font-bold border border-amber-500/30 whitespace-nowrap transition-colors"
+                              className="px-2 py-1 bg-white/10 hover:bg-white/20 text-slate-200 rounded-lg text-[10px] font-bold border border-white/10 transition-colors flex items-center gap-1"
+                              title="Editar datos o cambiar imagen de la carta"
                             >
-                              Agregar Manual
+                              ✏️ Editar
                             </button>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     ))}
