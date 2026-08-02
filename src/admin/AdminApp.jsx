@@ -2711,6 +2711,19 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     };
   };
 
+  const fetchWithTimeout = async (url, timeoutMs = 4000) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
+      return res;
+    } catch (e) {
+      clearTimeout(timer);
+      return null;
+    }
+  };
+
   const handleProcessList = async () => {
     if (!inputText.trim()) return;
     
@@ -2738,26 +2751,29 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       const row = updatedRows[i];
       updatedRows[i] = { ...row, status: 'loading' };
       setImportRows([...updatedRows]);
+      setImportRows([...updatedRows]);
 
       try {
         let card = null;
 
+        // 1. Primary Lookup with 4s timeout
         const primaryQuery = `set.id:"${row.setCode}" number:"${row.number}"`;
-        const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(primaryQuery)}`);
+        const res = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(primaryQuery)}`);
         
-        if (res.ok) {
+        if (res && res.ok) {
           const data = await res.json();
           if (data.data && data.data.length > 0) {
             card = data.data[0];
           }
         }
 
+        // 2. Fallback: Try 3-digit padded number (e.g. 18 -> 018)
         if (!card && /^\d+$/.test(row.number)) {
           const paddedNum = row.number.padStart(3, '0');
           if (paddedNum !== row.number) {
             const paddedQuery = `set.id:"${row.setCode}" number:"${paddedNum}"`;
-            const pRes = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(paddedQuery)}`);
-            if (pRes.ok) {
+            const pRes = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(paddedQuery)}`);
+            if (pRes && pRes.ok) {
               const pData = await pRes.json();
               if (pData.data && pData.data.length > 0) {
                 card = pData.data[0];
@@ -2766,10 +2782,11 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
           }
         }
 
+        // 3. Fallback: Search by number and filter set / PTCGO code
         if (!card) {
           const numQuery = `number:"${row.number}"`;
-          const numRes = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(numQuery)}`);
-          if (numRes.ok) {
+          const numRes = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(numQuery)}`);
+          if (numRes && numRes.ok) {
             const numData = await numRes.json();
             const numResults = numData.data || [];
             const userCode = (row.setCode || '').toLowerCase();
@@ -2800,7 +2817,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
           updatedRows[i] = {
             ...row,
             status: 'success',
-            name: card.name,
+            name: card.name || `Carta #${row.number}`,
             set: card.set?.name || 'Escarlata y Púrpura',
             setCode: card.set?.id || row.setCode,
             rarity: row.overriddenRarity || translateRarity(card.rarity),
@@ -2812,7 +2829,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
           updatedRows[i] = {
             ...row,
             status: 'error',
-            name: row.name || `Carta #${row.number} (${row.setCode.toUpperCase()})`
+            name: row.name || `Carta #${row.number} (${(row.setCode || '').toUpperCase()})`
           };
         }
       } catch (err) {
@@ -2820,13 +2837,13 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
         updatedRows[i] = {
           ...row,
           status: 'error',
-          name: row.name || `Carta #${row.number} (${row.setCode.toUpperCase()})`
+          name: row.name || `Carta #${row.number} (${(row.setCode || '').toUpperCase()})`
         };
       }
 
       setProgress(prev => ({ ...prev, current: i + 1 }));
       setImportRows([...updatedRows]);
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     setProcessing(false);
@@ -2854,35 +2871,41 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     }
 
     setProcessing(true);
+    setStep(3);
+    setImportProgress({ current: 0, total: selectedRows.length });
+
     try {
-      const cardsToInsert = selectedRows.map(r => ({
-        name: r.name,
-        set: r.set,
-        set_code: r.setCode,
-        number: r.number,
-        rarity: r.rarity,
-        price: r.price,
-        stock: r.stock,
-        condition: r.condition,
-        idioma: r.idioma,
-        is_reverse: r.is_reverse,
-        is_league: r.is_league,
-        image: r.image,
-        real_photo: r.real_photo,
-        description: r.description
+      const cardsToInsert = selectedRows.map(row => ({
+        name: row.name || 'Carta',
+        set: row.set || 'Escarlata y Púrpura',
+        set_code: (row.setCode || '').toUpperCase(),
+        rarity: row.rarity || 'Rara',
+        price: row.price || 0,
+        condition: row.condition || 'NM',
+        image: row.image || row.fallbackImage || 'https://images.pokemontcg.io/sv6/180_hires.png',
+        real_photo: row.real_photo || null,
+        description: row.description || 'Sin descripción adicional.',
+        in_stock: (row.price || 0) > 0 && (row.stock || 1) > 0,
+        stock: row.stock || 1,
+        is_reverse: !!row.is_reverse,
+        is_league: !!row.is_league,
+        idioma: row.idioma || 'Español'
       }));
 
-      await addBatchCardsToSupabase(cardsToInsert);
-      toast(`✨ Se han publicado ${cardsToInsert.length} cartas correctamente en Supabase`, 'success');
+      const { error } = await supabase.from('cards').insert(cardsToInsert);
+      if (error) throw error;
+
+      setImportProgress({ current: selectedRows.length, total: selectedRows.length });
+      toast(`🎉 ${selectedRows.length} cartas importadas correctamente`, 'success');
       
       setTimeout(() => {
         setProcessing(false);
         setStep(1);
         setInputText('');
         setImportRows([]);
-        if (onSuccess) onSuccess();
+        if (onImportSuccess) onImportSuccess();
         if (onClose) onClose();
-      }, 1500);
+      }, 1200);
     } catch (err) {
       console.error(err);
       toast('⚠️ Error al publicar cartas en Supabase: ' + err.message, 'error');
@@ -3031,17 +3054,26 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                           />
                         </td>
                         <td className="px-3 py-3 text-center">
-                          <img 
-                            src={row.image || row.fallbackImage || 'https://images.pokemontcg.io/sv6/180_hires.png'} 
-                            alt={row.name || 'Carta'} 
-                            onError={(e) => {
-                              e.currentTarget.onerror = null;
-                              if (row.fallbackImage && e.currentTarget.src !== row.fallbackImage) {
-                                e.currentTarget.src = row.fallbackImage;
-                              }
-                            }}
-                            className="w-8 h-10 object-contain rounded border border-white/10 bg-slate-900" 
-                          />
+                          <div
+                            onClick={() => openManualAdd(idx)}
+                            className="relative group cursor-pointer w-8 h-10 mx-auto flex items-center justify-center bg-slate-900 rounded border border-white/10 overflow-hidden"
+                            title="Haz clic para editar o cambiar la imagen"
+                          >
+                            <img 
+                              src={row.image || row.fallbackImage || 'https://images.pokemontcg.io/sv6/180_hires.png'} 
+                              alt={row.name || 'Carta'} 
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                if (row.fallbackImage && e.currentTarget.src !== row.fallbackImage) {
+                                  e.currentTarget.src = row.fallbackImage;
+                                }
+                              }}
+                              className="w-8 h-10 object-contain" 
+                            />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded text-[9px] font-bold text-white transition-opacity">
+                              ✏️
+                            </div>
+                          </div>
                         </td>
                         <td className="px-3 py-3">
                           <p className="font-bold text-white line-clamp-1">{row.name || `Carta #${row.number}`}</p>
