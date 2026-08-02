@@ -1,4 +1,4 @@
-# Cardpoint.cl 🃏 (v1.1.0)
+# Cardpoint.cl 🃏 (v1.2.0)
 
 Plataforma oficial de **Cardpoint Concepción**, una aplicación web moderna diseñada para la exhibición, catalogación y gestión de cartas sueltas (singles) de **Pokémon TCG** en Chile. 
 
@@ -12,6 +12,7 @@ La arquitectura del proyecto está optimizada para la velocidad, la responsivida
 
 *   **Frontend Core:** [React 19](https://react.dev/) + [Vite 8](https://vite.dev/) (para un empaquetado de producción ultrarrápido y liviano).
 *   **Estilos:** [Tailwind CSS v4](https://tailwindcss.com/) (con configuraciones personalizadas de tema y animaciones fluidas).
+*   **Suite de Testing:** [Vitest](https://vitest.dev/) + [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) + [jsdom](https://github.com/jsdom/jsdom) para pruebas unitarias automatizadas (`npm run test`).
 *   **Base de Datos y Backend:** [Supabase](https://supabase.com/) (PostgreSQL en tiempo real con políticas RLS de seguridad).
 *   **Enrutamiento y Code Splitting:** [React Router v7](https://reactrouter.com/) + Carga perezosa de rutas (`React.lazy` y `<Suspense>`) para segmentar las vistas del cliente y la administración privada.
 *   **Carga diferida (Lazy Loading):** Los bundles de páginas pesadas (Buscador API, Catálogo, Noticias, Torneos) se cargan de forma diferida, reduciendo el bundle de inicio bajo los 500 kB.
@@ -23,45 +24,45 @@ La arquitectura del proyecto está optimizada para la velocidad, la responsivida
 
 ## ✨ Características Principales e Implementaciones
 
-### 📦 1. Importador Masivo de Mazos (Batch Deck Importer)
-*   **Carga Automatizada:** Permite a los administradores copiar la lista de un mazo directamente en formato oficial de juego (ej. *Limitless TCG* o *Pokémon TCG Live*) e importarla de un solo clic.
-*   **Normalización de Formatos:** El sistema limpia automáticamente ceros a la izquierda en los números de las cartas (ej. `"018"` ➔ `"18"`) y mapea códigos de expansión estándar a los identificadores correctos de la base de datos (ej. `TWM` ➔ `sv6`, `PRE` ➔ `sv8pt5`).
-*   **Interfaz de Control Detallada:** Paso 2 de previsualización que muestra miniaturas, nombres de cartas, rarezas y precios sugeridos. Incluye **checkboxes individuales** para permitir al administrador seleccionar qué cartas específicas publicar y cuáles omitir antes de realizar el guardado definitivo.
+### 📦 1. Importador Masivo por Código y Autocompletado (Batch Import Engine)
+*   **Importación Solo por Código:** Permite a los administradores importar un lote de cartas ingresando únicamente el **Código de Set y Número** (ej. `TWMla 123/234`, `WHITla 018`, `MegEn 18`), sin necesidad de escribir el nombre de la carta.
+*   **Autocompletado Oficial:** El sistema consulta la base de datos oficial de Pokémon TCG y **autocompleta automáticamente** el nombre oficial de la carta, el set/expansión, la rareza traducida y la ilustración.
+*   **Ilustraciones Oficiales en Español:** Cuando se ingresa una carta en Español (`la` o `es`), consulta los servidores de Pokémon (`assets.pokemon.com`) para obtener y mostrar la **ilustración oficial en español**, incorporando un mecanismo de respaldo (*fallback*) a alta resolución.
+*   **Insensible a Mayúsculas/Minúsculas (Case-Insensitive):** Normalización automática e insensible a capitalización para códigos de set (`TWM`, `twm`, `Twm`), sufijos de idioma (`la`, `es`, `en`, `jp`), condiciones (`NM`, `LP`, `MP`, `HP`, `DMG`), banderas (`holo`, `reverse`, `liga`) y rarezas forzadas (`C`, `U`, `R`, `RR`, `UR`, `IR`, `SIR`, `SD`, `HR`).
+*   **Soporte Extendido de Parámetros:** Admite la sintaxis completa en orden:
+    ```text
+    [CódigoSet], [Número], [Cantidad], [Precio], [Estado], [Rareza], [Reverse/Holo], [Liga]
+    Ejemplo: TWMla, 123/234, 1, 5000, NM, UR, holo, liga
+    ```
+*   **Interfaz de Control Detallada:** Paso 2 de previsualización con tabla interactiva, miniaturas de arte, edición de precios/stock y **checkboxes de selección individual** antes del guardado definitivo en Supabase.
 
-### 📰 2. Noticias Automáticas con Imágenes Reales
+### 🧪 2. Suite de Tests Unitarios (32 Pruebas Automatizadas)
+*   **Pruebas de Parser de Importación (`batchImportParser.test.js`):** 14 tests que verifican la extracción de códigos, ceros iniciales, sufijos de idioma, banderas, rarezas forzadas y compatibilidad de formato.
+*   **Pruebas de Catálogo y Ordenamiento (`rarityAndSorting.test.js`):** 7 tests que aseguran la correcta normalización de texto y el cumplimiento estricto del algoritmo de prioridades por rareza.
+*   **Pruebas de Utilidades (`dateUtils.test.js`):** 5 tests de parseo de fechas en español.
+*   **Pruebas de Componentes UI (`components.test.jsx`):** 6 tests que validan el renderizado del logo SVG, insignias de liga, iconos y slots de publicidad AdSense.
+
+### 📰 3. Noticias Automáticas con Imágenes Reales
 *   **Fuente RSS:** Consume el feed de **Pokémon Alpha** (`pokemonalpha.es/feed/`) vía `api.rss2json.com`.
-*   **Extracción de Imágenes:** Las noticias que no incluyen `<img>` en su contenido RSS obtienen su `og:image` real mediante extracción server-side a través de una **Vercel Function** (`/api/og-proxy`). En desarrollo local, un middleware de Vite replica el mismo comportamiento.
-*   **Fallback Inteligente:** Si falla la extracción vía proxy, se asigna una imagen única del pool de respaldo (sin duplicados entre noticias).
-*   **Datos de Respaldo:** Noticias predefinidas de **Pokémon oficial**, **Pokémon Alpha** y **TCG News** como contenido base cuando el RSS no responde.
-*   **Editor Rápido de Imagen:** Panel admin permite cambiar la imagen de cualquier noticia automática con un clic (crea copia local en Supabase).
-*   **Caché Versionada:** Clave `cardpoint_news_rss_vN` en localStorage para forzar refresco de contenido en navegadores.
+*   **Extracción de Imágenes:** Extracción de `og:image` server-side a través de una **Vercel Function** (`/api/og-proxy`) y middleware local de Vite.
+*   **Fallback Inteligente:** Asignación de pool de imágenes únicas de respaldo sin duplicados entre noticias.
+*   **Noticias Base:** Contenido predefinido de Pokémon oficial y TCG News.
+*   **Editor de Noticias:** Panel administrativo para sustituir la imagen de cualquier noticia con almacenamiento en Supabase.
 
-### 🔍 3. Catálogo y Stock Físico Inteligente
-*   **Ordenamiento por Rarity (Default):** El catálogo ordena las cartas de manera predeterminada priorizando las rarezas superiores a *Ultra Rara* (Hyper Raras, Secretas Doradas, etc.), seguidas por las cartas *Raras*, *Doble Raras* y finalmente rarezas comunes. Si coinciden en rareza, se ordenan de mayor a menor precio.
-*   **Filtros de Rareza Adaptativos:** La barra de filtros de rarezas analiza dinámicamente el stock cargado en base de datos. Si una rareza (como *"Secreta Dorada"*) no está presente en ninguna carta en stock, el botón se oculta automáticamente para evitar filtros vacíos (0 resultados).
-*   **Paginación con Restablecimiento de Vista (Scroll Reset):** Al avanzar o retroceder de página en el catálogo, la pantalla realiza un scroll suave automático (`scrollIntoView`) hasta el inicio del listado de cartas. El scroll incluye un margen superior de `100px` para respetar la barra de navegación superior fija (*sticky navigation header*).
+### 🔍 4. Catálogo y Stock Físico Inteligente
+*   **Ordenamiento por Rarity (Default):** Ordenamiento predeterminado priorizando rarezas superiores (*Hyper Raras*, *Secretas Doradas*, *Ultra Raras Secreta*, *Ilustración Rara*, etc.), seguidas por *Ultra Raras*, *Raras*, *Doble Raras*, y finalmente cartas *Comunes*. Si coinciden en rareza, se ordenan por precio de mayor a menor.
+*   **Filtros de Rareza Adaptativos:** Ocultación automática de botones de filtro para rarezas que no cuentan con stock disponible en la base de datos.
+*   **Scroll Reset en Paginación:** Desplazamiento suave automático al inicio de la grilla de cartas al cambiar de página con margen para el menú fijo (*sticky header*).
 
-### 🚀 4. Optimización de Rendimiento (Web Vitals) y SEO
-*   **Preconexión de Servidores:** Preconexiones DNS y TCP agregadas para `images.pokemontcg.io`, acelerando la descarga del arte oficial de las cartas en el buscador.
-*   **Metadatos Sociales Dinámicos:** Hook `useSEO` mejorado para actualizar en tiempo real los tags de OpenGraph (`og:*`) y Twitter Cards en el DOM, permitiendo previsualizaciones visuales exactas en enlaces compartidos (por ejemplo, al enviar noticias o detalles de catálogo).
-*   **IntersectionObserver:** Implementado en la sección de noticias del landing para animaciones de entrada solo cuando el elemento es visible.
-*   **Google Fonts asíncrono:** Carga de tipografías con `display=swap` y `preconnect` para evitar bloqueo de renderizado.
-*   **Safe Area:** Respeto de `env(safe-area-inset-*)` para dispositivos con notch.
-*   **Páginas Indexables:** Creación de archivos estáticos `robots.txt` y `sitemap.xml` para guiar a los rastreadores web sobre las rutas válidas, impidiendo el indexado de la ruta privada `/acceso-privado-cp/*`.
-*   **CSP Limpia:** Content Security Policy depurada, eliminando proxies CORS externos no utilizados (`allorigins.win`, `corsproxy.io`, `codetabs.com`).
-*   **Cabecera Pegajosa Unificada:** Envoltura de la barra de anuncios patrocinados y el menú principal en un contenedor sticky unificado (`sticky top-0 z-40 w-full flex flex-col shadow-sm`) que no se oculta al desplazar la pantalla.
-*   **Rotación Inteligente de Anuncios:** 
-    *   En Desktop: Rotación optimizada a **12 segundos**.
-    *   En Mobile: Transición reactiva al próximo anuncio ligada al evento nativo `onAnimationIteration` de la marquesina. El cambio ocurre exactamente al finalizar el recorrido del texto, respetando las pausas por cursor (*hover*) o tacto.
-*   **Copiar Lista Enriquecida:** El botón "Copiar Lista" en la Bolsa de Cotización ahora exporta un listado detallado conteniendo: Código de set/edición, estado de reverso (*Reverse Holo*), versión promocional (*De Liga*), idioma de la carta y condición, evitando errores en la confirmación de stock.
-*   **Diseño Oscuro Pulido:**
-    *   Fusión de Fondos de Imagen: Corrección de la clase inválida `slate-955` por `dark:bg-[#121824]` en los contenedores de cartas para lograr que las cartas con transparencias floten integradas al color de la tarjeta.
-    *   Logotipo SVG Integrado: Preservación de bordes oscuros (`text-slate-950`) y fondo blanco en las cartas del logotipo en todos los temas, evitando que se fundan en un bloque blanco en el modo oscuro.
-    *   Enlace en Pie de Página: Redirección interactiva en el icono de gatito del footer hacia el portafolio del desarrollador ([https://cristobalsandoval-portafolio.vercel.app/](https://cristobalsandoval-portafolio.vercel.app/)).
+### 🚀 5. Optimización de Rendimiento (Web Vitals) y SEO
+*   **Preconexión DNS/TCP:** Optimización para `images.pokemontcg.io` y `assets.pokemon.com`.
+*   **Metadatos Sociales Dinámicos:** Hook `useSEO` para etiquetas OpenGraph y Twitter Cards en tiempo real.
+*   **AdSense Auto-Collapse:** Integración CSS con reglas `:has(...)` para auto-colapsar espacios publicitarios no rellenados sin afectar la maquetación.
+*   **Respeto de Safe Area & SEO Estático:** Archivos `robots.txt`, `sitemap.xml` y soporte para `env(safe-area-inset-*)`.
 
 ---
 
-## 🚀 Instalación y Desarrollo Local
+## 🚀 Instalación, Pruebas y Desarrollo Local
 
 1.  **Clonar el Repositorio:**
     ```bash
@@ -79,7 +80,12 @@ La arquitectura del proyecto está optimizada para la velocidad, la responsivida
     npm run dev
     ```
 
-4.  **Generar Compilación de Producción:**
+4.  **Ejecutar Suite de Tests Unitarios:**
+    ```bash
+    npm run test
+    ```
+
+5.  **Generar Compilación de Producción:**
     ```bash
     npm run build
     ```
