@@ -2560,10 +2560,10 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     let extraTokens = [];
 
     if (parts.length >= 2) {
-      // Delimited format
-      const isFirstPartSetCode = /^[a-zA-Z0-9]{2,8}$/.test(parts[0]) && /^(\d+|[a-zA-Z0-9-]+)(\/\d+)?$/.test(parts[1]);
+      // Delimited format - case-insensitive regex match
+      const isFirstPartSetCode = /^[a-z0-9]{2,8}$/i.test(parts[0]) && /^(\d+|[a-z0-9-]+)(\/\d+)?$/i.test(parts[1]);
       if (isFirstPartSetCode) {
-        // e.g. "MegEn | 18" or "WHITla, 018, 2, 5000"
+        // e.g. "MegEn | 18" or "WHITla, 018, 2, 5000" or "megen | 18"
         setCodeRaw = parts[0];
         numberRaw = parts[1];
         if (parts[2]) stock = parseInt(parts[2], 10) || 1;
@@ -2580,24 +2580,24 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
         if (parts[5]) condition = parts[5];
         extraTokens = parts.slice(6);
       } else {
-        // 2 parts: e.g. "MegEn, 18"
+        // 2 parts: e.g. "MegEn, 18" or "megen, 18"
         setCodeRaw = parts[0];
         numberRaw = parts[1];
       }
     } else {
-      // Space-separated tokens (e.g. "MegEn 18", "WHITla 018", "1 MegEn 18", "4 Carmine TWM 180")
+      // Space-separated tokens (e.g. "MegEn 18", "WHITla 018", "megen 18", "whitla 018", "1 MegEn 18", "4 Carmine TWM 180")
       const tokens = trimmed.split(/\s+/);
       if (tokens.length === 2) {
-        // e.g. "MegEn 18"
+        // e.g. "MegEn 18" or "megen 18"
         setCodeRaw = tokens[0];
         numberRaw = tokens[1];
       } else if (tokens.length === 3 && /^\d+$/.test(tokens[0])) {
-        // e.g. "1 MegEn 18"
+        // e.g. "1 MegEn 18" or "1 megen 18"
         stock = parseInt(tokens[0], 10) || 1;
         setCodeRaw = tokens[1];
         numberRaw = tokens[2];
       } else if (tokens.length >= 3) {
-        // e.g. "4 Carmine TWM 180" or "Boss's Orders PAL 172"
+        // e.g. "4 Carmine TWM 180" or "4 carmine twm 180"
         numberRaw = tokens[tokens.length - 1];
         setCodeRaw = tokens[tokens.length - 2];
 
@@ -2622,7 +2622,15 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       number = '0';
     }
 
-    // Detect language from set suffix (e.g. "MEGes", "MEGen", "WHITla", "WHITes", "WHITen")
+    // Normalize condition case-insensitively (e.g. "nm", "NM", "lp", "LP", "mp", "hp", "dmg")
+    const normCond = condition.trim().toUpperCase();
+    if (['NM', 'LP', 'MP', 'HP', 'DMG'].includes(normCond)) {
+      condition = normCond;
+    } else if (normCond === 'DAMAGED') {
+      condition = 'DMG';
+    }
+
+    // Detect language from set suffix case-insensitively (e.g. "MEGes", "meges", "MEGen", "WHITla", "whitla", "WHITes")
     let idioma = fallbackLanguage;
     if (setCode.endsWith('la') && setCode.length > 2) {
       setCode = setCode.slice(0, -2);
@@ -2641,7 +2649,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       idioma = 'Portugués';
     }
 
-    // Map common set code abbreviations
+    // Map common set code abbreviations (case-insensitive keys match setCode which is lowercase)
     const setCodeMapping = {
       'svi': 'sv1', 'sv01': 'sv1',
       'pal': 'sv2', 'sv02': 'sv2',
@@ -2668,7 +2676,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       }
     }
 
-    // Flags and custom rarity
+    // Flags and custom rarity (case-insensitive detection)
     let is_reverse = false;
     let is_league = false;
     let overriddenRarity = null;
@@ -2692,7 +2700,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       id: Math.random().toString(36).substr(2, 9),
       name: name.trim(),
       setCode,
-      rawSetCode: setCodeRaw,
+      rawSetCode: setCodeRaw.toLowerCase(),
       number,
       stock,
       price,
@@ -2725,7 +2733,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     });
 
     if (parsed.length === 0) {
-      toast('No se encontraron líneas válidas. Ingresa código de set y número (ej: MegEn 18 o TWM 180)', 'error');
+      toast('No se encontraron líneas válidas. Ingresa código de set y número (ej: MegEn 18 o megen 18 o TWM 180)', 'error');
       return;
     }
 
@@ -2744,7 +2752,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       try {
         let card = null;
 
-        // 1. Primary Lookup: Search by Set ID and Number ONLY (Direct code lookup)
+        // 1. Primary Lookup: Search by Set ID and Number ONLY (Direct code lookup - case-insensitive in pokemontcg.io)
         const primaryQuery = `set.id:"${row.setCode}" number:"${row.number}"`;
         const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(primaryQuery)}`);
         
@@ -2770,19 +2778,29 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
           }
         }
 
-        // 3. Fallback: Search by number and filter set by string match
+        // 3. Fallback: Search by number and filter set / PTCGO code by case-insensitive match
         if (!card) {
           const numQuery = `number:"${row.number}"`;
           const numRes = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(numQuery)}`);
           if (numRes.ok) {
             const numData = await numRes.json();
             const numResults = numData.data || [];
-            const userCode = row.setCode.toLowerCase();
+            const userCode = (row.setCode || '').toLowerCase();
+            const rawUserCode = (row.rawSetCode || '').toLowerCase();
+
             const match = numResults.find(c => {
               const setId = (c.set?.id || '').toLowerCase();
               const setName = (c.set?.name || '').toLowerCase();
-              return setId.includes(userCode) || setName.includes(userCode);
+              const setPtCode = (c.set?.ptcgoCode || '').toLowerCase();
+              const cNum = (c.number || '').toLowerCase();
+              const rNum = row.number.toLowerCase();
+
+              const numMatch = cNum === rNum || cNum.replace(/^0+/, '') === rNum.replace(/^0+/, '');
+              const setMatch = setId.includes(userCode) || setName.includes(userCode) || setPtCode.includes(userCode) ||
+                               setId.includes(rawUserCode) || setName.includes(rawUserCode) || setPtCode.includes(rawUserCode);
+              return numMatch && setMatch;
             });
+
             if (match) card = match;
             else if (numResults.length > 0) card = numResults[0];
           }
