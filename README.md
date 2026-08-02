@@ -1,4 +1,4 @@
-# Cardpoint.cl 🃏 (v1.2.1)
+# Cardpoint.cl 🃏 (v1.2.2)
 
 Plataforma oficial de **Cardpoint Concepción**, una aplicación web moderna diseñada para la exhibición, catalogación y gestión de cartas sueltas (singles) de **Pokémon TCG** en Chile. 
 
@@ -24,18 +24,19 @@ La arquitectura del proyecto está optimizada para la velocidad, la responsivida
 
 ## ✨ Características Principales e Implementaciones
 
-### 📦 1. Importador Masivo por Código y Autocompletado (Batch Import Engine)
-*   **Importación Solo por Código:** Permite a los administradores importar un lote de cartas ingresando únicamente el **Código de Set y Número** (ej. `TWMla 123/234`, `WHITla 018`, `MegEn 18`), sin necesidad de escribir el nombre de la carta.
-*   **Autocompletado Oficial:** El sistema consulta la base de datos oficial de Pokémon TCG con tiempos límite (*timeouts* de 4s por petición) y **autocompleta automáticamente** el nombre oficial de la carta, el set/expansión, la rareza traducida y la ilustración.
-*   **Ilustraciones Oficiales en Español e Inglés:** Cuando se ingresa una carta en Español (`la` o `es`), consulta los servidores de Pokémon (`assets.pokemon.com`) para obtener la **ilustración oficial en español**, e incorpora un respaldo automático en 3 niveles (*fallback*: Español ➔ Inglés HD ➔ Arte Comodín) con protección antiroturas (`onerror = null`).
+### 📦 1. Importador Masivo por Código y Autocompletado (Batch Import Engine v1.2.2)
+*   **Importación Solo por Código:** Permite a los administradores importar un lote de cartas ingresando únicamente el **Código de Set y Número** (ej. `TWMla 123/234`, `PORla 084/088`, `PFLla 089/094`, `MEGla 119/132`), sin necesidad de escribir el nombre de la carta.
+*   **Mapeo Inteligente de Sets y Pocket Expansions:** Reconocimiento de códigos de tienda y ediciones especiales de Pokémon TCG y TCG Pocket:
+    *   `por` ➔ `me3` (*Space-Time Smackdown* / Pocket Sets)
+    *   `pfl` ➔ `me2` (*Mythical Island*)
+    *   `meg` ➔ `me1` (*Genetic Apex*)
+    *   `asc` ➔ `me2pt5` (*Triumphant Light*)
+    *   `jtg` ➔ `sv9` (*Journey Together*)
+*   **Motor de Reintentos de API (`fetchCardsWithRetry`):** Sistema de consulta con reintentos automáticos (3 intentos con retardo progresivo) para prevenir fallos transitorios de red o cierres de conexión cuando la API responde con retardo.
+*   **Búsqueda Multicriterio Simultánea:** Consulta dual por `set.id`, `set.ptcgoCode` y el código crudo ingresado por el usuario (`rawSetCode`), más fallback secundario por número de carta.
+*   **Ilustraciones Oficiales en Español e Inglés:** Para cartas ingresadas en Español (`la` o `es`), consulta los servidores de Pokémon (`assets.pokemon.com`) para obtener la **ilustración oficial en español**, e incorpora un respaldo automático en 3 niveles (*fallback*: Español ➔ Inglés HD ➔ Arte Comodín) con protección antiroturas (`onerror = null`).
 *   **Edición e Inserción por Chunks en Supabase:** Inserción en bloques de a 100 filas (`CHUNK_SIZE = 100`) para garantizar la carga fluida de listas extensas sin saturar la conexión ni exceder límites de payload HTTP.
-*   **Buscador Asistido de la API en Edición Manual:** En caso de que una carta no sea reconocida por código, el modal de configuración manual incluye un **buscador por nombre en tiempo real** que consulta la API oficial y permite aplicar sus datos e imagen en un solo clic.
-*   **Insensible a Mayúsculas/Minúsculas (Case-Insensitive):** Normalización automática e insensible a capitalización para códigos de set (`TWM`, `twm`, `Twm`), sufijos de idioma (`la`, `es`, `en`, `jp`), condiciones (`NM`, `LP`, `MP`, `HP`, `DMG`), banderas (`holo`, `reverse`, `liga`) y rarezas forzadas (`C`, `U`, `R`, `RR`, `UR`, `IR`, `SIR`, `SD`, `HR`).
-*   **Soporte Extendido de Parámetros:** Admite la sintaxis completa en orden:
-    ```text
-    [CódigoSet], [Número], [Cantidad], [Precio], [Estado], [Rareza], [Reverse/Holo], [Liga]
-    Ejemplo: TWMla, 123/234, 1, 5000, NM, UR, holo, liga
-    ```
+*   **Buscador Asistido de la API en Edición Manual:** Modal de configuración manual con **buscador por nombre en tiempo real** que consulta la API oficial y aplica datos e ilustración en un solo clic.
 
 ### 🧪 2. Suite de Tests Unitarios (32 Pruebas Automatizadas)
 *   **Pruebas de Parser de Importación (`batchImportParser.test.js`):** 14 tests que verifican la extracción de códigos, ceros iniciales, sufijos de idioma, banderas, rarezas forzadas y compatibilidad de formato.
