@@ -2643,6 +2643,8 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       'ste': 'sv7', 'scr': 'sv7', 'sv07': 'sv7',
       'ssp': 'sv8', 'sv08': 'sv8',
       'pre': 'sv8pt5', 'sv85': 'sv8pt5',
+      'jtg': 'sv9', 'sv09': 'sv9',
+      'meg': 'me1', 'pfl': 'me2', 'por': 'me3', 'asc': 'me2pt5',
       'ssh': 'swsh1', 'rcl': 'swsh2', 'daa': 'swsh3', 'cpa': 'swsh3pt5',
       'vivid': 'swsh4', 'vv': 'swsh4', 'shf': 'swsh4pt5', 'bst': 'swsh5',
       'cre': 'swsh6', 'evs': 'swsh7', 'fs': 'swsh8', 'brs': 'swsh9',
@@ -2771,23 +2773,34 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       try {
         let card = null;
 
-        // 1. Primary Lookup with set.id and set.ptcgoCode OR matching
+        // Reintenta cuando la API responde 5xx o falla (suele ser transitorio)
+        const fetchCardsWithRetry = async (q, attempts = 3) => {
+          for (let attempt = 0; attempt < attempts; attempt++) {
+            const res = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}`);
+            if (res && res.ok) return res;
+            if (attempt < attempts - 1) await new Promise(r => setTimeout(r, 600));
+          }
+          return null;
+        };
+
+        // 1. Primary Lookup with set.id and set.ptcgoCode (el mapping traduce
+        // códigos de tienda como POR->me3, JTG->sv9; el ptcgoCode cubre el resto)
         const cleanNum = row.number.replace(/^0+/, '') || '0';
         const primaryQuery = `(set.id:"${row.setCode}" OR set.ptcgoCode:"${row.setCode}") (number:"${row.number}" OR number:"${cleanNum}")`;
-        const res = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(primaryQuery)}`);
+        const res = await fetchCardsWithRetry(primaryQuery);
         
-        if (res && res.ok) {
+        if (res) {
           const data = await res.json();
           if (data.data && data.data.length > 0) {
             card = data.data[0];
           }
         }
 
-        // 2. Fallback: Search by number and match PTCGO / set name
+        // 2. Fallback: Search by number and match PTCGO / set name / rawSetCode
         if (!card) {
           const numQuery = `number:"${row.number}" OR number:"${cleanNum}"`;
-          const numRes = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(numQuery)}`);
-          if (numRes && numRes.ok) {
+          const numRes = await fetchCardsWithRetry(numQuery);
+          if (numRes) {
             const numData = await numRes.json();
             const numResults = numData.data || [];
             const userCode = (row.setCode || '').toLowerCase();
@@ -2802,18 +2815,21 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
 
               const numMatch = cNum === rNum || cNum.replace(/^0+/, '') === rNum.replace(/^0+/, '');
               const setMatch = setId.includes(userCode) || setName.includes(userCode) || setPtCode.includes(userCode) ||
-                               setId.includes(rawUserCode) || setName.includes(rawUserCode) || setPtCode.includes(rawUserCode);
+                               setId.includes(rawUserCode) || setName.includes(rawUserCode) || setPtCode.includes(rawUserCode) ||
+                               userCode.includes(setId) || rawUserCode.includes(setId);
               return numMatch && setMatch;
             });
 
-            if (match) card = match;
-            else if (numResults.length > 0) card = numResults[0];
+            if (match) {
+              card = match;
+            } else if (numResults.length > 0) {
+              card = numResults[0];
+            }
           }
         }
 
         if (card) {
-          const fallbackImg = card.images?.large || card.images?.small || '';
-          const spanishUrl = row.idioma === 'Español' ? getSpanishImageUrl(card.set?.id || row.setCode, row.number) : null;
+          const cardImage = card.images?.large || card.images?.small || '';
 
           updatedRows[i] = {
             ...row,
@@ -2822,8 +2838,8 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
             set: card.set?.name || 'Escarlata y Púrpura',
             setCode: card.set?.id || row.setCode,
             rarity: row.overriddenRarity || translateRarity(card.rarity),
-            image: spanishUrl || fallbackImg,
-            fallbackImage: fallbackImg,
+            image: cardImage,
+            fallbackImage: cardImage,
             apiCard: card
           };
         } else {
