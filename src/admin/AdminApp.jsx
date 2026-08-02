@@ -2540,6 +2540,26 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     }
   };
 
+  const getSpanishImageUrl = (setCode, number) => {
+    if (!setCode || !number) return null;
+    let folder = setCode.toUpperCase();
+    if (/^SV[1-9]$/i.test(setCode)) {
+      folder = `SV0${setCode.slice(2)}`;
+    } else if (setCode.toLowerCase() === 'sv3pt5') {
+      folder = 'SV03.5';
+    } else if (setCode.toLowerCase() === 'sv4pt5') {
+      folder = 'SV04.5';
+    } else if (setCode.toLowerCase() === 'sv6pt5') {
+      folder = 'SV06.5';
+    } else if (setCode.toLowerCase() === 'sv8pt5') {
+      folder = 'SV08.5';
+    } else if (/^SWSH[1-9]$/i.test(setCode)) {
+      folder = `SWSH0${setCode.slice(4)}`;
+    }
+    const cleanNum = String(number).split('/')[0].trim().replace(/^0+/, '');
+    return `https://assets.pokemon.com/assets/cms2-es-es/img/cards/web/${folder}/${folder}_ES_${cleanNum}.png`;
+  };
+
   const parseImportLine = (line, fallbackLanguage) => {
     const trimmed = line.trim();
     if (!trimmed) return null;
@@ -2549,69 +2569,21 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       parts = trimmed.split('|').map(p => p.trim()).filter(Boolean);
     } else if (trimmed.includes(',')) {
       parts = trimmed.split(',').map(p => p.trim()).filter(Boolean);
+    } else {
+      parts = trimmed.split(/\s+/).filter(Boolean);
     }
 
-    let name = '';
-    let setCodeRaw = '';
-    let numberRaw = '';
-    let stock = 1;
-    let price = 0;
-    let condition = 'NM';
-    let extraTokens = [];
+    if (parts.length < 2) return null;
 
-    if (parts.length >= 2) {
-      // Delimited format (e.g. "Carmine | TWM | 180 | 1 | 5000" or "MegEn | 18 | 2 | 5000")
-      const isStandardThreePart = parts.length >= 3 && /^[a-z0-9]{2,6}$/i.test(parts[1]) && /^(\d+|[a-z0-9-]+)(\/\d+)?$/i.test(parts[2]);
-      const isFirstPartSetCode = /^[a-z0-9]{2,6}$/i.test(parts[0]) && /^(\d+|[a-z0-9-]+)(\/\d+)?$/i.test(parts[1]) && !isStandardThreePart;
-      
-      if (isFirstPartSetCode) {
-        // e.g. "MegEn | 18" or "WHITla, 018, 2, 5000"
-        setCodeRaw = parts[0];
-        numberRaw = parts[1];
-        if (parts[2]) stock = parseInt(parts[2], 10) || 1;
-        if (parts[3]) price = parseInt(parts[3].replace(/[$.]/g, ''), 10) || 0;
-        if (parts[4]) condition = parts[4];
-        extraTokens = parts.slice(5);
-      } else if (parts.length >= 3) {
-        // e.g. "Carmine | TWM | 180 | 1 | 5000"
-        name = parts[0];
-        setCodeRaw = parts[1];
-        numberRaw = parts[2];
-        if (parts[3]) stock = parseInt(parts[3], 10) || 1;
-        if (parts[4]) price = parseInt(parts[4].replace(/[$.]/g, ''), 10) || 0;
-        if (parts[5]) condition = parts[5];
-        extraTokens = parts.slice(6);
-      } else {
-        // 2 parts: e.g. "MegEn, 18"
-        setCodeRaw = parts[0];
-        numberRaw = parts[1];
-      }
-    } else {
-      // Space-separated tokens (e.g. "MegEn 18", "WHITla 018", "megen 18", "whitla 018", "1 MegEn 18", "4 Carmine TWM 180")
-      const tokens = trimmed.split(/\s+/);
-      if (tokens.length === 2) {
-        // e.g. "MegEn 18" or "megen 18"
-        setCodeRaw = tokens[0];
-        numberRaw = tokens[1];
-      } else if (tokens.length === 3 && /^\d+$/.test(tokens[0])) {
-        // e.g. "1 MegEn 18" or "1 megen 18"
-        stock = parseInt(tokens[0], 10) || 1;
-        setCodeRaw = tokens[1];
-        numberRaw = tokens[2];
-      } else if (tokens.length >= 3) {
-        // e.g. "4 Carmine TWM 180" or "4 carmine twm 180"
-        numberRaw = tokens[tokens.length - 1];
-        setCodeRaw = tokens[tokens.length - 2];
+    let setCodeRaw = parts[0];
+    let numberRaw = parts[1];
+    let remainingTokens = parts.slice(2);
 
-        let startIndex = 0;
-        if (/^\d+$/.test(tokens[0])) {
-          stock = parseInt(tokens[0], 10) || 1;
-          startIndex = 1;
-        }
-        name = tokens.slice(startIndex, tokens.length - 2).join(' ');
-      } else {
-        return null;
-      }
+    const isSecondPartSetCode = parts.length >= 3 && /^[a-z0-9]{2,6}$/i.test(parts[1]) && /^(\d+|[a-z0-9-]+)(\/\d+)?$/i.test(parts[2]);
+    if (isSecondPartSetCode && !/^[a-z0-9]{2,6}$/i.test(parts[0])) {
+      setCodeRaw = parts[1];
+      numberRaw = parts[2];
+      remainingTokens = parts.slice(3);
     }
 
     if (!setCodeRaw || !numberRaw) return null;
@@ -2624,15 +2596,6 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       number = '0';
     }
 
-    // Normalize condition case-insensitively (e.g. "nm", "NM", "lp", "LP", "mp", "hp", "dmg")
-    const normCond = condition.trim().toUpperCase();
-    if (['NM', 'LP', 'MP', 'HP', 'DMG'].includes(normCond)) {
-      condition = normCond;
-    } else if (normCond === 'DAMAGED') {
-      condition = 'DMG';
-    }
-
-    // Detect language from set suffix case-insensitively (e.g. "MEGes", "meges", "MEGen", "WHITla", "whitla", "WHITes")
     let idioma = fallbackLanguage;
     if (setCode.endsWith('la') && setCode.length > 2) {
       setCode = setCode.slice(0, -2);
@@ -2651,7 +2614,6 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       idioma = 'Portugués';
     }
 
-    // Map common set code abbreviations (case-insensitive keys match setCode which is lowercase)
     const setCodeMapping = {
       'svi': 'sv1', 'sv01': 'sv1',
       'pal': 'sv2', 'sv02': 'sv2',
@@ -2678,29 +2640,55 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       }
     }
 
-    // Flags and custom rarity (case-insensitive detection)
+    let stock = 1;
+    let price = 0;
+    let condition = 'NM';
     let is_reverse = false;
     let is_league = false;
     let overriddenRarity = null;
-    const checkTokens = [...parts.slice(3), ...extraTokens];
-    for (const val of checkTokens) {
-      if (val) {
-        const lowerVal = String(val).trim().toLowerCase();
-        if (lowerVal === 'reverse' || lowerVal === 'rev') is_reverse = true;
-        else if (lowerVal === 'liga' || lowerVal === 'league' || lowerVal === 'de liga') is_league = true;
-        else if (lowerVal === 'es' || lowerVal.includes('español')) idioma = 'Español';
-        else if (lowerVal === 'en' || lowerVal.includes('ingles') || lowerVal.includes('inglés')) idioma = 'Inglés';
-        else if (lowerVal === 'jp' || lowerVal.includes('japones') || lowerVal.includes('japonés')) idioma = 'Japonés';
-        else {
-          const matchedRarity = parseRarityPrefix(val);
-          if (matchedRarity) overriddenRarity = matchedRarity;
+    let hasSetStock = false;
+    let hasSetPrice = false;
+
+    for (const tok of remainingTokens) {
+      const val = String(tok).trim();
+      if (!val) continue;
+      const lowerVal = val.toLowerCase();
+      const upperVal = val.toUpperCase();
+
+      if (['NM', 'LP', 'MP', 'HP', 'DMG'].includes(upperVal)) {
+        condition = upperVal;
+      } else if (upperVal === 'DAMAGED') {
+        condition = 'DMG';
+      } else if (['holo', 'reverse', 'rev', 'reverse holo', 'rh'].includes(lowerVal)) {
+        is_reverse = true;
+      } else if (['liga', 'league', 'de liga'].includes(lowerVal)) {
+        is_league = true;
+      } else if (['es', 'español', 'espanol'].includes(lowerVal)) {
+        idioma = 'Español';
+      } else if (['en', 'ingles', 'inglés', 'english'].includes(lowerVal)) {
+        idioma = 'Inglés';
+      } else if (['jp', 'japones', 'japonés', 'japanese'].includes(lowerVal)) {
+        idioma = 'Japonés';
+      } else {
+        const rarityMatch = parseRarityPrefix(val);
+        if (rarityMatch) {
+          overriddenRarity = rarityMatch;
+        } else if (/^\d+$/.test(val.replace(/[$.]/g, ''))) {
+          const numVal = parseInt(val.replace(/[$.]/g, ''), 10);
+          if (!hasSetStock && numVal <= 100) {
+            stock = numVal;
+            hasSetStock = true;
+          } else if (!hasSetPrice) {
+            price = numVal;
+            hasSetPrice = true;
+          }
         }
       }
     }
 
     return {
       id: Math.random().toString(36).substr(2, 9),
-      name: name.trim(),
+      name: '',
       setCode,
       rawSetCode: setCodeRaw.toLowerCase(),
       number,
@@ -2715,6 +2703,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       real_photo: '',
       status: 'pending',
       image: '',
+      fallbackImage: '',
       set: '',
       rarity: overriddenRarity || 'Rara',
       description: 'Sin descripción adicional.',
@@ -2725,7 +2714,6 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
   const handleProcessList = async () => {
     if (!inputText.trim()) return;
     
-    // Parse lines
     const lines = inputText.split('\n');
     const parsed = [];
     
@@ -2735,7 +2723,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     });
 
     if (parsed.length === 0) {
-      toast('No se encontraron líneas válidas. Ingresa código de set y número (ej: MegEn 18 o megen 18 o TWM 180)', 'error');
+      toast('No se encontraron líneas válidas. Ingresa código de set y número (ej: TWMla, 123/234, 1, 5000, NM, UR, holo, liga)', 'error');
       return;
     }
 
@@ -2754,7 +2742,6 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
       try {
         let card = null;
 
-        // 1. Primary Lookup: Search by Set ID and Number ONLY (Direct code lookup - case-insensitive in pokemontcg.io)
         const primaryQuery = `set.id:"${row.setCode}" number:"${row.number}"`;
         const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(primaryQuery)}`);
         
@@ -2765,7 +2752,6 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
           }
         }
 
-        // 2. Fallback: Try 3-digit padded number (e.g. 18 -> 018)
         if (!card && /^\d+$/.test(row.number)) {
           const paddedNum = row.number.padStart(3, '0');
           if (paddedNum !== row.number) {
@@ -2780,7 +2766,6 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
           }
         }
 
-        // 3. Fallback: Search by number and filter set / PTCGO code by case-insensitive match
         if (!card) {
           const numQuery = `number:"${row.number}"`;
           const numRes = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(numQuery)}`);
@@ -2808,28 +2793,19 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
           }
         }
 
-        // 4. Fallback: If user provided a name, try querying name + number
-        if (!card && row.name) {
-          const nameQuery = `name:"${row.name}" number:"${row.number}"`;
-          const nRes = await fetch(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(nameQuery)}`);
-          if (nRes.ok) {
-            const nData = await nRes.json();
-            if (nData.data && nData.data.length > 0) {
-              card = nData.data[0];
-            }
-          }
-        }
-
         if (card) {
+          const fallbackImg = card.images?.large || card.images?.small || '';
+          const spanishUrl = row.idioma === 'Español' ? getSpanishImageUrl(card.set?.id || row.setCode, row.number) : null;
+
           updatedRows[i] = {
             ...row,
             status: 'success',
-            // Autocomplete official card information from API
             name: card.name,
             set: card.set?.name || 'Escarlata y Púrpura',
             setCode: card.set?.id || row.setCode,
             rarity: row.overriddenRarity || translateRarity(card.rarity),
-            image: card.images?.large || card.images?.small || '',
+            image: spanishUrl || fallbackImg,
+            fallbackImage: fallbackImg,
             apiCard: card
           };
         } else {
@@ -2856,147 +2832,56 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     setProcessing(false);
   };
 
-  const handleRowChange = (rowId, field, value) => {
-    setImportRows(prev => prev.map(row => {
-      if (row.id === rowId) {
-        return { ...row, [field]: value };
-      }
-      return row;
-    }));
-  };
-
   const handleRowPhotoUpload = async (rowId, e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
-    setUploadingRowId(rowId);
+
     try {
-      toast('Optimizando imagen...', 'info');
-      const compressedFile = await compressImage(file, 800, 0.85);
-      const formData = new FormData();
-      formData.append('image', compressedFile);
-      
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=149aebd904174718dea8f1c5eb444935`, {
-        method: 'POST',
-        body: formData
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const url = data.data?.url || '';
-        handleRowChange(rowId, 'real_photo', url);
-        toast('📷 Foto real cargada con éxito', 'success');
-      } else {
-        toast('⚠️ Error al subir imagen a ImgBB', 'error');
-      }
+      const publicUrl = await uploadCardImage(file, 'batch_photo');
+      handleRowChange(rowId, 'real_photo', publicUrl);
+      toast('Foto real subida para la fila', 'success');
     } catch (err) {
       console.error(err);
-      toast('⚠️ Error al subir imagen', 'error');
-    } finally {
-      setUploadingRowId(null);
+      toast('Error al subir foto real', 'error');
     }
   };
 
-  const openManualAdd = (idx) => {
-    const row = importRows[idx];
-    setManualForm({
-      name: row.name,
-      set: 'Escarlata y Púrpura',
-      setCode: row.setCode.toUpperCase(),
-      number: row.number,
-      rarity: row.overriddenRarity || 'Rara',
-      price: row.price,
-      stock: row.stock,
-      condition: row.condition,
-      idioma: row.idioma,
-      image: '',
-      real_photo: '',
-      is_reverse: !!row.is_reverse,
-      is_league: !!row.is_league
-    });
-    setManualAddIndex(idx);
-    setShowManualAddForm(true);
-  };
-
-  const handleSaveManual = (e) => {
-    e.preventDefault();
-    const updated = [...importRows];
-    updated[manualAddIndex] = {
-      ...updated[manualAddIndex],
-      ...manualForm,
-      status: 'success'
-    };
-    setImportRows(updated);
-    setShowManualAddForm(false);
-    setManualAddIndex(null);
-    toast('Carta configurada manualmente ✓', 'success');
-  };
-
-  const handleManualFormPhotoUpload = async (e, type) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    try {
-      toast('Optimizando imagen...', 'info');
-      const compressedFile = await compressImage(file, 800, 0.85);
-      const formData = new FormData();
-      formData.append('image', compressedFile);
-      
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=149aebd904174718dea8f1c5eb444935`, {
-        method: 'POST',
-        body: formData
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const url = data.data?.url || '';
-        setManualForm(prev => ({ ...prev, [type]: url }));
-        toast('Imagen subida con éxito ✓', 'success');
-      } else {
-        toast('⚠️ Error al subir imagen', 'error');
-      }
-    } catch (err) {
-      console.error(err);
-      toast('⚠️ Error al subir imagen', 'error');
-    }
-  };
-
-  const handlePublish = async () => {
-    const successRows = importRows.filter(r => r.status === 'success' && r.selected);
-    if (successRows.length === 0) {
-      toast('No hay cartas seleccionadas listas para importar.', 'error');
+  const handleSaveSelectedRows = async () => {
+    const selectedRows = importRows.filter(r => r.status === 'success' && r.selected);
+    if (selectedRows.length === 0) {
+      toast('No hay cartas seleccionadas para guardar', 'error');
       return;
     }
 
     setProcessing(true);
-    setStep(3);
-    setImportProgress({ current: 0, total: successRows.length });
-
     try {
-      const cardsToInsert = successRows.map(row => ({
-        name: row.name,
-        set: row.set || 'Escarlata y Púrpura',
-        set_code: row.setCode.toUpperCase(),
-        rarity: row.rarity,
-        price: row.price,
-        condition: row.condition,
-        image: row.image || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop',
-        real_photo: row.real_photo || null,
-        description: row.description || 'Sin descripción adicional.',
-        in_stock: row.price > 0 && row.stock > 0,
-        stock: row.stock,
-        is_reverse: row.is_reverse,
-        is_league: row.is_league,
-        idioma: row.idioma
+      const cardsToInsert = selectedRows.map(r => ({
+        name: r.name,
+        set: r.set,
+        set_code: r.setCode,
+        number: r.number,
+        rarity: r.rarity,
+        price: r.price,
+        stock: r.stock,
+        condition: r.condition,
+        idioma: r.idioma,
+        is_reverse: r.is_reverse,
+        is_league: r.is_league,
+        image: r.image,
+        real_photo: r.real_photo,
+        description: r.description
       }));
 
-      const { error } = await supabase.from('cards').insert(cardsToInsert);
-      if (error) throw error;
-
-      setImportProgress({ current: successRows.length, total: successRows.length });
-      toast(`🎉 ${successRows.length} cartas importadas correctamente`, 'success');
+      await addBatchCardsToSupabase(cardsToInsert);
+      toast(`✨ Se han publicado ${cardsToInsert.length} cartas correctamente en Supabase`, 'success');
       
       setTimeout(() => {
-        onImportSuccess();
-        onClose();
+        setProcessing(false);
+        setStep(1);
+        setInputText('');
+        setImportRows([]);
+        if (onSuccess) onSuccess();
+        if (onClose) onClose();
       }, 1500);
     } catch (err) {
       console.error(err);
@@ -3010,17 +2895,56 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
   const selectCls = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#0052FF] transition-all cursor-pointer";
 
   return (
-    <Modal title="Importar Cartas en Lote" onClose={onClose} maxWidth="max-w-5xl">
+    <Modal title="Importar Cartas en Lote (Solo Código)" onClose={onClose} maxWidth="max-w-5xl">
       {step === 1 && (
         <div className="space-y-4">
-          <div className="p-4 bg-white/5 rounded-xl border border-white/5 space-y-2 text-xs text-slate-400">
-            <p className="font-bold text-slate-200">💡 Instrucciones de Importación por Código o Lista:</p>
-            <p>Escribe o pega una lista de cartas. Puedes ingresar <strong>solo el código de set y número</strong> (ej. <code className="text-[#0052FF]">MegEn 18</code> o <code className="text-[#0052FF]">WHITla 018</code>) y el sistema buscará y autocompletará la carta oficial automáticamente.</p>
-            <code className="block bg-black/40 p-2 rounded text-[#0052FF] font-mono select-all">
-              [CódigoSet] [Número]  ó  [Cantidad] [CódigoSet] [Número]  ó  [Nombre], [Set], [Número], [Stock], [Precio]
-            </code>
-            <p className="mt-2 text-[10px]">✨ <strong>Solo código (Recomendado):</strong> <strong className="text-white">MegEn 18</strong> o <strong className="text-white">WHITla 018 2 5000</strong> (autocompleta nombre en inglés/español, set, rareza e ilustración).</p>
-            <p className="text-[10px]">✨ <strong>Idiomas por sufijo:</strong> <strong className="text-white">MegEn</strong> (Inglés), <strong className="text-white">WHITla</strong> / <strong className="text-white">MEGes</strong> (Español), <strong className="text-white">PREjp</strong> (Japonés).</p>
+          <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-3 text-xs text-slate-300">
+            <div className="flex items-center gap-2 text-slate-100 font-extrabold text-sm">
+              <span>💡</span> Formato de Importación por Lote (Solo Código):
+            </div>
+            
+            <p className="text-slate-300 leading-relaxed">
+              Pega tu lista de cartas por código (sin requerir el nombre). El sistema autocompletará el nombre oficial en español/inglés, la expansión, rareza e ilustración en español.
+            </p>
+
+            <div className="bg-black/50 p-3 rounded-xl border border-white/10 space-y-2 font-mono">
+              <div className="text-[11px] text-[#0052FF] font-bold select-all">
+                [CódigoSet], [Número], [Cantidad], [Precio], [Estado], [Rareza], [Reverse/Holo], [Liga]
+              </div>
+              <div className="text-emerald-400 text-xs font-semibold select-all">
+                Ejemplo completo: TWMla, 123/234, 1, 5000, NM, UR, holo, liga
+              </div>
+              <div className="text-slate-300 text-xs font-semibold select-all">
+                Ejemplo rápido: TWMla 123/234 1 5000 NM holo liga
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-[11px] text-slate-400 pt-1">
+              <div>
+                <span className="text-white font-bold">1. CódigoSet + Idioma:</span>
+                <span className="block text-slate-300 font-mono">TWMla / MEGes (Español), TWMen (Inglés), PREjp (Japonés)</span>
+              </div>
+              <div>
+                <span className="text-white font-bold">2. Número de Carta:</span>
+                <span className="block text-slate-300 font-mono">123/234, 123, 018, GG44</span>
+              </div>
+              <div>
+                <span className="text-white font-bold">3. Cantidad y Precio (Opcionales):</span>
+                <span className="block text-slate-300 font-mono">1 (stock), 5000 (precio CLP)</span>
+              </div>
+              <div>
+                <span className="text-white font-bold">4. Estado (Opcional):</span>
+                <span className="block text-slate-300 font-mono">NM, LP, MP, HP, DMG (Default: NM)</span>
+              </div>
+              <div>
+                <span className="text-white font-bold">5. Banderas (Opcionales):</span>
+                <span className="block text-slate-300 font-mono">holo / reverse (Reverso), liga (De Liga)</span>
+              </div>
+              <div>
+                <span className="text-white font-bold">6. Rareza Forzada (Opcional):</span>
+                <span className="block text-slate-300 font-mono">C, U, R, RR, UR, IR, SIR, SD, HR</span>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -3040,7 +2964,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
               rows={8}
               value={inputText}
               onChange={e => setInputText(e.target.value)}
-              placeholder={`Ejemplos:\nMegEn 18\nWHITla 018 2 5000\n4 TWM 180\nobf 026 3 800\nCarmine | twm | 180 | 1 | 5000`}
+              placeholder={`Ejemplos:\nTWMla, 123/234, 1, 5000, NM, UR, holo, liga\nWHITla 018 2 5000\nMEGes 18 1 60000 NM\nobf 026 3 800\n4 TWM 180`}
             />
           </Field>
 
@@ -3108,7 +3032,16 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                         </td>
                         <td className="px-3 py-3 text-center">
                           {row.image ? (
-                            <img src={row.image} alt={row.name} className="w-8 h-10 object-contain rounded border border-white/10 bg-slate-900" />
+                            <img 
+                              src={row.image} 
+                              alt={row.name} 
+                              onError={(e) => {
+                                if (row.fallbackImage && e.target.src !== row.fallbackImage) {
+                                  e.target.src = row.fallbackImage;
+                                }
+                              }}
+                              className="w-8 h-10 object-contain rounded border border-white/10 bg-slate-900" 
+                            />
                           ) : (
                             <div className="w-8 h-10 bg-white/5 border border-white/10 rounded flex items-center justify-center text-[10px] text-slate-500 font-black">?</div>
                           )}
