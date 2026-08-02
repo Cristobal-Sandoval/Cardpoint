@@ -44,14 +44,14 @@ describe('React Component Unit Tests', () => {
   });
 
   describe('GoogleAdSlot', () => {
-    it('renders simulated ad slot when AdSense script is not loaded', () => {
-      render(<GoogleAdSlot format="horizontal" />);
-      expect(screen.getByText(/Publicidad Patrocinada/i)).toBeInTheDocument();
+    it('returns null when AdSense script is not loaded or config is placeholder', () => {
+      const { container } = render(<GoogleAdSlot format="horizontal" />);
+      expect(container.firstChild).toBeNull();
     });
 
-    it('renders card format simulation', () => {
-      render(<GoogleAdSlot format="card" />);
-      expect(screen.getByText('Anuncio Patrocinado')).toBeInTheDocument();
+    it('returns null for card format when unconfigured', () => {
+      const { container } = render(<GoogleAdSlot format="card" />);
+      expect(container.firstChild).toBeNull();
     });
   });
 });

@@ -39,6 +39,21 @@ export default function Catalog({
   paginatedCards
 }) {
 
+  // Categorías adaptativas: solo se muestran si existen cartas disponibles en stock
+  const visibleCategories = useMemo(() => {
+    const list = [{ id: 'Todos', name: 'Todas', emoji: '🎴', count: categoryCounts.Todos || 0 }];
+    if (categoryCounts.Pokemon > 0) {
+      list.push({ id: 'Pokemon', name: 'Pokémon', emoji: '⚡', count: categoryCounts.Pokemon, color: 'bg-amber-500 text-slate-950 shadow-amber-500/20 hover:border-amber-500' });
+    }
+    if (categoryCounts.Entrenadores > 0) {
+      list.push({ id: 'Entrenadores', name: 'Entrenadores', emoji: '🎒', count: categoryCounts.Entrenadores, color: 'bg-purple-600 text-white shadow-purple-600/20 hover:border-purple-600' });
+    }
+    if (categoryCounts.Energias > 0) {
+      list.push({ id: 'Energias', name: 'Energías', emoji: '🔋', count: categoryCounts.Energias, color: 'bg-emerald-500 text-white shadow-emerald-500/20 hover:border-emerald-500' });
+    }
+    return list;
+  }, [categoryCounts]);
+
   const [showAutocomplete, setShowAutocomplete] = useState(false);
 
   // Obtener sugerencias de autocompletado en base al stock real
@@ -202,49 +217,26 @@ export default function Catalog({
         </div>
       </div>
 
-      {/* Filtro de Categoría (Pokémon, Entrenadores, Energías) */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar py-1 border-b border-slate-100 dark:border-slate-800/60 pb-3">
-        <button
-          onClick={() => setSelectedCategory('Todos')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-            selectedCategory === 'Todos'
-              ? 'bg-[#0052FF] text-white shadow-md shadow-blue-500/20'
-              : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:border-[#0052FF]'
-          }`}
-        >
-          <span>🎴</span> Todas ({categoryCounts.Todos || 0})
-        </button>
-        <button
-          onClick={() => setSelectedCategory('Pokemon')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-            selectedCategory === 'Pokemon'
-              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
-              : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:border-amber-500'
-          }`}
-        >
-          <span>⚡</span> Pokémon ({categoryCounts.Pokemon || 0})
-        </button>
-        <button
-          onClick={() => setSelectedCategory('Entrenadores')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-            selectedCategory === 'Entrenadores'
-              ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20 font-black'
-              : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:border-purple-600'
-          }`}
-        >
-          <span>🎒</span> Entrenadores ({categoryCounts.Entrenadores || 0})
-        </button>
-        <button
-          onClick={() => setSelectedCategory('Energias')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-            selectedCategory === 'Energias'
-              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20 font-black'
-              : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:border-emerald-500'
-          }`}
-        >
-          <span>🔋</span> Energías ({categoryCounts.Energias || 0})
-        </button>
-      </div>
+      {/* Filtro Adaptativo de Categoría (Pokémon, Entrenadores, Energías - Oculta vacías) */}
+      {visibleCategories.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto no-scrollbar py-1 border-b border-slate-100 dark:border-slate-800/60 pb-3">
+          {visibleCategories.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                selectedCategory === cat.id
+                  ? cat.id === 'Todos'
+                    ? 'bg-[#0052FF] text-white shadow-md shadow-blue-500/20 font-black'
+                    : `${cat.color} font-black shadow-md`
+                  : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:border-[#0052FF]'
+              }`}
+            >
+              <span>{cat.emoji}</span> {cat.name} ({cat.count})
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Filtro de Rarezas */}
       <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
