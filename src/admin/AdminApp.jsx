@@ -2998,7 +2998,8 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
         stock: row.stock || 1,
         is_reverse: !!row.is_reverse,
         is_league: !!row.is_league,
-        idioma: row.idioma || 'Español'
+        idioma: row.idioma || 'Español',
+        supertype: row.supertype || 'Pokémon'
       }));
 
       // Insert por lotes (chunks de 100) para no exceder límites de Supabase
