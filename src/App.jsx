@@ -67,40 +67,24 @@ const TRAINER_EXPLICIT_SET_NUMBERS = new Set([
   'sv6-180', 'sv6-181', 'sv6-182', 'sv6-183'
 ]);
 
-const TRAINER_KEYWORDS = [
-  'carmine', 'carmín', 'juez', 'judge', 'nemona', 'nemonía', 'nemonia',
-  'lillie', 'lillie\'s', 'lilies', 'determinación de lillie', 'lillie\'s determination',
-  'lana', 'lana\'s', 'lana\'s aid', 'asistencia de nereida', 'nereida',
-  'erika', 'erika\'s hospitality', 'hospitalidad de erika', 'erika\'s',
-  'profesor', 'professor', 'investigación de profesores', 'professor\'s research',
-  'arven', 'iono', 'boss', 'boss\'s orders', 'órdenes de jefes', 'ordenes de jefes',
-  'penny', 'sada', 'turo', 'crispin', 'crispín', 'kieran', 'lacey', 'drayton',
-  'amarys', 'briar', 'cynthia', 'cintia', 'steven', 'máximo', 'maximo',
-  'marnie', 'camila', 'rosa', 'skyla', 'serena', 'cheryll', 'klara', 'clara',
-  'melony', 'milo', 'nessa', 'guzma', 'guzmán', 'colress', 'acromo', 'lysandre',
-  'giovanni', 'red', 'blue', 'green', 'leaf', 'hop', 'bede', 'cyrus', 'helio',
-  'kukui', 'gladion', 'hau', 'kiawe', 'mallow', 'lulú', 'illima', 'sophocles',
-  'grusha', 'geeta', 'gita', 'miriam', 'jacq', 'dendra', 'saguaro', 'salvatore',
-  'hassel', 'clavell', 'atticus', 'mela', 'poppy', 'amapolita', 'ortega',
-  'grand tree', 'gran árbol', 'gran arbol', 'bug catching set', 'set de caza de bichos',
-  'poké ball', 'poke ball', 'poción', 'pocion', 'potion', 'ultra ball', 'nido ball',
-  'nest ball', 'super ball', 'great ball', 'master ball', 'caramelo raro', 'rare candy',
-  'cuerda huida', 'escape rope', 'interruptor', 'energy switch', 'camilla', 'super rod',
-  'recuperación de energía', 'energy retrieval', 'casco dentado', 'rocky helmet',
-  'capa de valor', 'bravery charm', 'piedra sello', 'forest seal stone',
-  'capturador supremo', 'prime catcher', 'vasija terrestre', 'earthen vessel',
-  'tambor del despertar', 'awakening drum', 'artazon', 'artazao', 'town store',
-  'tienda del pueblo', 'jamming tower', 'torre de interferencias', 'neutral center',
-  'centro neutral', 'dangerous laser', 'láser peligroso', 'secret box', 'caja secreta',
-  'unfair stamp', 'sello injusto', 'sparkling crystal', 'cristal deslumbrante',
-  'hyper aroma', 'hiperaroma', 'pokégear', 'pokegear', 'pal pad', 'poffin',
-  'buddy-buddy poffin', 'heavy ball', 'switch', 'exp. share', 'leftovers', 'restos',
-  'choice belt', 'cinturón elección', 'rotom phone', 'teléfono rotom',
-  'counter catcher', 'capturador contraataque', 'eerie radar', 'radar espeluznante',
-  'counter gain', 'ganancia contraataque', 'gravity stone', 'piedra gravedad',
-  'entrenador', 'trainer', 'partidario', 'supporter', 'objeto', 'item',
-  'estadio', 'stadium', 'herramienta', 'tool', 'ace spec', 'technical machine'
-];
+const EXPLICIT_TRAINER_FULL_NAMES = new Set([
+  "judge", "juez", "lana's aid", "lana’s aid", "lillie's determination", "lillie’s determination",
+  "lilies determination", "lillie's full force", "erika's hospitality", "hospitalidad de erika",
+  "boss's orders", "boss’s orders", "órdenes de jefes", "ordenes de jefes", "grand tree", "gran árbol",
+  "gran arbol", "carmine", "carmín", "nemona", "nemonía", "nemonia", "investigación de profesores",
+  "professor's research", "professor’s research", "ultra ball", "nido ball", "nest ball", "super ball",
+  "great ball", "master ball", "caramelo raro", "rare candy", "cuerda huida", "escape rope",
+  "interruptor", "energy switch", "camilla", "super rod", "casco dentado", "capa de valor",
+  "piedra sello", "capturador supremo", "prime catcher", "vasija terrestre", "earthen vessel",
+  "tambor del despertar", "awakening drum", "artazon", "town store", "jamming tower",
+  "neutral center", "dangerous laser", "secret box", "unfair stamp", "sparkling crystal",
+  "hyper aroma", "hiperaroma", "pokégear", "pokegear", "pal pad", "buddy-buddy poffin",
+  "heavy ball", "switch", "exp. share", "leftovers", "choice belt", "rotom phone",
+  "counter catcher", "eerie radar", "counter gain", "gravity stone", "bug catching set",
+  "set de caza de bichos", "iono", "hop", "arven", "penny", "sada", "turo", "crispin",
+  "kieran", "lacey", "drayton", "amarys", "briar", "cynthia", "steven", "marnie", "serena",
+  "rosa", "skyla", "guzma", "colress", "giovanni", "red", "blue", "green", "cyrus", "kukui"
+]);
 
 export function getCardSupertype(card) {
   if (!card) return 'Pokemon';
@@ -110,18 +94,29 @@ export function getCardSupertype(card) {
   const setCode = (card.set_code || card.setCode || '').toLowerCase().trim();
   const st = (card.supertype || card.card_type || card.category || '').toLowerCase().trim();
 
-  // 1. Check Explicit Field (Highest Priority)
+  // 1. EXPLICIT DB FIELD
   if (st === 'trainer' || st === 'entrenador' || st.includes('trainer') || st.includes('entrenador') || st.includes('supporter') || st.includes('item') || st.includes('stadium') || st.includes('tool')) {
     return 'Entrenadores';
   }
-  if (st === 'energy' || st === 'energía' || st === 'energia' || st.includes('energy') || st.includes('energía')) {
+  if (st === 'energy' || st === 'energía' || st === 'energia' || st.includes('energy')) {
     return 'Energias';
   }
   if (st === 'pokémon' || st === 'pokemon') {
     return 'Pokemon';
   }
 
-  // 2. Check SetCode-Number Combo (e.g. TWM 155/167, POR 084/088, ASC 192/217)
+  const nameLower = name.toLowerCase();
+
+  // 2. OWNER'S POKÉMON CHECK (e.g. "Hop's Snorlax", "Iono's Kilowattrel", "Erika's Dragonair")
+  // If the card name has "'s " or "’s " and is NOT an explicit Trainer card name like "Lana's Aid" or "Boss's Orders"
+  const isOwnerPattern = /['’]s\s+/i.test(name);
+  const isKnownTrainerName = EXPLICIT_TRAINER_FULL_NAMES.has(nameLower);
+
+  if (isOwnerPattern && !isKnownTrainerName) {
+    return 'Pokemon';
+  }
+
+  // 3. Check SetCode-Number Combo (e.g. TWM 155/167, POR 084/088, ASC 192/217)
   const numberMatch = name.match(/(\d+)\/(\d+)/) || desc.match(/(\d+)\/(\d+)/);
   if (setCode && numberMatch) {
     const key = `${setCode}-${numberMatch[1]}`;
@@ -131,30 +126,25 @@ export function getCardSupertype(card) {
     }
   }
 
-  // 3. IS IT A POKÉMON TRAIT? (HP, Moves, ex/V/VMAX/GX/Tera/Mega suffix)
+  // 4. POKÉMON TRAITS (HP, ex/V/VMAX/GX/Tera/Mega suffix)
   const hasHP = !!card.hp || /\b(hp\s*\d+|\d+\s*hp)\b/i.test(desc) || /\b\d{2,3}\s*hp\b/i.test(name);
   const isPokemonSuffix = /\b(ex|v|vmax|vstar|gx|radiant|radiante|tera|mega)\b/i.test(name);
   const isPokemonTypeDesc = /tipo principal:\s*(fuego|agua|planta|rayo|psíquico|psiquico|lucha|oscuridad|metal|dragón|dragon|incoloro|fire|water|grass|lightning|psychic|fighting|darkness|metal|dragon|colorless)/i.test(desc);
 
-  // If card has HP or Pokémon suffix (like Mega Gengar ex, Iono's Kilowattrel 120 HP)
   if (hasHP || isPokemonSuffix || isPokemonTypeDesc || (card.types && card.types.length > 0)) {
-    // Only allow if description explicitly says Trainer card
     if (!desc.includes('carta entrenador') && !desc.includes('supporter card') && !desc.includes('item card')) {
       return 'Pokemon';
     }
   }
 
-  // 4. IS IT ENERGY?
+  // 5. ENERGY DETECTION
   if (/\b(energía|energia|basic energy|special energy|double turbo|jet energy|reversal energy)\b/i.test(name)) {
     return 'Energias';
   }
 
-  // 5. Trainer Keywords / Names
-  for (const kw of TRAINER_KEYWORDS) {
-    const regex = new RegExp(`\\b${kw.replace(/['']/g, "['']")}\\b`, 'i');
-    if (regex.test(name) || regex.test(desc)) {
-      return 'Entrenadores';
-    }
+  // 6. TRAINER MATCH (If name matches an explicit Trainer name or description specifies Trainer)
+  if (isKnownTrainerName || /\b(supporter|item|stadium|tool|partidario|objeto|estadio|herramienta|ace spec|technical machine)\b/i.test(desc)) {
+    return 'Entrenadores';
   }
 
   return 'Pokemon';

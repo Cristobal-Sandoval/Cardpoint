@@ -32,6 +32,8 @@ describe('getCardSupertype Master Classifier', () => {
 
   it('correctly classifies Pokémon cards without misidentifying them as Trainers', () => {
     const pokemonCards = [
+      { name: "Hop's Snorlax" },
+      { name: "Iono's Kilowattrel" },
       { name: "Cascoon", description: "Información oficial de la carta Cascoon. Tipo principal: Grass." },
       { name: "Capakid", description: "Información oficial de la carta Capakid. Tipo principal: Water." },
       { name: "Charizard ex", description: "Información oficial de la carta Charizard ex. Tipo principal: Fire." },
