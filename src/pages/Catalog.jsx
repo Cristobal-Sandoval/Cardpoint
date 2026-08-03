@@ -206,10 +206,11 @@ export default function Catalog({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border bg-white dark:bg-[#121824] border-slate-200 dark:border-slate-850 text-xs focus:outline-none focus:border-[#0052FF] transition-all text-slate-900 dark:text-white cursor-pointer"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border bg-white dark:bg-[#121824] border-slate-200 dark:border-slate-850 text-xs focus:outline-none focus:border-[#0052FF] transition-all text-slate-900 dark:text-white cursor-pointer font-bold"
             aria-label="Ordenar listado"
           >
             <option value="default">Ordenar por defecto</option>
+            <option value="newest">✨ Últimas agregadas</option>
             <option value="price-low">Precio: Menor a Mayor</option>
             <option value="price-high">Precio: Mayor a Menor</option>
             <option value="name">Nombre: A-Z</option>

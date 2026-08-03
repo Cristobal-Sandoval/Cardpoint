@@ -1173,6 +1173,11 @@ export default function App() {
       const matchesCategory = selectedCategory === 'Todos' || cardType === selectedCategory;
       return matchesSearch && matchesRarity && matchesCategory;
     }).sort((a, b) => {
+      if (sortBy === 'newest') {
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : (typeof a.id === 'number' ? a.id : 0);
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : (typeof b.id === 'number' ? b.id : 0);
+        return dateB - dateA;
+      }
       if (sortBy === 'price-low') return a.price - b.price;
       if (sortBy === 'price-high') return b.price - a.price;
       if (sortBy === 'name') return a.name.localeCompare(b.name);
