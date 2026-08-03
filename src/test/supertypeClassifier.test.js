@@ -20,6 +20,10 @@ describe('getCardSupertype Master Classifier', () => {
       { name: "Grand Tree" },
       { name: "Lana's Aid" },
       { name: "Lillie's Determination" },
+      { name: "Rosa's Encouragement" },
+      { name: "Brock's Scouting" },
+      { name: "Colress's Tenacity" },
+      { name: "Firebreather" },
       { name: "Investigación de Profesores" },
       { name: "Juez" },
       { name: "Ultra Ball" }

@@ -67,8 +67,10 @@ const TRAINER_EXPLICIT_SET_NUMBERS = new Set([
   'sv6-180', 'sv6-181', 'sv6-182', 'sv6-183'
 ]);
 
+const TRAINER_ACTION_SUFFIXES = /\b(encouragement|scouting|tenacity|aid|determination|hospitality|orders|vitality|scenario|conviction|ambition|pride|technique|force|invitation|resolve|dedication|intuition|compassion|sincerity)\b/i;
+
 const EXPLICIT_TRAINER_FULL_NAMES = new Set([
-  "judge", "juez", "lana's aid", "lana’s aid", "lillie's determination", "lillie’s determination",
+  "judge", "juez", "firebreather", "lana's aid", "lana’s aid", "lillie's determination", "lillie’s determination",
   "lilies determination", "lillie's full force", "erika's hospitality", "hospitalidad de erika",
   "boss's orders", "boss’s orders", "órdenes de jefes", "ordenes de jefes", "grand tree", "gran árbol",
   "gran arbol", "carmine", "carmín", "nemona", "nemonía", "nemonia", "investigación de profesores",
@@ -83,7 +85,7 @@ const EXPLICIT_TRAINER_FULL_NAMES = new Set([
   "counter catcher", "eerie radar", "counter gain", "gravity stone", "bug catching set",
   "set de caza de bichos", "iono", "hop", "arven", "penny", "sada", "turo", "crispin",
   "kieran", "lacey", "drayton", "amarys", "briar", "cynthia", "steven", "marnie", "serena",
-  "rosa", "skyla", "guzma", "colress", "giovanni", "red", "blue", "green", "cyrus", "kukui"
+  "rosa", "skyla", "guzma", "colress", "giovanni", "red", "blue", "green", "cyrus", "kukui", "brock"
 ]);
 
 export function getCardSupertype(card) {
@@ -94,7 +96,7 @@ export function getCardSupertype(card) {
   const setCode = (card.set_code || card.setCode || '').toLowerCase().trim();
   const st = (card.supertype || card.card_type || card.category || '').toLowerCase().trim();
 
-  // 1. EXPLICIT DB FIELD
+  // 1. Explicit DB field
   if (st === 'trainer' || st === 'entrenador' || st.includes('trainer') || st.includes('entrenador') || st.includes('supporter') || st.includes('item') || st.includes('stadium') || st.includes('tool')) {
     return 'Entrenadores';
   }
@@ -107,13 +109,15 @@ export function getCardSupertype(card) {
 
   const nameLower = name.toLowerCase();
 
-  // 2. OWNER'S POKÉMON CHECK (e.g. "Hop's Snorlax", "Iono's Kilowattrel", "Erika's Dragonair")
-  // If the card name has "'s " or "’s " and is NOT an explicit Trainer card name like "Lana's Aid" or "Boss's Orders"
-  const isOwnerPattern = /['’]s\s+/i.test(name);
-  const isKnownTrainerName = EXPLICIT_TRAINER_FULL_NAMES.has(nameLower);
+  // 2. Definitive Pokémon traits (HP > 0, types array, ex/V/VMAX/GX/Tera/Mega suffix)
+  const hasHP = !!card.hp || /\b(hp\s*\d+|\d+\s*hp)\b/i.test(desc) || /\b\d{2,3}\s*hp\b/i.test(name);
+  const isPokemonSuffix = /\b(ex|v|vmax|vstar|gx|radiant|radiante|tera|mega)\b/i.test(name);
+  const isPokemonTypeDesc = /tipo principal:\s*(fuego|agua|planta|rayo|psíquico|psiquico|lucha|oscuridad|metal|dragón|dragon|incoloro|fire|water|grass|lightning|psychic|fighting|darkness|metal|dragon|colorless)/i.test(desc);
 
-  if (isOwnerPattern && !isKnownTrainerName) {
-    return 'Pokemon';
+  if (isPokemonSuffix || (hasHP && !TRAINER_ACTION_SUFFIXES.test(name)) || isPokemonTypeDesc || (card.types && card.types.length > 0)) {
+    if (!desc.includes('carta entrenador') && !desc.includes('supporter card') && !desc.includes('item card')) {
+      return 'Pokemon';
+    }
   }
 
   // 3. Check SetCode-Number Combo (e.g. TWM 155/167, POR 084/088, ASC 192/217)
@@ -126,24 +130,28 @@ export function getCardSupertype(card) {
     }
   }
 
-  // 4. POKÉMON TRAITS (HP, ex/V/VMAX/GX/Tera/Mega suffix)
-  const hasHP = !!card.hp || /\b(hp\s*\d+|\d+\s*hp)\b/i.test(desc) || /\b\d{2,3}\s*hp\b/i.test(name);
-  const isPokemonSuffix = /\b(ex|v|vmax|vstar|gx|radiant|radiante|tera|mega)\b/i.test(name);
-  const isPokemonTypeDesc = /tipo principal:\s*(fuego|agua|planta|rayo|psíquico|psiquico|lucha|oscuridad|metal|dragón|dragon|incoloro|fire|water|grass|lightning|psychic|fighting|darkness|metal|dragon|colorless)/i.test(desc);
-
-  if (hasHP || isPokemonSuffix || isPokemonTypeDesc || (card.types && card.types.length > 0)) {
-    if (!desc.includes('carta entrenador') && !desc.includes('supporter card') && !desc.includes('item card')) {
-      return 'Pokemon';
-    }
-  }
-
-  // 5. ENERGY DETECTION
+  // 4. ENERGY DETECTION
   if (/\b(energía|energia|basic energy|special energy|double turbo|jet energy|reversal energy)\b/i.test(name)) {
     return 'Energias';
   }
 
-  // 6. TRAINER MATCH (If name matches an explicit Trainer name or description specifies Trainer)
-  if (isKnownTrainerName || /\b(supporter|item|stadium|tool|partidario|objeto|estadio|herramienta|ace spec|technical machine)\b/i.test(desc)) {
+  // 5. TRAINER MATCH
+  if (TRAINER_ACTION_SUFFIXES.test(name)) {
+    return 'Entrenadores';
+  }
+
+  for (const kw of EXPLICIT_TRAINER_FULL_NAMES) {
+    const regex = new RegExp(`\\b${kw.replace(/['']/g, "['']")}\\b`, 'i');
+    if (regex.test(name) || regex.test(desc)) {
+      const isOwnerPokemon = /['’]s\s+(snorlax|kilowattrel|wattrel|bellibolt|dragonair|alakazam|machamp|garchomp|metagross|pikachu|charizard|bulbasaur|squirtle|eevee|meowth|gengar|pidgeot|slowbro|raichu|clefairy|wooloo|dubwool|zoroark)\b/i.test(name);
+      if (isOwnerPokemon) {
+        return 'Pokemon';
+      }
+      return 'Entrenadores';
+    }
+  }
+
+  if (/\b(supporter|item|stadium|tool|partidario|objeto|estadio|herramienta|ace spec|technical machine)\b/i.test(desc)) {
     return 'Entrenadores';
   }
 
