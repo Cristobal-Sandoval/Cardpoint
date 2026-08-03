@@ -63,35 +63,39 @@ const normalizeRarityText = (str) => {
 export function getCardSupertype(card) {
   if (!card) return 'Pokemon';
   
-  // 1. Explicit field check
-  const st = (card.supertype || card.card_type || card.category || '').toLowerCase();
-  if (st.includes('trainer') || st.includes('entrenador')) return 'Entrenadores';
-  if (st.includes('energy') || st.includes('energía') || st.includes('energia')) return 'Energias';
-  if (st.includes('pokémon') || st.includes('pokemon')) return 'Pokemon';
+  // 1. Explicit field check (Highest priority)
+  const st = (card.supertype || card.card_type || card.category || '').toLowerCase().trim();
+  if (st === 'trainer' || st === 'entrenador' || st.includes('trainer') || st.includes('entrenador')) {
+    return 'Entrenadores';
+  }
+  if (st === 'energy' || st === 'energía' || st === 'energia' || st.includes('energy') || st.includes('energía')) {
+    return 'Energias';
+  }
+  if (st === 'pokémon' || st === 'pokemon' || st.includes('pokémon') || st.includes('pokemon')) {
+    return 'Pokemon';
+  }
 
-  // 2. Inspect name and description for Energy / Trainer keywords
-  const name = (card.name || '').toLowerCase();
   const desc = (card.description || '').toLowerCase();
+  const name = (card.name || '').toLowerCase();
 
-  // Energy detection
-  if (name.includes('energía') || name.includes('energia') || name.includes('energy')) {
+  // 2. Strong Pokémon Indicators (If description has "Tipo principal: [Element]" or name has ex/V/VMAX/GX or HP exists)
+  const isPokemonTypeDesc = /tipo principal:\s*(fuego|agua|planta|rayo|psíquico|psiquico|lucha|oscuridad|metal|dragón|dragon|incoloro|fire|water|grass|lightning|psychic|fighting|darkness|metal|dragon|colorless)/i.test(desc);
+  const isPokemonNameSuffix = /\b(ex|v|vmax|vstar|gx|radiant|radiante|star|break)\b/i.test(name);
+  if (isPokemonTypeDesc || isPokemonNameSuffix || card.hp || (card.types && card.types.length > 0)) {
+    return 'Pokemon';
+  }
+
+  // 3. Energy Detection (Exact boundaries)
+  if (/\b(energía|energia|basic energy|special energy)\b/i.test(name) || desc.includes('carta de energía') || desc.includes('carta de energia')) {
     return 'Energias';
   }
 
-  // Trainer keywords
-  const trainerKeywords = [
-    'entrenador', 'partidario', 'objeto', 'estadio', 'herramienta', 
-    'trainer', 'supporter', 'item', 'stadium', 'tool',
-    'juez', 'judge', 'iono', 'nemona', 'nemonía', 'boss', 'órdenes de jefes',
-    'profesor', 'professor', 'ball', 'caramelo', 'camilla', 'recuperación',
-    'capturador', 'interruptor', 'cuerda', 'cambio', 'tambor', 'casco', 'capa',
-    'piedra', 'punzón', 'pocíón', 'pocion', 'vitalidad', 'investigación', 'investigacion'
-  ];
-
-  for (const kw of trainerKeywords) {
-    if (name.includes(kw) || desc.includes(kw)) {
-      return 'Entrenadores';
-    }
+  // 4. Trainer Detection (Explicit word boundaries & Trainer description phrases)
+  const isTrainerDesc = /\b(entrenador|trainer|partidario|supporter|objeto|item|estadio|stadium|herramienta|tool)\b/i.test(desc);
+  const trainerNameRegex = /\b(juez|judge|iono|nemona|nemonía|profesor|professor|investigación|investigacion|boss|órdenes de jefes|ordenes de jefes|ultra ball|nido ball|super ball|poké ball|poke ball|caramelo raro|cuerda huida|interruptor|camilla|casco dentado|capa de valor|piedra sello|capturador supremo|vasija terrestre|tambor del despertar|carta de entrenador|vitalidad de|recuperación de energía|recuperacion de energia)\b/i;
+  
+  if (isTrainerDesc || trainerNameRegex.test(name)) {
+    return 'Entrenadores';
   }
 
   return 'Pokemon';
