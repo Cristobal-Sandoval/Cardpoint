@@ -60,42 +60,101 @@ const normalizeRarityText = (str) => {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 };
 
+const TRAINER_EXPLICIT_SET_NUMBERS = new Set([
+  'twm-145', 'twm-155', 'twm-156', 'twm-157', 'twm-160', 'twm-163',
+  'por-076', 'por-76', 'por-084', 'por-84', 'por-085', 'por-85',
+  'pre-103', 'pfl-089', 'pfl-89', 'asc-192', 'meg-119', 'sfa-057', 'sfa-57', 'jtg-146',
+  'sv6-180', 'sv6-181', 'sv6-182', 'sv6-183'
+]);
+
+const TRAINER_KEYWORDS = [
+  'carmine', 'carmín', 'juez', 'judge', 'nemona', 'nemonía', 'nemonia',
+  'lillie', 'lillie\'s', 'lilies', 'determinación de lillie', 'lillie\'s determination',
+  'lana', 'lana\'s', 'lana\'s aid', 'asistencia de nereida', 'nereida',
+  'erika', 'erika\'s hospitality', 'hospitalidad de erika', 'erika\'s',
+  'profesor', 'professor', 'investigación de profesores', 'professor\'s research',
+  'arven', 'iono', 'boss', 'boss\'s orders', 'órdenes de jefes', 'ordenes de jefes',
+  'penny', 'sada', 'turo', 'crispin', 'crispín', 'kieran', 'lacey', 'drayton',
+  'amarys', 'briar', 'cynthia', 'cintia', 'steven', 'máximo', 'maximo',
+  'marnie', 'camila', 'rosa', 'skyla', 'serena', 'cheryll', 'klara', 'clara',
+  'melony', 'milo', 'nessa', 'guzma', 'guzmán', 'colress', 'acromo', 'lysandre',
+  'giovanni', 'red', 'blue', 'green', 'leaf', 'hop', 'bede', 'cyrus', 'helio',
+  'kukui', 'gladion', 'hau', 'kiawe', 'mallow', 'lulú', 'illima', 'sophocles',
+  'grusha', 'geeta', 'gita', 'miriam', 'jacq', 'dendra', 'saguaro', 'salvatore',
+  'hassel', 'clavell', 'atticus', 'mela', 'poppy', 'amapolita', 'ortega',
+  'grand tree', 'gran árbol', 'gran arbol', 'bug catching set', 'set de caza de bichos',
+  'poké ball', 'poke ball', 'poción', 'pocion', 'potion', 'ultra ball', 'nido ball',
+  'nest ball', 'super ball', 'great ball', 'master ball', 'caramelo raro', 'rare candy',
+  'cuerda huida', 'escape rope', 'interruptor', 'energy switch', 'camilla', 'super rod',
+  'recuperación de energía', 'energy retrieval', 'casco dentado', 'rocky helmet',
+  'capa de valor', 'bravery charm', 'piedra sello', 'forest seal stone',
+  'capturador supremo', 'prime catcher', 'vasija terrestre', 'earthen vessel',
+  'tambor del despertar', 'awakening drum', 'artazon', 'artazao', 'town store',
+  'tienda del pueblo', 'jamming tower', 'torre de interferencias', 'neutral center',
+  'centro neutral', 'dangerous laser', 'láser peligroso', 'secret box', 'caja secreta',
+  'unfair stamp', 'sello injusto', 'sparkling crystal', 'cristal deslumbrante',
+  'hyper aroma', 'hiperaroma', 'pokégear', 'pokegear', 'pal pad', 'poffin',
+  'buddy-buddy poffin', 'heavy ball', 'switch', 'exp. share', 'leftovers', 'restos',
+  'choice belt', 'cinturón elección', 'rotom phone', 'teléfono rotom',
+  'counter catcher', 'capturador contraataque', 'eerie radar', 'radar espeluznante',
+  'counter gain', 'ganancia contraataque', 'gravity stone', 'piedra gravedad',
+  'entrenador', 'trainer', 'partidario', 'supporter', 'objeto', 'item',
+  'estadio', 'stadium', 'herramienta', 'tool', 'ace spec', 'technical machine'
+];
+
 export function getCardSupertype(card) {
   if (!card) return 'Pokemon';
-  
-  // 1. Explicit field check (Highest priority)
+
+  const name = (card.name || '').trim();
+  const desc = (card.description || '').toLowerCase();
+  const setCode = (card.set_code || card.setCode || '').toLowerCase().trim();
   const st = (card.supertype || card.card_type || card.category || '').toLowerCase().trim();
-  if (st === 'trainer' || st === 'entrenador' || st.includes('trainer') || st.includes('entrenador')) {
+
+  // 1. Check Explicit Field (Highest Priority)
+  if (st === 'trainer' || st === 'entrenador' || st.includes('trainer') || st.includes('entrenador') || st.includes('supporter') || st.includes('item') || st.includes('stadium') || st.includes('tool')) {
     return 'Entrenadores';
   }
   if (st === 'energy' || st === 'energía' || st === 'energia' || st.includes('energy') || st.includes('energía')) {
     return 'Energias';
   }
-  if (st === 'pokémon' || st === 'pokemon' || st.includes('pokémon') || st.includes('pokemon')) {
+  if (st === 'pokémon' || st === 'pokemon') {
     return 'Pokemon';
   }
 
-  const desc = (card.description || '').toLowerCase();
-  const name = (card.name || '').toLowerCase();
+  // 2. Check SetCode-Number Combo (e.g. TWM 155/167, POR 084/088, ASC 192/217)
+  const numberMatch = name.match(/(\d+)\/(\d+)/) || desc.match(/(\d+)\/(\d+)/);
+  if (setCode && numberMatch) {
+    const key = `${setCode}-${numberMatch[1]}`;
+    const keyPadded = `${setCode}-${numberMatch[1].padStart(3, '0')}`;
+    if (TRAINER_EXPLICIT_SET_NUMBERS.has(key) || TRAINER_EXPLICIT_SET_NUMBERS.has(keyPadded)) {
+      return 'Entrenadores';
+    }
+  }
 
-  // 2. Strong Pokémon Indicators (If description has "Tipo principal: [Element]" or name has ex/V/VMAX/GX or HP exists)
+  // 3. IS IT A POKÉMON TRAIT? (HP, Moves, ex/V/VMAX/GX/Tera/Mega suffix)
+  const hasHP = !!card.hp || /\b(hp\s*\d+|\d+\s*hp)\b/i.test(desc) || /\b\d{2,3}\s*hp\b/i.test(name);
+  const isPokemonSuffix = /\b(ex|v|vmax|vstar|gx|radiant|radiante|tera|mega)\b/i.test(name);
   const isPokemonTypeDesc = /tipo principal:\s*(fuego|agua|planta|rayo|psíquico|psiquico|lucha|oscuridad|metal|dragón|dragon|incoloro|fire|water|grass|lightning|psychic|fighting|darkness|metal|dragon|colorless)/i.test(desc);
-  const isPokemonNameSuffix = /\b(ex|v|vmax|vstar|gx|radiant|radiante|star|break)\b/i.test(name);
-  if (isPokemonTypeDesc || isPokemonNameSuffix || card.hp || (card.types && card.types.length > 0)) {
-    return 'Pokemon';
+
+  // If card has HP or Pokémon suffix (like Mega Gengar ex, Iono's Kilowattrel 120 HP)
+  if (hasHP || isPokemonSuffix || isPokemonTypeDesc || (card.types && card.types.length > 0)) {
+    // Only allow if description explicitly says Trainer card
+    if (!desc.includes('carta entrenador') && !desc.includes('supporter card') && !desc.includes('item card')) {
+      return 'Pokemon';
+    }
   }
 
-  // 3. Energy Detection (Exact boundaries)
-  if (/\b(energía|energia|basic energy|special energy)\b/i.test(name) || desc.includes('carta de energía') || desc.includes('carta de energia')) {
+  // 4. IS IT ENERGY?
+  if (/\b(energía|energia|basic energy|special energy|double turbo|jet energy|reversal energy)\b/i.test(name)) {
     return 'Energias';
   }
 
-  // 4. Trainer Detection (Explicit word boundaries & Trainer description phrases)
-  const isTrainerDesc = /\b(entrenador|trainer|partidario|supporter|objeto|item|estadio|stadium|herramienta|tool)\b/i.test(desc);
-  const trainerNameRegex = /\b(juez|judge|iono|nemona|nemonía|profesor|professor|investigación|investigacion|boss|órdenes de jefes|ordenes de jefes|ultra ball|nido ball|super ball|poké ball|poke ball|caramelo raro|cuerda huida|interruptor|camilla|casco dentado|capa de valor|piedra sello|capturador supremo|vasija terrestre|tambor del despertar|carta de entrenador|vitalidad de|recuperación de energía|recuperacion de energia)\b/i;
-  
-  if (isTrainerDesc || trainerNameRegex.test(name)) {
-    return 'Entrenadores';
+  // 5. Trainer Keywords / Names
+  for (const kw of TRAINER_KEYWORDS) {
+    const regex = new RegExp(`\\b${kw.replace(/['']/g, "['']")}\\b`, 'i');
+    if (regex.test(name) || regex.test(desc)) {
+      return 'Entrenadores';
+    }
   }
 
   return 'Pokemon';
