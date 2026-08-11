@@ -19,10 +19,10 @@ export default function HowToBuy({ theme }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8">
         <div className="space-y-4">
           <h3 className="text-lg font-black text-[#0052FF]">¿Quiénes Somos?</h3>
-          <p className="text-xs sm:text-sm text-slate-650 dark:text-slate-300 leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
             Fundada en Concepción, CardPoint.cl nació con el propósito de conectar a los coleccionistas y jugadores competitivos de la región del Biobío con un inventario actualizado y transparente. 
           </p>
-          <p className="text-xs sm:text-sm text-slate-655 dark:text-slate-300 leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
             Garantizamos que el 100% de nuestras cartas sueltas son auténticas y han sido revisadas meticulosamente bajo estándares Near Mint (NM).
           </p>
         </div>

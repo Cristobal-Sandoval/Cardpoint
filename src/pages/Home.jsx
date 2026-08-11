@@ -301,7 +301,7 @@ export default function Home({
               carruselRef.current?.scrollBy({ left: -260, behavior: 'smooth' });
               setTimeout(() => setIsPaused(false), 4000);
             }}
-            className="absolute -left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 p-3.5 rounded-full bg-white/95 dark:bg-slate-900/95 shadow-xl border border-slate-200 dark:border-slate-800 text-slate-855 dark:text-slate-100 backdrop-blur-md opacity-100 md:opacity-0 md:group-hover/carrusel:opacity-100 transition-all duration-300 hover:scale-105 cursor-pointer"
+            className="absolute -left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 p-3.5 rounded-full bg-white/95 dark:bg-slate-900/95 shadow-xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 backdrop-blur-md opacity-100 md:opacity-0 md:group-hover/carrusel:opacity-100 transition-all duration-300 hover:scale-105 cursor-pointer"
             aria-label="Regresar"
           >
             <ChevronLeft size={22} className="stroke-[2.5]" />
@@ -313,7 +313,7 @@ export default function Home({
               carruselRef.current?.scrollBy({ left: 260, behavior: 'smooth' });
               setTimeout(() => setIsPaused(false), 4000);
             }}
-            className="absolute -right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 p-3.5 rounded-full bg-white/95 dark:bg-slate-900/95 shadow-xl border border-slate-200 dark:border-slate-800 text-slate-855 dark:text-slate-100 backdrop-blur-md opacity-100 md:opacity-0 md:group-hover/carrusel:opacity-100 transition-all duration-300 hover:scale-105 cursor-pointer"
+            className="absolute -right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 p-3.5 rounded-full bg-white/95 dark:bg-slate-900/95 shadow-xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 backdrop-blur-md opacity-100 md:opacity-0 md:group-hover/carrusel:opacity-100 transition-all duration-300 hover:scale-105 cursor-pointer"
             aria-label="Avanzar"
           >
             <ChevronRight size={22} className="stroke-[2.5]" />
@@ -363,7 +363,7 @@ export default function Home({
                   <div className="p-4 flex flex-col flex-grow justify-between">
                     <div>
                       <h4 
-                        className="font-bold text-sm text-slate-850 dark:text-white line-clamp-1 hover:text-[#0052FF] transition-colors cursor-pointer"
+                        className="font-bold text-sm text-slate-800 dark:text-white line-clamp-1 hover:text-[#0052FF] transition-colors cursor-pointer"
                         onClick={() => setSelectedCardDetail(card)}
                       >
                         {card.name}
@@ -558,7 +558,7 @@ export default function Home({
                       ) : (
                         <h4 className="font-bold text-sm text-slate-900 dark:text-white line-clamp-1">{t.title}</h4>
                       )}
-                      <span className="text-[10px] font-bold text-[#0052FF] bg-blue-50 dark:bg-blue-955/40 px-2 py-0.5 rounded whitespace-nowrap">
+                      <span className="text-[10px] font-bold text-[#0052FF] bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded whitespace-nowrap">
                         Inscripción: {t.entry_fee}
                       </span>
                     </div>

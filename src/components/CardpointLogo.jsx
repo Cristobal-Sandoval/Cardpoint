@@ -2,7 +2,7 @@ export default function CardpointLogo({ className = "h-14", showText = true }) {
   return (
     <div className={`flex flex-col items-center justify-center ${className}`}>
       {/* Icono de las cartas en abanico */}
-      <svg className="w-20 h-14" viewBox="0 0 160 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg className="w-20 h-14" viewBox="0 0 160 110" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         {/* Carta Izquierda */}
         <rect 
           x="34" y="24" width="38" height="58" rx="5" 

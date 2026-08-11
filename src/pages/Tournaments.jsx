@@ -42,7 +42,7 @@ export default function Tournaments({
             </div>
           ))
         ) : displayTournaments.length === 0 ? (
-          <p className="text-slate-450 col-span-3 text-center py-8">No hay torneos programados por el momento.</p>
+          <p className="text-slate-400 col-span-3 text-center py-8">No hay torneos programados por el momento.</p>
         ) : (
           displayTournaments.map((t) => (
             <div 
@@ -64,7 +64,7 @@ export default function Tournaments({
                   </div>
                 </div>
 
-                <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-4">
+                <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800 pt-4">
                   <div className="flex items-center gap-2">
                     <Shield size={14} className="text-[#0052FF] flex-shrink-0" />
                     <span>Formato: <strong className="text-slate-800 dark:text-slate-100">{t.format}</strong></span>

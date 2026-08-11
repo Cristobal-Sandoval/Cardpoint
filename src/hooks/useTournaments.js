@@ -6,7 +6,7 @@ export function useTournaments() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const fetchTournaments = async () => {
+  const fetchTournaments = async (isMounted = { current: true }) => {
     setLoading(true)
     setError(null)
     try {
@@ -15,17 +15,27 @@ export function useTournaments() {
         .select('*')
         .order('created_at', { ascending: true })
       if (error) throw error
-      setTournaments(data || [])
+      if (isMounted.current) {
+        setTournaments(data || [])
+      }
     } catch (err) {
-      setError(err.message)
+      if (isMounted.current) {
+        setError(err?.message || String(err))
+      }
     } finally {
-      setLoading(false)
+      if (isMounted.current) {
+        setLoading(false)
+      }
     }
   }
 
   useEffect(() => {
-    fetchTournaments()
+    const isMounted = { current: true }
+    fetchTournaments(isMounted)
+    return () => {
+      isMounted.current = false
+    }
   }, [])
 
-  return { tournaments, loading, error, refetch: fetchTournaments }
+  return { tournaments, loading, error, refetch: () => fetchTournaments({ current: true }) }
 }

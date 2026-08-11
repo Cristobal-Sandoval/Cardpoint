@@ -567,7 +567,7 @@ export default function App() {
                 if (el.tagName && el.tagName.startsWith('H')) {
                   return `<h3 class="text-lg font-black text-slate-900 dark:text-white mt-6 mb-3">${text}</h3>`;
                 }
-                return `<p class="text-sm text-slate-650 dark:text-slate-350 leading-relaxed mb-4">${text}</p>`;
+                return `<p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">${text}</p>`;
               })
               .filter(Boolean)
               .join('');
@@ -1280,7 +1280,7 @@ export default function App() {
           className="w-full bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center"
           style={{ height: '34px' }}
         >
-          <span className="hidden md:flex flex-shrink-0 pl-4 pr-3 text-[8px] font-black text-slate-400 dark:text-slate-550 uppercase tracking-widest">
+          <span className="hidden md:flex flex-shrink-0 pl-4 pr-3 text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
             Anuncio Patrocinado
           </span>
 
@@ -1344,7 +1344,7 @@ export default function App() {
                     className={`px-3 py-2 rounded-xl transition-all duration-205 flex items-center gap-1.5 cursor-pointer ${
                       isActive 
                         ? 'text-[#0052FF] font-black bg-[#0052FF]/10' 
-                        : 'text-slate-605 dark:text-slate-300 hover:text-[#0052FF] dark:hover:text-[#0052FF]'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-[#0052FF] dark:hover:text-[#0052FF]'
                     }`}
                     aria-current={isActive ? 'page' : undefined}
                   >
@@ -1402,7 +1402,7 @@ export default function App() {
       </div>
 
       {/* NAVEGACIÓN COMPACTA MÓVIL */}
-      <div className={`md:hidden fixed bottom-0 left-0 right-0 z-45 border-t flex justify-around items-center px-2 py-3 pb-safe transition-colors ${theme === 'dark' ? 'bg-[#0f172a]/95 border-slate-800' : 'bg-white/95 border-slate-100'} backdrop-blur-md shadow-lg`}>
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 z-[45] border-t flex justify-around items-center px-2 py-3 pb-safe transition-colors ${theme === 'dark' ? 'bg-[#0f172a]/95 border-slate-800' : 'bg-white/95 border-slate-100'} backdrop-blur-md shadow-lg`}>
         {[
           { id: 'home', label: 'Inicio', icon: Sparkles },
           { id: 'catalog', label: 'Stock', icon: Layers },
@@ -1440,7 +1440,7 @@ export default function App() {
         <Suspense fallback={
           <div className="py-32 text-center flex flex-col items-center justify-center space-y-4">
             <div className="w-12 h-12 border-4 border-[#0052FF] border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-xs text-slate-450 font-bold tracking-wide animate-pulse">Cargando contenido premium...</p>
+            <p className="text-xs text-slate-400 font-bold tracking-wide animate-pulse">Cargando contenido premium...</p>
           </div>
         }>
           {currentTab === 'home' && !selectedNews && (
@@ -1535,7 +1535,7 @@ export default function App() {
 
       {/* 1. MODAL BOLSA DE COTIZACIÓN */}
       {showInquiryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="inquiry-modal-title">
           <div className="absolute inset-0" onClick={() => setShowInquiryModal(false)}></div>
           
           <div className="relative w-full sm:max-w-md h-full bg-white dark:bg-[#0f172a] shadow-2xl flex flex-col justify-between z-10 border-l border-slate-100 dark:border-slate-800 animate-slide-in">
@@ -1543,11 +1543,12 @@ export default function App() {
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ShoppingBag className="text-[#0052FF]" size={20} />
-                <h3 className="font-black text-slate-900 dark:text-white text-base">Bolsa de Cotización</h3>
+                <h3 id="inquiry-modal-title" className="font-black text-slate-900 dark:text-white text-base">Bolsa de Cotización</h3>
               </div>
               <button 
                 onClick={() => setShowInquiryModal(false)}
                 className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer"
+                aria-label="Cerrar bolsa de cotización"
               >
                 <X size={18} />
               </button>
@@ -1711,7 +1712,7 @@ export default function App() {
 
       {/* 2. MODAL DETALLE DE CARTA */}
       {selectedCardDetail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="card-modal-title">
           <div className="absolute inset-0" onClick={() => setSelectedCardDetail(null)}></div>
           
           <div className="relative w-full max-w-2xl bg-white dark:bg-[#121824] rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl z-10 flex flex-col md:flex-row animate-scale-up max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-y-visible no-scrollbar">
@@ -1724,7 +1725,7 @@ export default function App() {
               
               <div className="relative w-full flex items-center justify-center min-h-[250px] sm:min-h-[300px] md:min-h-[360px]">
                 {modalImageLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-slate-50/60 dark:bg-slate-950/60 backdrop-blur-xs z-10 rounded-2xl">
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-50/60 dark:bg-slate-950/60 backdrop-blur-sm z-10 rounded-2xl">
                     <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#0052FF] border-t-transparent"></div>
                   </div>
                 )}
@@ -1741,11 +1742,11 @@ export default function App() {
 
               {/* Toggles de foto real */}
               {selectedCardDetail.real_photo && (
-                <div className="flex items-center gap-1 bg-slate-105 dark:bg-slate-900 rounded-xl p-1">
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 rounded-xl p-1">
                   <button
                     onClick={() => setShowRealPhoto(false)}
                     className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-                      !showRealPhoto ? 'bg-white dark:bg-slate-700 text-[#0052FF] shadow-sm' : 'text-slate-405 hover:text-slate-600'
+                      !showRealPhoto ? 'bg-white dark:bg-slate-700 text-[#0052FF] shadow-sm' : 'text-slate-400 hover:text-slate-600'
                     }`}
                   >
                     <Palette size={14} className="inline" /> Arte Oficial
@@ -1753,7 +1754,7 @@ export default function App() {
                   <button
                     onClick={() => setShowRealPhoto(true)}
                     className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-                      showRealPhoto ? 'bg-white dark:bg-slate-700 text-green-500 shadow-sm' : 'text-slate-405 hover:text-slate-600'
+                      showRealPhoto ? 'bg-white dark:bg-slate-700 text-green-500 shadow-sm' : 'text-slate-400 hover:text-slate-600'
                     }`}
                   >
                     <Camera size={14} className="inline" /> Foto Real
@@ -1768,16 +1769,16 @@ export default function App() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0 pr-2">
                     <span className="text-[10px] font-black text-[#0052FF] uppercase tracking-wider">{selectedCardDetail.set}</span>
-                    <h3 className="font-black text-xl sm:text-2xl text-slate-900 dark:text-white leading-tight">{selectedCardDetail.name}</h3>
+                    <h3 id="card-modal-title" className="font-black text-xl sm:text-2xl text-slate-900 dark:text-white leading-tight">{selectedCardDetail.name}</h3>
                     <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                       <span className="text-[10px] text-slate-400">{selectedCardDetail.rarity}</span>
                       {(selectedCardDetail.idioma || selectedCardDetail.language) && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-505/30 uppercase">
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30 uppercase">
                           {selectedCardDetail.idioma || selectedCardDetail.language}
                         </span>
                       )}
                       {selectedCardDetail.is_reverse && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-505/30 uppercase">
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 uppercase">
                           <Sparkles size={12} className="inline" /> Reverse Holo
                         </span>
                       )}
@@ -1791,6 +1792,7 @@ export default function App() {
                   <button 
                     onClick={() => setSelectedCardDetail(null)}
                     className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer flex-shrink-0"
+                    aria-label="Cerrar detalle de carta"
                   >
                     <X size={18} />
                   </button>
@@ -1829,7 +1831,7 @@ export default function App() {
 
                 <div className="space-y-1">
                   <span className="text-slate-400 block text-[9px] uppercase font-bold">Descripción</span>
-                  <p className="text-xs text-slate-500 dark:text-slate-350 leading-relaxed">
+                  <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
                     {selectedCardDetail.description || "Sin descripción adicional."}
                   </p>
                 </div>
@@ -1842,7 +1844,7 @@ export default function App() {
                       Solo catálogo de referencia
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-550 leading-normal px-4">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-normal px-4">
                     Esta carta no está disponible actualmente en nuestro stock para cotización.
                   </p>
                   
@@ -1856,7 +1858,7 @@ export default function App() {
                         <span className="text-xs text-slate-400 line-through block leading-tight">
                           ${detailStockItem.price.toLocaleString('es-CL')} CLP
                         </span>
-                        <span className="font-black text-2xl text-red-550 block leading-tight">
+                        <span className="font-black text-2xl text-red-500 block leading-tight">
                           ${detailStockItem.offer_price.toLocaleString('es-CL')} CLP
                         </span>
                       </div>
@@ -2005,7 +2007,7 @@ export default function App() {
             <div>
               <p className="font-bold text-slate-800 dark:text-slate-200">CardPoint.cl</p>
               <p className="text-[10px] text-slate-400">© 2026 Cardpoint. Todos los derechos reservados.</p>
-              <p className="text-[9px] text-slate-550 mt-0.5">
+              <p className="text-[9px] text-slate-500 mt-0.5">
                 hecho por{' '}
                 <a 
                   href="https://cristobalsandoval-portafolio.vercel.app/" 
@@ -2019,7 +2021,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex gap-6 font-bold text-slate-650 dark:text-slate-350">
+          <div className="flex gap-6 font-bold text-slate-600 dark:text-slate-300">
             <button onClick={() => { setCurrentTab('home'); setSelectedNews(null); }} className="hover:text-[#0052FF] cursor-pointer">Inicio</button>
             <button onClick={() => { setCurrentTab('catalog'); setSelectedNews(null); }} className="hover:text-[#0052FF] cursor-pointer">En Stock</button>
             <button onClick={() => { setCurrentTab('how-to-buy'); setSelectedNews(null); }} className="hover:text-[#0052FF] cursor-pointer">Nosotros</button>

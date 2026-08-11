@@ -59,7 +59,7 @@ export default function DatabaseView({
             placeholder="Ej. Pikachu, Charizard, Lugia..."
             value={dbSearch}
             onChange={(e) => { setDbSearch(e.target.value); setDbPage(1); }}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#121824] border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-emerald-505 focus:ring-1 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-[#121824] border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white"
             aria-label="Buscar en la base de datos oficial"
           />
         </div>
@@ -72,13 +72,13 @@ export default function DatabaseView({
       {dbLoading ? (
         <div className="text-center py-24">
           <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-xs text-slate-450">Consultando con la base de datos de Pokémon Company...</p>
+          <p className="text-xs text-slate-400">Consultando con la base de datos de Pokémon Company...</p>
         </div>
       ) : dbError ? (
         <div className="text-center py-16 bg-red-500/5 dark:bg-red-500/10 border border-red-500/20 rounded-3xl max-w-md mx-auto p-6 space-y-3">
           <Info className="mx-auto text-red-500" size={32} />
           <h4 className="font-bold text-slate-900 dark:text-white">Error de Conexión</h4>
-          <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed">{dbError}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{dbError}</p>
           <button
             onClick={refetch}
             className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl cursor-pointer hover:bg-emerald-700"
@@ -154,7 +154,7 @@ export default function DatabaseView({
                           </button>
                         </div>
                       ) : (
-                        <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 text-slate-450">
+                        <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 text-slate-400">
                           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                             No disponible
                           </span>
@@ -203,7 +203,7 @@ export default function DatabaseView({
               <button
                 key={term}
                 onClick={() => handleSuggestionClick(term)}
-                className="px-2.5 py-1 text-[11px] font-medium bg-slate-50 dark:bg-slate-900 border border-slate-250 dark:border-slate-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/5 rounded-lg transition-colors cursor-pointer"
+                className="px-2.5 py-1 text-[11px] font-medium bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/5 rounded-lg transition-colors cursor-pointer"
               >
                 {term}
               </button>

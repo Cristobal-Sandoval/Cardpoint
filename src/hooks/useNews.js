@@ -6,32 +6,36 @@ export function useNews() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const fetchNews = async () => {
+  const fetchNews = async (isMounted = { current: true }) => {
     setLoading(true)
     setError(null)
-    console.log("useNews: fetching news from Supabase...");
     try {
       const { data, error } = await supabase
         .from('news')
         .select('*')
         .order('created_at', { ascending: false })
-      if (error) {
-        console.error("useNews: Supabase query error:", error);
-        throw error;
+      if (error) throw error;
+      if (isMounted.current) {
+        setNews(data || [])
       }
-      console.log("useNews: fetched successfully, count =", data?.length, data);
-      setNews(data || [])
     } catch (err) {
-      console.error("useNews: error in fetchNews:", err);
-      setError(err.message)
+      if (isMounted.current) {
+        setError(err?.message || String(err))
+      }
     } finally {
-      setLoading(false)
+      if (isMounted.current) {
+        setLoading(false)
+      }
     }
   }
 
   useEffect(() => {
-    fetchNews()
+    const isMounted = { current: true }
+    fetchNews(isMounted)
+    return () => {
+      isMounted.current = false
+    }
   }, [])
 
-  return { news, loading, error, refetch: fetchNews }
+  return { news, loading, error, refetch: () => fetchNews({ current: true }) }
 }

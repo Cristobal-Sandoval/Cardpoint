@@ -443,15 +443,28 @@ export function useAutoNews(newsSourcesParam) {
       // Ordenar por fecha descendente
       allCollectedNews.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-      setAutoNews(allCollectedNews);
-      localStorage.setItem(CACHE_KEY, JSON.stringify({
-        timestamp: Date.now(),
-        enabledSources: enabledSources,
-        data: allCollectedNews
-      }));
+      if (isMounted) {
+        setAutoNews(allCollectedNews);
+      }
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          timestamp: Date.now(),
+          enabledSources: enabledSources,
+          data: allCollectedNews
+        }));
+      } catch (e) {
+        console.warn('Could not save news cache to localStorage:', e);
+      }
     };
 
-    fetchAllNews().finally(() => setLoadingAuto(false));
+    let isMounted = true;
+    fetchAllNews().finally(() => {
+      if (isMounted) setLoadingAuto(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, [sourcesKey]);
 
   return { autoNews, loadingAuto };

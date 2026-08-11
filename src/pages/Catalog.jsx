@@ -165,10 +165,10 @@ export default function Catalog({
           {/* Menú de Autocompletado Flotante */}
           {showAutocomplete && autocompleteSuggestions.length > 0 && (
             <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-[#111723] border border-slate-200/85 dark:border-slate-800 rounded-2xl shadow-xl z-20 overflow-hidden text-left">
-              <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-850 text-[9px] font-black text-[#0052FF] uppercase tracking-wider bg-slate-50/50 dark:bg-slate-900/10">
+              <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 text-[9px] font-black text-[#0052FF] uppercase tracking-wider bg-slate-50/50 dark:bg-slate-900/10">
                 Sugerencias en Stock
               </div>
-              <ul className="divide-y divide-slate-100 dark:divide-slate-850">
+              <ul className="divide-y divide-slate-100 dark:divide-slate-800">
                 {autocompleteSuggestions.map((suggestion) => (
                   <li key={suggestion}>
                     <button
@@ -178,7 +178,7 @@ export default function Catalog({
                         setSelectedRarity('Todas');
                         setCardPage(1);
                       }}
-                      className="w-full px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-900 text-xs text-slate-700 dark:text-slate-350 font-bold flex items-center gap-2 cursor-pointer transition-colors"
+                      className="w-full px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-900 text-xs text-slate-700 dark:text-slate-300 font-bold flex items-center gap-2 cursor-pointer transition-colors"
                     >
                       <Search size={12} className="text-slate-400" />
                       {suggestion}
@@ -206,7 +206,7 @@ export default function Catalog({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border bg-white dark:bg-[#121824] border-slate-200 dark:border-slate-850 text-xs focus:outline-none focus:border-[#0052FF] transition-all text-slate-900 dark:text-white cursor-pointer font-bold"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border bg-white dark:bg-[#121824] border-slate-200 dark:border-slate-800 text-xs focus:outline-none focus:border-[#0052FF] transition-all text-slate-900 dark:text-white cursor-pointer font-bold"
             aria-label="Ordenar listado"
           >
             <option value="default">Ordenar por defecto</option>
@@ -230,7 +230,7 @@ export default function Catalog({
                   ? cat.id === 'Todos'
                     ? 'bg-[#0052FF] text-white shadow-md shadow-blue-500/20 font-black'
                     : `${cat.color} font-black shadow-md`
-                  : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:border-[#0052FF]'
+                  : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-[#0052FF]'
               }`}
             >
               <span>{cat.emoji}</span> {cat.name} ({cat.count})
@@ -248,7 +248,7 @@ export default function Catalog({
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
               selectedRarity === rarity.id
                 ? 'bg-[#0052FF] text-white shadow-md shadow-blue-500/10'
-                : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-300 hover:border-[#0052FF]'
+                : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-[#0052FF]'
             }`}
           >
             {rarity.name}
@@ -307,7 +307,7 @@ export default function Catalog({
                         {card.idioma || 'ES'}
                       </span>
                       {card.is_offer && card.offer_price && (
-                        <span className="absolute top-2 right-2 bg-red-650 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wide border border-white/20 z-10 animate-pulse">
+                        <span className="absolute top-2 right-2 bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow uppercase tracking-wide border border-white/20 z-10 animate-pulse">
                           <Flame size={11} className="inline" /> Oferta
                         </span>
                       )}
@@ -344,7 +344,7 @@ export default function Catalog({
                                   <span className="text-[10px] text-slate-400 line-through leading-tight">
                                     ${card.price.toLocaleString('es-CL')}
                                   </span>
-                                  <span className="font-extrabold text-red-505 dark:text-red-400 text-xs sm:text-sm leading-tight">
+                                  <span className="font-extrabold text-red-500 dark:text-red-400 text-xs sm:text-sm leading-tight">
                                     ${card.offer_price.toLocaleString('es-CL')} CLP
                                   </span>
                                 </>
@@ -384,7 +384,7 @@ export default function Catalog({
               <button
                 onClick={() => setCardPage(prev => Math.max(1, prev - 1))}
                 disabled={cardPage === 1}
-                className="w-11 h-11 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121824] text-slate-650 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[#0052FF] transition-all cursor-pointer"
+                className="w-11 h-11 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121824] text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[#0052FF] transition-all cursor-pointer"
                 aria-label="Página anterior"
               >
                 <ChevronLeft size={16} />
@@ -393,7 +393,7 @@ export default function Catalog({
               <div className="flex items-center gap-1">
                 {getPageNumbers().map((p, i) => (
                   p === '...' ? (
-                    <span key={`dots-${i}`} className="px-3 text-slate-450 font-bold text-sm">...</span>
+                    <span key={`dots-${i}`} className="px-3 text-slate-400 font-bold text-sm">...</span>
                   ) : (
                     <button
                       key={`page-${p}`}
@@ -401,7 +401,7 @@ export default function Catalog({
                       className={`w-11 h-11 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                         cardPage === p
                           ? 'bg-[#0052FF] text-white shadow-md shadow-blue-500/25 scale-105'
-                          : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-655 dark:text-slate-300 hover:border-[#0052FF]'
+                          : 'bg-white dark:bg-[#121824] border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-[#0052FF]'
                       }`}
                       aria-label={`Ir a la página ${p}`}
                       aria-current={cardPage === p ? "page" : undefined}
@@ -415,7 +415,7 @@ export default function Catalog({
               <button
                 onClick={() => setCardPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={cardPage === totalPages}
-                className="w-11 h-11 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121824] text-slate-650 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[#0052FF] transition-all cursor-pointer"
+                className="w-11 h-11 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121824] text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[#0052FF] transition-all cursor-pointer"
                 aria-label="Página siguiente"
               >
                 <ChevronRight size={16} />
@@ -437,7 +437,7 @@ export default function Catalog({
               <button
                 key={term}
                 onClick={() => handleSuggestionClick(term)}
-                className="px-2.5 py-1 text-[11px] font-medium bg-slate-50 dark:bg-slate-900 border border-slate-250 dark:border-slate-800 text-[#0052FF] hover:bg-blue-500/5 rounded-lg transition-colors cursor-pointer"
+                className="px-2.5 py-1 text-[11px] font-medium bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[#0052FF] hover:bg-blue-500/5 rounded-lg transition-colors cursor-pointer"
               >
                 {term}
               </button>

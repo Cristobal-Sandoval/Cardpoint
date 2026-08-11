@@ -43,7 +43,7 @@ onError={(e) => { e.target.onerror = null; e.target.src = "/og-image.png"; }}
           <div className="space-y-3">
             <span className="text-xs font-bold text-[#0052FF] uppercase">{selectedNews.date}</span>
             <h1 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white">{selectedNews.title}</h1>
-            <p className="text-sm font-semibold text-slate-505 dark:text-slate-300 leading-relaxed italic border-l-4 border-[#0052FF] pl-4">
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-300 leading-relaxed italic border-l-4 border-[#0052FF] pl-4">
               {selectedNews.summary}
             </p>
           </div>
@@ -55,11 +55,11 @@ onError={(e) => { e.target.onerror = null; e.target.src = "/og-image.png"; }}
             </div>
           ) : selectedNews.isExternal ? (
             <div 
-              className="prose dark:prose-invert text-sm text-slate-600 dark:text-slate-350 leading-relaxed space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800"
+              className="prose dark:prose-invert text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800"
               dangerouslySetInnerHTML={{ __html: selectedNews.content }}
             />
           ) : (
-            <div className="prose dark:prose-invert text-sm text-slate-600 dark:text-slate-350 leading-relaxed space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div className="prose dark:prose-invert text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
               {(selectedNews.content || '').split('\n\n').map((para, i) => (
                 <p key={i}>{para}</p>
               ))}
@@ -70,7 +70,7 @@ onError={(e) => { e.target.onerror = null; e.target.src = "/og-image.png"; }}
           <GoogleAdSlot format="horizontal" className="my-8" />
             
           {selectedNews.isExternal && (
-            <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end text-xs text-slate-450 dark:text-slate-500">
+            <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end text-xs text-slate-400 dark:text-slate-500">
               <a 
                 href={selectedNews.sourceUrl} 
                 target="_blank" 
@@ -191,7 +191,7 @@ onError={(e) => { e.target.onerror = null; e.target.src = "/og-image.png"; }}
                   setNewsPage(p => Math.min(Math.ceil(visibleNewsList.length / 12), p + 1));
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                disabled={newsPage === Math.ceil(visibleNewsList.length / 6)}
+                disabled={newsPage === Math.ceil(visibleNewsList.length / 12)}
                 className="w-11 h-11 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121824] text-slate-500 hover:text-[#0052FF] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                 aria-label="Página siguiente de noticias"
               >
