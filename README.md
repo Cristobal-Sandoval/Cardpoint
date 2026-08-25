@@ -1,4 +1,4 @@
-# Cardpoint.cl 🃏 (v1.3.0)
+# Cardpoint.cl 🃏 (v1.4.0)
 
 Plataforma oficial de **Cardpoint Concepción**, una aplicación web moderna diseñada para la exhibición, catalogación y gestión de cartas sueltas (singles) de **Pokémon TCG** en Chile. 
 
@@ -17,14 +17,20 @@ La arquitectura del proyecto está optimizada para la velocidad, la responsivida
 *   **Enrutamiento y Code Splitting:** [React Router v7](https://reactrouter.com/) + Carga perezosa de rutas (`React.lazy` y `<Suspense>`) para segmentar las vistas del cliente y la administración privada.
 *   **Carga diferida (Lazy Loading):** Los bundles de páginas pesadas (Buscador API, Catálogo, Noticias, Torneos) se cargan de forma diferida, reduciendo el bundle de inicio bajo los 500 kB.
 *   **Monetización Premium:** Componentes dinámicos de publicidad con integración a **Google AdSense** y auto-colapso inteligente para bloques no rellenados (evita desplazamientos CLS).
-*   **Cargador de Imágenes:** Integración con la API de **ImgBB** y almacenamiento directo en Supabase Storage para fotos reales de las cartas desde el panel administrativo.
+*   **Cargador de Imágenes:** Integración con la API de **ImgBB** con compresión client-side en canvas para fotos reales de las cartas desde dispositivos móviles y escritorio.
 *   **Iconografía:** [Lucide React](https://lucide.dev/) (iconos vectoriales de alto rendimiento).
 
 ---
 
 ## ✨ Características Principales e Implementaciones
 
-### 🛡️ 1. Auditoría y Optimización Integral (UX/UI, Performance, Seguridad & SEO v1.3.0)
+### 📱 1. Panel de Administración y Optimización Móvil (v1.4.0)
+*   **Subida Robusta de Fotos en Móviles:** Normalización de archivos e interoperabilidad para selectores de cámara en iOS (Safari/HEIC) y Android, asegurando nombres con marca temporal y cabeceras MIME `image/jpeg` válidas en el envío a ImgBB.
+*   **Compresión por Canvas Previa:** Compresión dinámica a máximo 800px y 85% de calidad previa al envío en todas las vías de carga de fotos reales (carga individual y por lotes).
+*   **Buscador Bilingüe Asistido (Español ↔ Inglés):** Integración con traducción automática de nombres de cartas (Español ➔ Inglés) en caso de no hallar coincidencias directas en la API oficial en inglés (ej. *"Determinación de Lillie"* ➔ *"Lillie's Determination"*), indicando visualmente el término traducido.
+*   **Auto-relleno y Traducción de Metadatos:** Al seleccionar una carta desde la base de datos oficial, se traduce su rareza al español (*Doble Rara*, *Especial Ilustración Rara*, etc.), se asigna el set y código oficial, y se genera un resumen de metadatos (serie, año, `#XXX`) en la descripción.
+
+### 🛡️ 2. Auditoría y Optimización Integral (UX/UI, Performance, Seguridad & SEO v1.3.0)
 *   **Corrección de Clases Tailwind CSS Inválidas:** Normalización de ~50 clases fuera del estándar Tailwind v4 (`text-slate-650` ➔ `text-slate-600`, `z-45` ➔ `z-[45]`, `slate-855` ➔ `slate-800`, `blue-955` ➔ `blue-950`, etc.) en todas las vistas de la aplicación.
 *   **Corrección de Paginación en Noticias:** Solución al error de cálculo de total de páginas en el botón "Siguiente" (`/ 6` ➔ `/ 12`), previniendo la navegación hacia vistas en blanco.
 *   **Prevención de Memory Leaks en Hooks:** Implementación de banderas de montaje (`isMounted`) y limpieza en `useCards`, `useNews`, `useTournaments` y `useAutoNews` para evitar actualizaciones de estado en componentes desmonados.
@@ -32,7 +38,7 @@ La arquitectura del proyecto está optimizada para la velocidad, la responsivida
 *   **Depuración de Política de Seguridad (CSP):** Eliminación de dominios de proxies CORS externos en la cabecera `Content-Security-Policy` de `vercel.json` y adición de la cabecera `Permissions-Policy`.
 *   **Mejoras de Accesibilidad (WCAG/ARIA):** Incorporación de atributos `role="dialog"`, `aria-modal="true"` y etiquetas explícitas `aria-label` en modales y botones de cierre, junto con `aria-hidden="true"` en SVGs decorativos.
 
-### 📦 2. Importador Masivo por Código y Autocompletado (Batch Import Engine)
+### 📦 3. Importador Masivo por Código y Autocompletado (Batch Import Engine)
 *   **Importación Solo por Código:** Permite a los administradores importar un lote de cartas ingresando únicamente el **Código de Set y Número** (ej. `TWMla 123/234`, `PORla 084/088`, `PFLla 089/094`, `MEGla 119/132`), sin necesidad de escribir el nombre de la carta.
 *   **Mapeo Inteligente de Sets y Pocket Expansions:** Reconocimiento de códigos de tienda y ediciones especiales de Pokémon TCG y TCG Pocket (`por` ➔ `me3`, `pfl` ➔ `me2`, `meg` ➔ `me1`, `asc` ➔ `me2pt5`, `jtg` ➔ `sv9`).
 *   **Motor de Reintentos de API (`fetchCardsWithRetry`):** Sistema de consulta con reintentos automáticos (3 intentos con retardo progresivo) para prevenir fallos transitorios de red o cierres de conexión cuando la API responde con retardo.

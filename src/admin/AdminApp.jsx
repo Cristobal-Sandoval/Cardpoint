@@ -45,6 +45,49 @@ const ERAS = ['Escarlata y Púrpura', 'Espada y Escudo', 'SM - Sol y Luna', 'XY'
 const CONDITIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
 const LANGUAGES = ['Español', 'Inglés', 'Japonés', 'Otro'];
 
+// ── RARITY TRANSLATOR ────────────────────────────────────────────────────────
+const translateRarity = (engRarity) => {
+  if (!engRarity) return 'Rara';
+  const r = engRarity.toLowerCase();
+  if (r.includes('common') && !r.includes('uncommon')) return 'Común';
+  if (r.includes('uncommon')) return 'Poco Común';
+  if (r.includes('double rare')) return 'Doble Rara';
+  if (r.includes('special illustration rare')) return 'Especial Ilustración Rara';
+  if (r.includes('illustration rare')) return 'Ilustración Rara';
+  if (r.includes('ultra rare') || r.includes('shiny ultra rare')) return 'Ultra Rara';
+  if (r.includes('secret rare') || r.includes('shiny rare')) return 'Ultra Rara Secreta';
+  if (r.includes('hyper rare') || r.includes('rainbow rare')) return 'Hyper Rara';
+  if (r.includes('gold') || r.includes('rare holo star')) return 'Secreta Dorada';
+  if (r.includes('rare') || r.includes('holo')) return 'Rara';
+  return 'Común';
+};
+
+// ── BILINGUAL TRANSLATION HELPER ──────────────────────────────────────────────
+const translateCardName = async (spanishName) => {
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(spanishName)}&langpair=es|en`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const translated = data.responseData?.translatedText;
+    if (!translated || translated.toLowerCase() === spanishName.toLowerCase()) return null;
+    return translated;
+  } catch {
+    return null;
+  }
+};
+
+// ── METADATA DESCRIPTION BUILDER ──────────────────────────────────────────────
+const buildAutoDescription = (card) => {
+  const parts = [];
+  if (card.supertype) parts.push(card.supertype);
+  if (card.subtypes?.length) parts.push(card.subtypes.join(' / '));
+  if (card.set?.series) parts.push(`Serie: ${card.set.series}`);
+  if (card.set?.releaseDate) parts.push(`Año: ${card.set.releaseDate.split('/')[0]}`);
+  if (card.number) parts.push(`#${card.number}`);
+  return parts.length > 0 ? parts.join(' · ') : '';
+};
+
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const today = () => new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -80,7 +123,7 @@ const compressImage = (file, maxDimension = 800, quality = 0.85) => {
           canvas.toBlob(
             (blob) => {
               if (blob) {
-                const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                const compressedFile = new File([blob], `card_${Date.now()}.jpg`, {
                   type: 'image/jpeg',
                   lastModified: Date.now(),
                 });
@@ -111,12 +154,19 @@ const IMGBB_KEY = '149aebd904174718dea8f1c5eb444935';
 // Sube una imagen de carta a ImgBB y devuelve su URL directa
 const uploadCardImage = async (file, folder = 'cards') => {
   if (!file) throw new Error('No se seleccionó archivo');
+  // Normalizar nombre y tipo explícitamente para compatibilidad con iOS/Android
+  const safeFile = new File(
+    [file],
+    `cardpoint_${folder}_${Date.now()}.jpg`,
+    { type: file.type || 'image/jpeg' }
+  );
   const formData = new FormData();
-  formData.append('image', file);
+  formData.append('image', safeFile);
   const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
     method: 'POST',
     body: formData,
   });
+  if (!res.ok) throw new Error(`Error de red: ${res.status}`);
   const data = await res.json();
   if (!data.success) throw new Error(data.error?.message || 'Error al subir la imagen');
   return data.data.display_url || data.data.url;
@@ -171,8 +221,12 @@ function Toast({ message, type, onClose }) {
 
   return (
     <div className={`fixed top-5 right-5 z-[100] flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl border text-sm font-semibold transition-all
-      ${type === 'success' ? 'bg-green-900/90 border-green-500/40 text-green-300' : 'bg-red-900/90 border-red-500/40 text-red-300'}`}>
-      {type === 'success' ? <IcoCheck /> : <IcoX />}
+      ${type === 'success'
+        ? 'bg-green-900/90 border-green-500/40 text-green-300'
+        : type === 'info'
+        ? 'bg-blue-900/90 border-blue-500/40 text-blue-300'
+        : 'bg-red-900/90 border-red-500/40 text-red-300'}`}>
+      {type === 'success' ? <IcoCheck /> : type === 'info' ? <span className="animate-spin text-sm">⏳</span> : <IcoX />}
       {message}
     </div>
   );
@@ -210,6 +264,7 @@ function AdminCards({ toast }) {
   const [apiSearching, setApiSearching] = useState(false);
   const [apiResults, setApiResults] = useState([]);
   const [apiSearchError, setApiSearchError] = useState(null); // null | 'no_results' | 'timeout' | 'error'
+  const [apiSearchLang, setApiSearchLang] = useState(null); // null | 'original' | { type: 'translated', translatedName: string }
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [fixingImageCardId, setFixingImageCardId] = useState(null);
   const [fixAllState, setFixAllState] = useState(null);
@@ -244,20 +299,48 @@ function AdminCards({ toast }) {
     setApiSearching(true);
     setApiResults([]);
     setApiSearchError(null);
+    setApiSearchLang(null);
+
+    const searchByName = async (name, signal) => {
+      const res = await fetch(
+        `https://api.pokemontcg.io/v2/cards?q=name:"${name}"&pageSize=250`,
+        { signal }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.data || [];
+    };
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
     try {
-      const res = await fetch(
-        `https://api.pokemontcg.io/v2/cards?q=name:"${form.name}"&pageSize=250`,
-        { signal: controller.signal }
-      );
+      let results = await searchByName(form.name, controller.signal);
       clearTimeout(timeout);
-      const data = await res.json();
-      const results = data.data || [];
-      if (results.length === 0) {
-        setApiSearchError('no_results');
-      } else {
+      if (results.length > 0) {
         setApiResults(results);
+        setApiSearchLang('original');
+      } else {
+        // Fallback: traducir de español a inglés y volver a consultar
+        const translated = await translateCardName(form.name);
+        if (translated && translated.toLowerCase() !== form.name.toLowerCase()) {
+          const controller2 = new AbortController();
+          const timeout2 = setTimeout(() => controller2.abort(), 8000);
+          try {
+            results = await searchByName(translated, controller2.signal);
+            clearTimeout(timeout2);
+            if (results.length > 0) {
+              setApiResults(results);
+              setApiSearchLang({ type: 'translated', translatedName: translated });
+            } else {
+              setApiSearchError('no_results');
+            }
+          } catch {
+            clearTimeout(timeout2);
+            setApiSearchError('no_results');
+          }
+        } else {
+          setApiSearchError('no_results');
+        }
       }
     } catch (err) {
       clearTimeout(timeout);
@@ -271,14 +354,19 @@ function AdminCards({ toast }) {
   };
 
   const selectApiResult = (card) => {
+    const rarityES = translateRarity(card.rarity);
+    const autoDesc = buildAutoDescription(card);
+
     setForm(prev => ({
       ...prev,
       image: card.images?.large || card.images?.small || '',
       set: card.set?.name || prev.set,
       set_code: (card.set?.id || '').toUpperCase(),
-      rarity: card.rarity || prev.rarity
+      rarity: rarityES || prev.rarity,
+      description: prev.description?.trim() ? prev.description : autoDesc
     }));
     setApiResults([]);
+    toast(`Metadatos aplicados: ${card.set?.name || ''} · ${rarityES}`, 'success');
   };
 
   const handleFixCardImage = async (card) => {
@@ -292,31 +380,37 @@ function AdminCards({ toast }) {
         { signal: controller.signal }
       );
       clearTimeout(timeout);
-      if (!res.ok) { toast('Error al consultar API', 'error'); return; }
       const data = await res.json();
       const result = data.data?.[0];
-      if (!result?.images?.large) { toast('No se encontró imagen en la API', 'error'); return; }
-      const { error } = await supabase.from('cards').update({ image: result.images.large }).eq('id', card.id);
-      if (error) { toast('Error al guardar: ' + error.message, 'error'); return; }
-      load();
-      toast(`Imagen actualizada: ${card.name} ✓`, 'success');
+      if (result?.images?.large) {
+        await supabase.from('cards').update({ image: result.images.large }).eq('id', card.id);
+        toast(`Imagen actualizada para ${card.name} ✓`, 'success');
+        load();
+      } else {
+        toast(`No se encontró imagen para ${card.name}`, 'error');
+      }
     } catch (err) {
-      toast('Error de conexión con la API', 'error');
+      toast(`Error al buscar imagen: ${err.message}`, 'error');
     }
     setFixingImageCardId(null);
   };
 
   const handleFixAllImages = async () => {
-    if (!cards?.length || fixAllState) return;
-    const state = { total: cards.length, completed: 0, errors: 0, stopped: false };
+    if (fixAllState) return;
+    const cardsToFix = cards.filter(c => !c.image || c.image.includes('pokemontcg.io/sv') || c.image.includes('placeholder'));
+    if (cardsToFix.length === 0) {
+      toast('Todas las cartas ya tienen imagen ✓', 'success');
+      return;
+    }
+    const state = { total: cardsToFix.length, current: 0, fixed: 0, notFound: 0, completed: 0 };
     setFixAllState(state);
-    for (const card of cards) {
-      if (state.stopped) break;
-      if (!card.name) { state.completed++; setFixAllState({...state}); continue; }
+    for (const card of cardsToFix) {
+      state.current++;
+      setFixAllState({...state});
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
         const query = `name:"${card.name}"${card.set_code ? ` set.id:"${card.set_code}"` : ''}`;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 6000);
         const res = await fetch(
           `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}&pageSize=1`,
           { signal: controller.signal }
@@ -327,6 +421,9 @@ function AdminCards({ toast }) {
           const result = data.data?.[0];
           if (result?.images?.large) {
             await supabase.from('cards').update({ image: result.images.large }).eq('id', card.id);
+            state.fixed++;
+          } else {
+            state.notFound++;
           }
         }
       } catch {}
@@ -346,15 +443,7 @@ function AdminCards({ toast }) {
     try {
       toast('Optimizando imagen...', 'info');
       const compressedFile = await compressImage(file, 800, 0.85);
-      const formData = new FormData();
-      formData.append('image', compressedFile);
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error?.message || 'Error al subir');
-      const directUrl = data.data.display_url || data.data.url;
+      const directUrl = await uploadCardImage(compressedFile, 'photo');
       setForm(prev => ({ ...prev, real_photo: directUrl }));
       toast('Foto subida a ImgBB ✓', 'success');
     } catch (err) {
@@ -378,8 +467,8 @@ function AdminCards({ toast }) {
 
   useEffect(() => { load(); }, []);
 
-  const openAdd = () => { setForm(emptyForm); setEditingCard(null); setApiResults([]); setShowForm(true); };
-  const openEdit = (card) => { setForm({ ...card, idioma: card.idioma || 'Español', is_reverse: !!card.is_reverse, is_league: !!card.is_league, stock: card.stock ?? 1, is_offer: !!card.is_offer, offer_price: card.offer_price || '' }); setEditingCard(card); setApiResults([]); setShowForm(true); };
+  const openAdd = () => { setForm(emptyForm); setEditingCard(null); setApiResults([]); setApiSearchLang(null); setShowForm(true); };
+  const openEdit = (card) => { setForm({ ...card, idioma: card.idioma || 'Español', is_reverse: !!card.is_reverse, is_league: !!card.is_league, stock: card.stock ?? 1, is_offer: !!card.is_offer, offer_price: card.offer_price || '' }); setEditingCard(card); setApiResults([]); setApiSearchLang(null); setShowForm(true); };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -580,6 +669,14 @@ function AdminCards({ toast }) {
                   {apiSearching ? 'Buscando...' : 'Buscar Imagen'}
                 </button>
               </div>
+              {apiSearchLang?.type === 'translated' && (
+                <div className="mt-2 p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs flex items-center gap-2">
+                  <span className="text-sm">💡</span>
+                  <span>
+                    No se encontró en español. Mostrando resultados para: <strong className="text-white underline">{apiSearchLang.translatedName}</strong> (inglés).
+                  </span>
+                </div>
+              )}
               {apiResults.length > 0 && (
                 <div className="mt-2 p-3 bg-black/40 rounded-xl border border-white/10 max-h-[300px] overflow-y-auto grid grid-cols-4 gap-2 shadow-inner">
                   {apiResults.map(res => (
@@ -612,9 +709,9 @@ function AdminCards({ toast }) {
                   </div>
                   <div className="text-[10px] text-slate-400 space-y-1">
                     <p className="font-semibold text-slate-300">💡 Sugerencias:</p>
-                    <p>• Usa el nombre en <strong className="text-white">inglés</strong>: "Starmie" en vez de "Mega Starmie"</p>
+                    <p>• Puedes buscar en <strong className="text-white">español o inglés</strong> (el sistema traducirá automáticamente)</p>
                     <p>• Prueba sin "Mega", "ex", "V" o "VMAX" al buscar</p>
-                    <p>• Revisa la ortografía exacta del nombre</p>
+                    <p>• Revisa la ortografía del nombre</p>
                     <p>• Si no aparece, pega la URL de imagen directamente abajo</p>
                   </div>
                 </div>
@@ -702,7 +799,17 @@ function AdminCards({ toast }) {
             <Field label="URL de Imagen (API / Oficial)">
               <input className={inputCls} value={form.image} onChange={e => setForm({...form, image: e.target.value})} placeholder="https://images.pokemontcg.io/..." />
             </Field>
-            {form.image && <img src={form.image} alt="preview" className="w-20 h-28 object-contain rounded-xl border border-white/10 mx-auto" />}
+            {form.image && (
+              <div className="flex flex-col items-center gap-1.5">
+                <img src={form.image} alt="preview" className="w-20 h-28 object-contain rounded-xl border border-white/10 mx-auto" />
+                {form.set_code && (
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 text-[10px]">
+                    <span className="px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 font-bold uppercase border border-blue-500/30">Set: {form.set_code}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-400 font-bold border border-purple-500/30">{form.rarity}</span>
+                  </div>
+                )}
+              </div>
+            )}
             <Field label="📸 Foto Real de tu Carta">
               <div className="flex gap-2">
                 <input
@@ -2516,22 +2623,6 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
   const [apiSearchResults, setApiSearchResults] = useState([]);
   const [apiSearching, setApiSearching] = useState(false);
 
-  const translateRarity = (engRarity) => {
-    if (!engRarity) return 'Rara';
-    const r = engRarity.toLowerCase();
-    if (r.includes('common') && !r.includes('uncommon')) return 'Común';
-    if (r.includes('uncommon')) return 'Poco Común';
-    if (r.includes('double rare')) return 'Doble Rara';
-    if (r.includes('special illustration rare')) return 'Especial Ilustración Rara';
-    if (r.includes('illustration rare')) return 'Ilustración Rara';
-    if (r.includes('ultra rare') || r.includes('shiny ultra rare')) return 'Ultra Rara';
-    if (r.includes('secret rare') || r.includes('shiny rare')) return 'Ultra Rara Secreta';
-    if (r.includes('hyper rare') || r.includes('rainbow rare')) return 'Hyper Rara';
-    if (r.includes('gold') || r.includes('rare holo star')) return 'Secreta Dorada';
-    if (r.includes('rare') || r.includes('holo')) return 'Rara';
-    return 'Común';
-  };
-
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -2868,9 +2959,10 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     if (!file) return;
 
     try {
-      const publicUrl = await uploadCardImage(file, 'batch_photo');
+      const compressed = await compressImage(file);
+      const publicUrl = await uploadCardImage(compressed, 'batch_photo');
       handleRowChange(rowId, 'real_photo', publicUrl);
-      toast('Foto real subida para la fila', 'success');
+      toast('Foto real subida para la fila ✓', 'success');
     } catch (err) {
       console.error(err);
       toast('Error al subir foto real', 'error');
@@ -2943,13 +3035,31 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
     try {
       const q = apiSearchQuery.trim();
       const setPart = /^[a-zA-Z0-9]+/.test(q) && manualForm.setCode ? ` set.id:"${manualForm.setCode}"` : '';
-      const res = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(`name:"${q}"${setPart}`)}&pageSize=12`);
-      if (res && res.ok) {
-        const data = await res.json();
-        setApiSearchResults(data.data || []);
-        if ((data.data || []).length === 0) toast('No se encontraron cartas con ese nombre', 'error');
-      } else {
-        toast('No se pudo consultar la API (revisa tu conexión)', 'error');
+
+      const searchCards = async (queryText) => {
+        const res = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(`name:"${queryText}"${setPart}`)}&pageSize=12`);
+        if (res && res.ok) {
+          const data = await res.json();
+          return data.data || [];
+        }
+        return [];
+      };
+
+      let results = await searchCards(q);
+      if (results.length === 0) {
+        // Fallback: traducir español -> inglés
+        const translated = await translateCardName(q);
+        if (translated && translated.toLowerCase() !== q.toLowerCase()) {
+          results = await searchCards(translated);
+          if (results.length > 0) {
+            toast(`Mostrando cartas en inglés para: "${translated}"`, 'info');
+          }
+        }
+      }
+
+      setApiSearchResults(results);
+      if (results.length === 0) {
+        toast('No se encontraron cartas con ese nombre', 'error');
       }
     } catch (err) {
       console.error(err);
