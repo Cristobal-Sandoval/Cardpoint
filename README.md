@@ -1,4 +1,4 @@
-# Cardpoint.cl 🃏 (v1.4.0)
+# Cardpoint.cl 🃏 (v1.4.1)
 
 Plataforma oficial de **Cardpoint Concepción**, una aplicación web moderna diseñada para la exhibición, catalogación y gestión de cartas sueltas (singles) de **Pokémon TCG** en Chile. 
 
@@ -24,7 +24,11 @@ La arquitectura del proyecto está optimizada para la velocidad, la responsivida
 
 ## ✨ Características Principales e Implementaciones
 
-### 📱 1. Panel de Administración y Optimización Móvil (v1.4.0)
+### 🏆 1. Priorización de Vitrina Bilingüe y Catálogo (v1.4.1)
+*   **Normalización Universal de Rarezas en Vitrina:** Corrección al algoritmo de ordenamiento de la vitrina principal (`RARITY_PRIORITY`), permitiendo que cartas registradas con nombres de rareza en inglés (ej. *Illustration Rare*, *Special Illustration Rare*, *Ultra Rare*, etc.) reciban su prioridad jerárquica correcta y no sean relegadas al final del stock.
+*   **Filtrado de Catálogo Bilingüe:** Los filtros de rareza del catálogo ahora relacionan sinónimos en español e inglés sin distinción, permitiendo encontrar cartas sin importar el idioma de origen del registro.
+
+### 📱 2. Panel de Administración y Optimización Móvil (v1.4.0)
 *   **Subida Robusta de Fotos en Móviles:** Normalización de archivos e interoperabilidad para selectores de cámara en iOS (Safari/HEIC) y Android, asegurando nombres con marca temporal y cabeceras MIME `image/jpeg` válidas en el envío a ImgBB.
 *   **Compresión por Canvas Previa:** Compresión dinámica a máximo 800px y 85% de calidad previa al envío en todas las vías de carga de fotos reales (carga individual y por lotes).
 *   **Buscador Bilingüe Asistido (Español ↔ Inglés):** Integración con traducción automática de nombres de cartas (Español ➔ Inglés) en caso de no hallar coincidencias directas en la API oficial en inglés (ej. *"Determinación de Lillie"* ➔ *"Lillie's Determination"*), indicando visualmente el término traducido.

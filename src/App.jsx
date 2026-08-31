@@ -55,9 +55,27 @@ const RARITIES = [
   { id: 'Hyper Rara', name: 'Hyper Rara' }
 ];
 
-const normalizeRarityText = (str) => {
+const RARITY_PATTERNS = [
+  { priority: 1, result: 'hyper rara' },
+  { priority: 2, result: 'secreta dorada' },
+  { priority: 3, result: 'ultra rara secreta' },
+  { priority: 4, result: 'especial ilustracion rara' },
+  { priority: 5, result: 'ilustracion rara' },
+  { priority: 6, result: 'ultra rara' },
+  { priority: 7, result: 'rara' },
+  { priority: 8, result: 'doble rara' },
+  { priority: 9, result: 'poco comun' },
+  { priority: 10, result: 'comun' }
+];
+
+export const normalizeRarityText = (str) => {
   if (!str) return '';
-  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const clean = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  
+  const match = RARITY_PATTERNS.find(p => 
+    p.result.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === clean
+  );
+  return match ? match.result : clean;
 };
 
 const TRAINER_EXPLICIT_SET_NUMBERS = new Set([
@@ -158,17 +176,30 @@ export function getCardSupertype(card) {
   return 'Pokemon';
 }
 
-const RARITY_PRIORITY = {
+export const RARITY_PRIORITY = {
   'hyper rara': 1,
+  'hyper rare': 1,
   'secreta dorada': 2,
+  'gold': 2,
   'ultra rara secreta': 3,
+  'secret rare': 3,
+  'shiny rare': 3,
   'especial ilustracion rara': 4,
+  'special illustration rare': 4,
   'ilustracion rara': 5,
+  'illustration rare': 5,
   'ultra rara': 6,
+  'ultra rare': 6,
+  'shiny ultra rare': 6,
   'rara': 7,
+  'rare': 7,
+  'holo': 7,
   'doble rara': 8,
+  'double rare': 8,
   'poco comun': 9,
-  'comun': 10
+  'uncommon': 9,
+  'comun': 10,
+  'common': 10
 };
 
 // Tarjetas de marcador de posición (Fallback)
@@ -244,10 +275,13 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-// Hook de SEO Dinámico Avanzado (Título, descripciones, OpenGraph, Twitter y Canonical en DOM)
+// SEO Dinámico Avanzado (Título, descripciones, OpenGraph, Twitter y Canonical en DOM)
 function useSEO(title, description, image = '') {
   useEffect(() => {
-    document.title = title;
+    // Actualizar título con límite de caracteres
+    const MAX_TITLE_LENGTH = 60;
+    const truncatedTitle = title.substring(0, MAX_TITLE_LENGTH);
+    document.title = truncatedTitle;
     
     const setMetaName = (name, value) => {
       if (!value) return;
@@ -281,12 +315,17 @@ function useSEO(title, description, image = '') {
     setMetaProperty('og:title', title);
     setMetaProperty('og:description', description);
     setMetaProperty('og:image', image || 'https://cardpoint.cl/og-image.png');
-
+    setMetaProperty('og:type', 'website');
+    setMetaProperty('og:url', window.location.href);
+    setMetaProperty('og:locale', 'es_CL');
+    
     // Twitter Cards
     setMetaProperty('twitter:title', title);
     setMetaProperty('twitter:description', description);
     setMetaProperty('twitter:image', image || 'https://cardpoint.cl/og-image.png');
-
+    setMetaProperty('twitter:card', 'summary_large_image');
+    setMetaProperty('twitter:site', '@cardpoint_cl');
+    
     // Enlace Canónico Dinámico
     let canonicalLink = document.querySelector('link[rel="canonical"]');
     if (!canonicalLink) {
@@ -851,8 +890,8 @@ export default function App() {
     if (!card) return '';
     const query = `${card.name} ${card.set || ''}`.trim();
     const encodedQuery = encodeURIComponent(query);
-    // Cambiar por tu ID de afiliado de Impact cuando sea aprobada
-    const affiliateId = 'YOUR_AFFILIATE_ID_HERE';
+    // ID de afiliado de Impact - venir de config administrativa
+    const affiliateId = adminSettings.affiliate_id || 'YOUR_AFFILIATE_ID_HERE';
     
     const targetUrl = `https://www.tcgplayer.com/search/pokemon/product?q=${encodedQuery}&utm_campaign=affiliate&utm_medium=cardpoint&utm_source=impact`;
     
@@ -1225,7 +1264,7 @@ export default function App() {
     return catalogCards.filter(card => {
       const matchesSearch = card.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) || 
                             card.set.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
-      const matchesRarity = selectedRarity === 'Todas' || (card.rarity && card.rarity.trim().toLowerCase() === selectedRarity.trim().toLowerCase());
+      const matchesRarity = selectedRarity === 'Todas' || normalizeRarityText(card.rarity) === normalizeRarityText(selectedRarity);
       const cardType = getCardSupertype(card);
       const matchesCategory = selectedCategory === 'Todos' || cardType === selectedCategory;
       return matchesSearch && matchesRarity && matchesCategory;
@@ -1783,7 +1822,7 @@ export default function App() {
                         </span>
                       )}
                       {selectedCardDetail.is_league && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-505/30 uppercase flex items-center gap-1">
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 uppercase flex items-center gap-1">
                           <Trophy size={12} className="inline" /> De Liga
                         </span>
                       )}

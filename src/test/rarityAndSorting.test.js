@@ -2,20 +2,46 @@ import { describe, it, expect } from 'vitest';
 
 const normalizeRarityText = (str) => {
   if (!str) return '';
-  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const clean = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  
+  if (clean.includes('hyper rare') || clean.includes('hyper rara') || clean.includes('rainbow rare')) return 'hyper rara';
+  if (clean.includes('gold') || clean.includes('secreta dorada') || clean.includes('rare holo star')) return 'secreta dorada';
+  if (clean.includes('secret rare') || clean.includes('ultra rara secreta') || clean.includes('shiny rare')) return 'ultra rara secreta';
+  if (clean.includes('special illustration rare') || clean.includes('especial ilustracion rara')) return 'especial ilustracion rara';
+  if (clean.includes('illustration rare') || clean.includes('ilustracion rara')) return 'ilustracion rara';
+  if (clean.includes('ultra rare') || clean.includes('ultra rara') || clean.includes('shiny ultra rare')) return 'ultra rara';
+  if (clean.includes('double rare') || clean.includes('doble rara')) return 'doble rara';
+  if (clean.includes('uncommon') || clean.includes('poco comun')) return 'poco comun';
+  if (clean.includes('common') || clean.includes('comun')) return 'comun';
+  if (clean.includes('rare') || clean.includes('rara') || clean.includes('holo')) return 'rara';
+
+  return clean;
 };
 
 const RARITY_PRIORITY = {
   'hyper rara': 1,
+  'hyper rare': 1,
   'secreta dorada': 2,
+  'gold': 2,
   'ultra rara secreta': 3,
+  'secret rare': 3,
+  'shiny rare': 3,
   'especial ilustracion rara': 4,
+  'special illustration rare': 4,
   'ilustracion rara': 5,
+  'illustration rare': 5,
   'ultra rara': 6,
+  'ultra rare': 6,
+  'shiny ultra rare': 6,
   'rara': 7,
+  'rare': 7,
+  'holo': 7,
   'doble rara': 8,
+  'double rare': 8,
   'poco comun': 9,
-  'comun': 10
+  'uncommon': 9,
+  'comun': 10,
+  'common': 10
 };
 
 function sortCardsByDefault(cards) {
@@ -54,6 +80,16 @@ describe('Rarity Normalization and Card Sorting', () => {
     it('handles extra spaces and mixed casing', () => {
       expect(normalizeRarityText('  HYPER RARA  ')).toBe('hyper rara');
       expect(normalizeRarityText('Ultra Rara Secreta')).toBe('ultra rara secreta');
+    });
+
+    it('normalizes English rarity names seamlessly', () => {
+      expect(normalizeRarityText('Illustration Rare')).toBe('ilustracion rara');
+      expect(normalizeRarityText('Special Illustration Rare')).toBe('especial ilustracion rara');
+      expect(normalizeRarityText('Ultra Rare')).toBe('ultra rara');
+      expect(normalizeRarityText('Double Rare')).toBe('doble rara');
+      expect(normalizeRarityText('Secret Rare')).toBe('ultra rara secreta');
+      expect(normalizeRarityText('Uncommon')).toBe('poco comun');
+      expect(normalizeRarityText('Common')).toBe('comun');
     });
   });
 

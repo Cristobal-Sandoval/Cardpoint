@@ -2,7 +2,20 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 
 export function useAdmin() {
-  const [adminSettings, setAdminSettings] = useState({ coupons: [], clarity_id: '', gtm_id: '', pixel_id: '', hidden_news: [], pinned_news: [], custom_banners: [], news_sources: { pokemon: true, tcgnews: true, autogenerate: true } });
+  // Estado por defecto - valores por defecto si no hay config en Supabase
+  const [adminSettings, setAdminSettings] = useState({
+    coupons: [],
+    clarity_id: '',
+    gtm_id: '',
+    pixel_id: '',
+    affiliate_id: '',
+    hidden_news: [],
+    pinned_news: [],
+    custom_banners: [],
+    tournaments_override: [],
+    sponsored_ad: null,
+    news_sources: { pokemon: true, tcgnews: true, autogenerate: true }
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -12,10 +25,26 @@ export function useAdmin() {
       const { data, error } = await supabase.from('admin_settings').select('*');
       
       if (error) {
-        // Ignorar el error en local/desarrollo si la tabla no existe aún para evitar colgar la app
         console.warn("No se pudo cargar admin_settings de Supabase:", error);
-      } else if (data) {
-        const settings = { coupons: [], clarity_id: '', gtm_id: '', pixel_id: '', hidden_news: [], pinned_news: [], custom_banners: [], tournaments_override: [], sponsored_ad: null, news_sources: { pokemon: true, tcgnews: true, autogenerate: true } };
+        // Manter estado actual en caso de error
+        return;
+      }
+      
+      if (data) {
+        // Inicializar con defaults, luego sobrescribir con datos reales
+        const settings = {
+          coupons: [],
+          clarity_id: '',
+          gtm_id: '',
+          pixel_id: '',
+          hidden_news: [],
+          pinned_news: [],
+          custom_banners: [],
+          tournaments_override: [],
+          sponsored_ad: null,
+          news_sources: { pokemon: true, tcgnews: true, autogenerate: true }
+        };
+        
         data.forEach(row => {
           if (row.id === 'coupons') settings.coupons = row.data;
           if (row.id === 'clarity_id') settings.clarity_id = row.data;
@@ -28,6 +57,7 @@ export function useAdmin() {
           if (row.id === 'sponsored_ad') settings.sponsored_ad = row.data;
           if (row.id === 'news_sources') settings.news_sources = row.data;
         });
+        
         setAdminSettings(settings);
       }
     } catch (err) {
