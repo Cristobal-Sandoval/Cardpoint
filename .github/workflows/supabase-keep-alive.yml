@@ -1,4 +1,4 @@
-﻿name: Supabase Keep-Alive Ping
+name: Supabase Keep-Alive Ping
 
 on:
   schedule:
@@ -15,8 +15,8 @@ jobs:
         run: |
           echo "Sending keep-alive ping to Supabase..."
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdGxybnVncHBkZXNmYXV4enJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMzE0NDQsImV4cCI6MjA5NjYwNzQ0NH0.L2g1dhmNJfwg7_UjcX7642JSu6umvrFTbCyRltlleZs' }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNhdGxybnVncHBkZXNmYXV4enJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMzE0NDQsImV4cCI6MjA5NjYwNzQ0NH0.L2g1dhmNJfwg7_UjcX7642JSu6umvrFTbCyRltlleZs' }}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY || 'sb_publishable_C2ZHLCdaqyl7m4nr3ImPLQ_c-eG27cU' }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY || 'sb_publishable_C2ZHLCdaqyl7m4nr3ImPLQ_c-eG27cU' }}" \
             "https://satlrnugppdesfauxzrw.supabase.co/rest/v1/cards?select=id&limit=1")
           
           echo "Supabase responded with HTTP status: $HTTP_STATUS"
