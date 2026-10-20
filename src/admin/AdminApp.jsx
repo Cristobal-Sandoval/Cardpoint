@@ -178,16 +178,21 @@ const uploadCardImage = async (file, folder = 'cards') => {
 function Modal({ title, onClose, children, maxWidth = 'max-w-lg' }) {
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
-  }, []);
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [onClose]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className={`relative z-10 bg-[#0f1117] border border-white/10 rounded-2xl w-full ${maxWidth} max-h-[90vh] overflow-y-auto shadow-2xl`}>
-        <div className="flex items-center justify-between p-5 border-b border-white/10">
-          <h2 className="text-lg font-bold text-white">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors p-1">
+        <div className="flex items-center justify-between gap-3 p-5 border-b border-white/10 sticky top-0 bg-[#0f1117] z-10">
+          <h2 className="text-lg font-bold text-white min-w-0 truncate">{title}</h2>
+          <button onClick={onClose} className="modal-close-btn" aria-label="Cerrar ventana">
             <IcoX />
           </button>
         </div>
@@ -717,7 +722,7 @@ function AdminCards({ toast }) {
                 </div>
               )}
             </Field>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="admin-form-grid">
               <Field label="Idioma">
                 <select className={selectCls} value={form.idioma} onChange={e => setForm({...form, idioma: e.target.value})}>
                   {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
@@ -746,7 +751,7 @@ function AdminCards({ toast }) {
                 />
               </Field>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="admin-form-grid cols-2">
               <Field label="Rareza">
                 <select className={selectCls} value={form.rarity} onChange={e => setForm({...form, rarity: e.target.value})}>
                   {RARITIES.map(r => <option key={r} value={r}>{r}</option>)}
@@ -758,14 +763,14 @@ function AdminCards({ toast }) {
                 </select>
               </Field>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="admin-form-grid">
               <Field label="Stock (Cantidad)"><input className={inputCls} type="number" required min="0" value={form.stock} onChange={e => setForm({...form, stock: parseInt(e.target.value) || 0})} placeholder="Ej: 1" /></Field>
               <div className="flex flex-col justify-end">
                 <label className="flex items-center gap-2.5 cursor-pointer select-none pb-2.5">
                   <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 ${form.is_reverse ? 'bg-amber-500' : 'bg-slate-600'}`} onClick={() => setForm({...form, is_reverse: !form.is_reverse})}>
                     <div className={`w-5 h-5 bg-white rounded-full mt-0.5 transition-transform ${form.is_reverse ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
                   </div>
-                  <span className="text-xs font-semibold text-slate-300 whitespace-nowrap">Reverse Holo</span>
+                  <span className="text-xs font-semibold text-slate-300">Reverse Holo</span>
                 </label>
               </div>
               <div className="flex flex-col justify-end">
@@ -773,7 +778,7 @@ function AdminCards({ toast }) {
                   <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 ${form.is_league ? 'bg-rose-500' : 'bg-slate-600'}`} onClick={() => setForm({...form, is_league: !form.is_league})}>
                     <div className={`w-5 h-5 bg-white rounded-full mt-0.5 transition-transform ${form.is_league ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
                   </div>
-                  <span className="text-xs font-semibold text-slate-300 whitespace-nowrap">Carta de Liga</span>
+                  <span className="text-xs font-semibold text-slate-300">Carta de Liga</span>
                 </label>
               </div>
             </div>
@@ -786,7 +791,7 @@ function AdminCards({ toast }) {
                   <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 ${form.is_offer ? 'bg-red-500' : 'bg-slate-600'}`} onClick={() => setForm({...form, is_offer: !form.is_offer})}>
                     <div className={`w-5 h-5 bg-white rounded-full mt-0.5 transition-transform ${form.is_offer ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
                   </div>
-                  <span className="text-xs font-semibold text-slate-300 whitespace-nowrap">🔥 Poner en Oferta</span>
+                  <span className="text-xs font-semibold text-slate-300">🔥 Poner en Oferta</span>
                 </label>
               </div>
             </div>
@@ -1457,7 +1462,7 @@ function AdminTournaments({ toast }) {
       {showForm && (
         <Modal title={editingItem ? 'Editar Torneo' : 'Nuevo Torneo'} onClose={() => setShowForm(false)}>
           <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="admin-form-grid cols-2">
               <Field label="Tipo de Torneo">
                 <select className={selectCls} value={form.is_recurring ? 'recurring' : 'manual'} onChange={e => setForm({...form, is_recurring: e.target.value === 'recurring'})}>
                   <option value="manual">Manual (Fecha Única)</option>
@@ -1489,7 +1494,7 @@ function AdminTournaments({ toast }) {
                 </div>
               </Field>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="admin-form-grid cols-2">
                 <Field label="Fecha del Torneo">
                   <input 
                     type="date" 
@@ -1506,7 +1511,7 @@ function AdminTournaments({ toast }) {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="admin-form-grid cols-2">
               <Field label="Formato">
                 <select className={selectCls} value={form.format} onChange={e => setForm({...form, format: e.target.value})}>
                   {FORMATS.map(f => <option key={f} value={f}>{f}</option>)}
@@ -1519,7 +1524,7 @@ function AdminTournaments({ toast }) {
             
             <Field label="Enlace de Inscripción (Instagram / URL)"><input className={inputCls} value={form.registration_link || ''} onChange={e => setForm({...form, registration_link: e.target.value})} placeholder="Ej: https://instagram.com/cuchostore.cl" /></Field>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="admin-form-grid cols-2">
               <Field label="Inscripción"><input className={inputCls} value={form.entry_fee} onChange={e => setForm({...form, entry_fee: e.target.value})} placeholder="$5.000" /></Field>
               <Field label="Estado">
                 <select className={selectCls} value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
@@ -3429,7 +3434,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                 <input className={inputCls} required value={manualForm.name} onChange={e => setManualForm({ ...manualForm, name: e.target.value })} placeholder="Ej: Charizard ex" />
               </Field>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="admin-form-grid">
                 <Field label="Idioma">
                   <select className={selectCls} value={manualForm.idioma} onChange={e => setManualForm({ ...manualForm, idioma: e.target.value })}>
                     {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
@@ -3455,7 +3460,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                 </Field>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="admin-form-grid">
                 <Field label="Número">
                   <input className={inputCls} required value={manualForm.number} onChange={e => setManualForm({ ...manualForm, number: e.target.value })} placeholder="Ej: 18" />
                 </Field>
@@ -3471,7 +3476,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                 </Field>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="admin-form-grid">
                 <Field label="Stock (Cantidad)">
                   <input type="number" className={inputCls} required min="0" value={manualForm.stock} onChange={e => setManualForm({ ...manualForm, stock: parseInt(e.target.value) || 0 })} placeholder="Ej: 1" />
                 </Field>
@@ -3480,7 +3485,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                     <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 ${manualForm.is_reverse ? 'bg-amber-500' : 'bg-slate-600'}`} onClick={() => setManualForm({ ...manualForm, is_reverse: !manualForm.is_reverse })}>
                       <div className={`w-5 h-5 bg-white rounded-full mt-0.5 transition-transform ${manualForm.is_reverse ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
                     </div>
-                    <span className="text-xs font-semibold text-slate-300 whitespace-nowrap">Reverse Holo</span>
+                    <span className="text-xs font-semibold text-slate-300">Reverse Holo</span>
                   </label>
                 </div>
                 <div className="flex flex-col justify-end">
@@ -3488,7 +3493,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                     <div className={`w-11 h-6 rounded-full transition-all flex-shrink-0 ${manualForm.is_league ? 'bg-rose-500' : 'bg-slate-600'}`} onClick={() => setManualForm({ ...manualForm, is_league: !manualForm.is_league })}>
                       <div className={`w-5 h-5 bg-white rounded-full mt-0.5 transition-transform ${manualForm.is_league ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
                     </div>
-                    <span className="text-xs font-semibold text-slate-300 whitespace-nowrap">Carta de Liga</span>
+                    <span className="text-xs font-semibold text-slate-300">Carta de Liga</span>
                   </label>
                 </div>
               </div>
@@ -3497,7 +3502,7 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                 <input type="number" className={inputCls} required min="0" value={manualForm.price} onChange={e => setManualForm({ ...manualForm, price: parseInt(e.target.value) || 0 })} placeholder="Ej: 89990" />
               </Field>
 
-              <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="admin-form-grid cols-2 pt-2">
                 <Field label="Arte Oficial">
                   <div className="flex gap-2">
                     <input className={inputCls} placeholder="https://..." value={manualForm.image} onChange={e => setManualForm({ ...manualForm, image: e.target.value })} />

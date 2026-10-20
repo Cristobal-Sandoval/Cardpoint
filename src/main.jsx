@@ -1,21 +1,9 @@
-import { StrictMode, Suspense, lazy, Component } from 'react'
+import { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
-
-// Lazy load AdminApp for performance
-const AdminApp = lazy(() => import('./admin/AdminApp.jsx'))
-
-// Loading fallback for lazy components
-const LoadingScreen = () => (
-  <div className="min-h-screen bg-[#0a0d14] flex items-center justify-center">
-    <div className="animate-pulse flex flex-col items-center">
-      <div className="w-12 h-12 border-4 border-[#0052FF] border-t-transparent rounded-full animate-spin"></div>
-      <p className="text-slate-400 mt-4 text-sm font-semibold">Cargando...</p>
-    </div>
-  </div>
-);
+import { AdminGate, LegacyAdminRoute } from './components/AdminAccess.jsx'
 
 // Error boundary: cualquier error de render muestra un mensaje en vez de una página en blanco
 class ErrorBoundary extends Component {
@@ -74,15 +62,11 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <ErrorBoundary>
         <Routes>
+          {/* Puerta stealth (slug de un segmento definido en Supabase, no en código).
+              Sin gesto previo o sin config en DB, muestra la tienda normal. */}
+          <Route path="/:adminSlug" element={<AdminGate fallback={<App />} />} />
           <Route path="/*" element={<App />} />
-          <Route 
-            path="/acceso-privado-cp/*" 
-            element={
-              <Suspense fallback={<LoadingScreen />}>
-                <AdminApp />
-              </Suspense>
-            } 
-          />
+          <Route path="/acceso-privado-cp/*" element={<LegacyAdminRoute />} />
         </Routes>
       </ErrorBoundary>
     </BrowserRouter>

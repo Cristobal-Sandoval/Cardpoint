@@ -6,6 +6,7 @@ import { useNews } from './hooks/useNews';
 import { useTournaments } from './hooks/useTournaments';
 import { useAutoNews } from './hooks/useAutoNews';
 import { useAdmin } from './hooks/useAdmin';
+import { useStealthAdmin } from './hooks/useStealthAdmin';
 import { HERO_BANNERS } from './constants/banners';
 import { 
   ShoppingBag, 
@@ -26,8 +27,7 @@ import {
   Palette,
   Camera,
   Trophy,
-  Cat,
-  Database as DatabaseIcon
+  Cat
 } from 'lucide-react';
 
 import CardpointLogo from './components/CardpointLogo';
@@ -48,7 +48,6 @@ const Catalog = lazy(() => import('./pages/Catalog'));
 const News = lazy(() => import('./pages/News'));
 const Tournaments = lazy(() => import('./pages/Tournaments'));
 const HowToBuy = lazy(() => import('./pages/HowToBuy'));
-const DatabaseView = lazy(() => import('./pages/Database'));
 
 const RARITIES = [
   { id: 'Todas', name: 'Todas' },
@@ -353,7 +352,13 @@ export default function App() {
   
   // Derive currentTab from URL path
   const path = location.pathname.replace('/', '');
-  const currentTab = path === '' ? 'home' : path;
+  const knownTabs = ['catalog', 'news', 'tournaments', 'how-to-buy'];
+  const currentTab = knownTabs.includes(path) ? path : 'home';
+
+  // El buscador externo de cartas fue retirado: /database redirige al catálogo propio.
+  useEffect(() => {
+    if (path === 'database') navigate('/catalog', { replace: true });
+  }, [path, navigate]);
 
   // Navegador interno
   const setCurrentTab = (tab) => {
@@ -364,6 +369,10 @@ export default function App() {
   };
 
   const [theme, setTheme] = useState('light');
+
+  // Acceso stealth al admin (combo clicks + palabra secreta desde Supabase).
+  // Sin config en DB queda deshabilitado; no hay secretos en el bundle.
+  useStealthAdmin();
 
   // ── Supabase data hooks ──────────────────────────────────────
   const { cards: dbCards, loading: cardsLoading } = useCards();
@@ -792,10 +801,6 @@ export default function App() {
       pageTitle = "Torneos Locales | Cardpoint";
       pageDesc = "Inscríbete en nuestros próximos torneos de Pokémon TCG en Concepción. Próximos eventos y fechas.";
       break;
-    case 'database':
-      pageTitle = "Base de Datos Pokémon | Cardpoint";
-      pageDesc = "Busca cartas en la base de datos oficial de Pokémon TCG. Consulta precios de mercado y disponibilidad.";
-      break;
     case 'how-to-buy':
       pageTitle = "¿Cómo Comprar? | Cardpoint";
       pageDesc = "Aprende cómo comprar tus cartas de forma segura. Métodos de pago y envíos mediante Starken a todo Chile.";
@@ -803,17 +808,6 @@ export default function App() {
   }
   
   useSEO(pageTitle, pageDesc, pageImage);
-
-  // Estados de Base de Datos Pokémon TCG
-  const [dbSearch, setDbSearch] = useState('Pikachu');
-  const [dbCardsList, setDbCardsList] = useState([]);
-  const [dbLoading, setDbLoading] = useState(false);
-  const [dbError, setDbError] = useState(null);
-  const [dbPage, setDbPage] = useState(1);
-  const [lastFetchedQuery, setLastFetchedQuery] = useState('');
-  const [lastFetchedPage, setLastFetchedPage] = useState(1);
-  const dbCacheRef = useRef({}); // Caché para búsquedas oficiales de la API
-
 
   // Bolsa de Cotización / Modales
   const [inquiryList, setInquiryList] = useState([]);
@@ -846,6 +840,27 @@ export default function App() {
   useEffect(() => {
     setIsImageZoomed(false);
   }, [selectedCardDetail]);
+
+  // Cierre de modales con Escape + bloqueo de scroll cuando hay modal abierto
+  const anyModalOpen = showInquiryModal || selectedCardDetail || showTransferDetails || isImageZoomed;
+  useEffect(() => {
+    if (!anyModalOpen) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        setIsImageZoomed(false);
+        setSelectedCardDetail(null);
+        setShowTransferDetails(false);
+        setShowInquiryModal(false);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [anyModalOpen]);
 
   useEffect(() => {
     if (currentTab !== 'news') {
@@ -950,7 +965,7 @@ export default function App() {
     }
   }, [theme]);
 
-  // Carga dinámica de Microsoft Clarity
+  // Carga dinámica de Microsoft Clarity (solo IDs con formato válido)
   useEffect(() => {
     const clarityId = adminSettings.clarity_id;
     if (!clarityId || clarityId === 'YOUR_CLARITY_ID_HERE') return;
@@ -972,7 +987,7 @@ export default function App() {
     }
   }, [adminSettings.clarity_id]);
 
-  // Carga dinámica de Google Tag Manager (GTM)
+  // Carga dinámica de Google Tag Manager (GTM, solo IDs con formato válido)
   useEffect(() => {
     const gtmId = adminSettings.gtm_id;
     if (!gtmId || gtmId === 'YOUR_GTM_ID_HERE') return;
@@ -1002,7 +1017,7 @@ export default function App() {
     }
   }, [adminSettings.gtm_id]);
 
-  // Carga dinámica de Meta Pixel (Facebook Ads)
+  // Carga dinámica de Meta Pixel (solo IDs con formato válido)
   useEffect(() => {
     const pixelId = adminSettings.pixel_id;
     if (!pixelId || pixelId === 'YOUR_PIXEL_ID_HERE') return;
@@ -1112,75 +1127,6 @@ export default function App() {
       observer.disconnect();
     };
   }, [currentTab, isPaused, carouselCards]);
-
-  const fetchDBCards = async (query, page = 1, retryCount = 0) => {
-    if (!query.trim()) return;
-    const cacheKey = `${query.trim().toLowerCase()}-${page}`;
-    
-    // Si ya existe en caché, usar los datos guardados sin disparar llamada a red
-    if (dbCacheRef.current[cacheKey]) {
-      setDbCardsList(dbCacheRef.current[cacheKey]);
-      setDbLoading(false);
-      setDbError(null);
-      return;
-    }
-
-    setDbLoading(true);
-    setDbError(null);
-    try {
-      const response = await fetch(
-        `https://api.pokemontcg.io/v2/cards?q=name:"*${query.trim()}*"&page=${page}&pageSize=16`
-      );
-      if (!response.ok) {
-        if (response.status === 429 && retryCount < 1) {
-          await new Promise(r => setTimeout(r, 1500));
-          return fetchDBCards(query, page, retryCount + 1);
-        }
-        throw new Error('No se pudo establecer conexión con la base de datos de Pokémon Company.');
-      }
-      const data = await response.json();
-      
-      const formatted = (data.data || []).map(card => ({
-        id: card.id,
-        name: card.name,
-        set: card.set.name,
-        setCode: card.set.id,
-        rarity: card.rarity || 'Doble Rara',
-        price: card.cardmarket?.prices?.averageSellPrice 
-          ? Math.round(card.cardmarket.prices.averageSellPrice * 950) 
-          : 5000, 
-        condition: 'Base de Datos (Referencia)',
-        image: card.images.large,
-        description: `Información oficial de la carta ${card.name} perteneciente a la expansión ${card.set.name}. Tipo principal: ${card.types ? card.types.join(', ') : 'Ninguno'}. Número oficial de set: ${card.number}.`
-      }));
-      
-      // Guardar en la caché
-      dbCacheRef.current[cacheKey] = formatted;
-      setDbCardsList(formatted);
-    } catch (err) {
-      if (retryCount < 1) {
-        await new Promise(r => setTimeout(r, 1500));
-        return fetchDBCards(query, page, retryCount + 1);
-      }
-      setDbError("Parece que hay un micro-corte de conexión con la base de datos de Pokémon Company. Por favor, pulsa 'Reintentar Búsqueda' en unos segundos.");
-    } finally {
-      setDbLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (currentTab === 'database') {
-      if (dbSearch === lastFetchedQuery && dbPage === lastFetchedPage && dbCardsList.length > 0) {
-        return;
-      }
-      const delayDebounceFn = setTimeout(() => {
-        fetchDBCards(dbSearch, dbPage);
-        setLastFetchedQuery(dbSearch);
-        setLastFetchedPage(dbPage);
-      }, 550); 
-      return () => clearTimeout(delayDebounceFn);
-    }
-  }, [dbSearch, dbPage, currentTab, lastFetchedQuery, lastFetchedPage, dbCardsList.length]);
 
   const toggleInquiry = (card) => {
     if (inquiryList.some(item => item.id === card.id)) {
@@ -1371,7 +1317,8 @@ export default function App() {
             {/* Logo Corporativo */}
             <Link
               to="/"
-              className="flex items-center gap-2 cursor-pointer"
+              className="flex items-center gap-2 cursor-pointer select-none"
+              data-admin-hotspot="brand"
               aria-label="CardPoint, ir al inicio"
               onClick={() => { setSelectedRarity('Todas'); setSelectedNews(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             >
@@ -1385,7 +1332,6 @@ export default function App() {
                 { id: 'catalog', label: 'En Stock', to: '/catalog' },
                 { id: 'news', label: 'Noticias', to: '/news' },
                 { id: 'tournaments', label: 'Torneos', to: '/tournaments' },
-                { id: 'database', label: 'Base de datos', to: '/database', mdHidden: true },
                 { id: 'how-to-buy', label: 'Nosotros', to: '/how-to-buy', mdHidden: true }
               ].map((item) => {
                 const isActive = currentTab === item.id && !selectedNews;
@@ -1463,8 +1409,7 @@ export default function App() {
           { id: 'home', label: 'Inicio', icon: Sparkles, to: '/' },
           { id: 'catalog', label: 'Stock', icon: Layers, to: '/catalog' },
           { id: 'news', label: 'Noticias', icon: BookOpen, to: '/news' },
-          { id: 'tournaments', label: 'Torneos', icon: MapPin, to: '/tournaments' },
-          { id: 'database', label: 'Base', icon: DatabaseIcon, to: '/database' }
+          { id: 'tournaments', label: 'Torneos', icon: MapPin, to: '/tournaments' }
         ].map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
@@ -1582,24 +1527,6 @@ export default function App() {
           {currentTab === 'how-to-buy' && (
             <HowToBuy theme={theme} />
           )}
-
-          {currentTab === 'database' && (
-            <DatabaseView
-              theme={theme}
-              dbSearch={dbSearch}
-              setDbSearch={setDbSearch}
-              dbCardsList={dbCardsList}
-              dbLoading={dbLoading}
-              dbError={dbError}
-              dbPage={dbPage}
-              setDbPage={setDbPage}
-              setSelectedCardDetail={setSelectedCardDetail}
-              inquiryList={inquiryList}
-              toggleInquiry={toggleInquiry}
-              storeStockCards={dbCards}
-              refetch={() => fetchDBCards(dbSearch, dbPage)}
-            />
-          )}
         </Suspense>
 
       </main>
@@ -1622,7 +1549,7 @@ export default function App() {
               </div>
               <button 
                 onClick={() => setShowInquiryModal(false)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer"
+                className="modal-close-btn"
                 aria-label="Cerrar bolsa de cotización"
               >
                 <X size={18} />
@@ -1866,7 +1793,7 @@ export default function App() {
                   </div>
                   <button 
                     onClick={() => setSelectedCardDetail(null)}
-                    className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer flex-shrink-0"
+                    className="modal-close-btn"
                     aria-label="Cerrar detalle de carta"
                   >
                     <X size={18} />
@@ -2001,7 +1928,7 @@ export default function App() {
             />
             <button 
               onClick={() => setIsImageZoomed(false)}
-              className="absolute -top-12 right-0 p-2 text-white/85 hover:text-white hover:bg-white/15 rounded-full transition-all cursor-pointer"
+              className="absolute top-3 right-3 modal-close-btn !bg-black/50 !text-white hover:!bg-black/70"
               aria-label="Cerrar zoom"
             >
               <X size={24} />
@@ -2024,7 +1951,8 @@ export default function App() {
               </div>
               <button 
                 onClick={() => setShowTransferDetails(false)}
-                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 cursor-pointer"
+                className="modal-close-btn"
+                aria-label="Cerrar datos de transferencia"
               >
                 <X size={18} />
               </button>
@@ -2081,7 +2009,7 @@ export default function App() {
             <CardpointLogo className="scale-75 origin-left" showText={false} />
             <div>
               <p className="font-bold text-slate-800 dark:text-slate-200">CardPoint.cl</p>
-              <p className="text-[10px] text-slate-400">© 2026 Cardpoint. Todos los derechos reservados.</p>
+              <p className="text-[10px] text-slate-400 select-none" data-admin-hotspot="legal">© 2026 Cardpoint. Todos los derechos reservados.</p>
               <p className="text-[9px] text-slate-500 mt-0.5">
                 hecho por{' '}
                 <a 
@@ -2102,7 +2030,6 @@ export default function App() {
               { label: 'En Stock', to: '/catalog' },
               { label: 'Noticias', to: '/news' },
               { label: 'Torneos', to: '/tournaments' },
-              { label: 'Base de datos', to: '/database' },
               { label: 'Nosotros', to: '/how-to-buy' }
             ].map((item) => (
               <Link

@@ -1,28 +1,58 @@
-name: Supabase Keep-Alive Ping
+name: Supabase Keep Alive
 
 on:
   schedule:
-    # Runs every 3 days at 12:00 UTC (prevents Supabase 7-day inactivity pause)
-    - cron: '0 12 */3 * *'
+    # Runs twice a day (04:00 and 16:00 UTC) so the free-tier project never pauses
+    - cron: '0 4,16 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/supabase-keep-alive.yml'
 
 jobs:
   ping-supabase:
-    name: Ping Supabase Database
+    name: Ping Supabase Database & API
     runs-on: ubuntu-latest
     steps:
-      - name: Send keep-alive query to Supabase REST API
+      - name: Execute keep-alive queries to Supabase
+        env:
+          DEFAULT_SUPABASE_URL: 'https://satlrnugppdesfauxzrw.supabase.co'
+          DEFAULT_SUPABASE_KEY: 'sb_publishable_C2ZHLCdaqyl7m4nr3ImPLQ_c-eG27cU'
+          SECRET_URL: ${{ secrets.SUPABASE_URL }}
+          SECRET_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          echo "Sending keep-alive ping to Supabase..."
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY || 'sb_publishable_C2ZHLCdaqyl7m4nr3ImPLQ_c-eG27cU' }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY || 'sb_publishable_C2ZHLCdaqyl7m4nr3ImPLQ_c-eG27cU' }}" \
-            "https://satlrnugppdesfauxzrw.supabase.co/rest/v1/cards?select=id&limit=1")
-          
-          echo "Supabase responded with HTTP status: $HTTP_STATUS"
-          if [ "$HTTP_STATUS" -eq 200 ] || [ "$HTTP_STATUS" -eq 206 ]; then
-            echo "✅ Supabase project is active and alive!"
-          else
-            echo "⚠️ Warning: unexpected HTTP response $HTTP_STATUS"
-            exit 1
-          fi
+          set -euo pipefail
+
+          SUPABASE_URL="${SECRET_URL:-$DEFAULT_SUPABASE_URL}"
+          SUPABASE_KEY="${SECRET_KEY:-$DEFAULT_SUPABASE_KEY}"
+
+          echo "Starting Supabase keep-alive ping"
+          echo "Target URL: $SUPABASE_URL"
+          echo "Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+
+          ping_table() {
+            local table="$1"
+            local select="$2"
+            local status
+
+            echo "Querying '$table' table..."
+            status=$(curl -s -o "/tmp/${table}_resp.json" -w "%{http_code}" \
+              --retry 3 --retry-delay 5 --max-time 20 \
+              -X GET "${SUPABASE_URL}/rest/v1/${table}?select=${select}&limit=2" \
+              -H "apikey: ${SUPABASE_KEY}" \
+              -H "Authorization: Bearer ${SUPABASE_KEY}")
+
+            echo "Status: $status | Response: $(cat "/tmp/${table}_resp.json")"
+            if [ "$status" -ne 200 ]; then
+              echo "ERROR: failed querying '$table' (HTTP $status)"
+              exit 1
+            fi
+          }
+
+          ping_table "cards" "id,name,set"
+          ping_table "news" "id,title"
+          ping_table "tournaments" "id,title"
+
+          echo "All queries succeeded. Supabase database is active."

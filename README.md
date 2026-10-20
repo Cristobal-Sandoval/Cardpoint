@@ -15,7 +15,7 @@ La arquitectura del proyecto está optimizada para la velocidad, la responsivida
 *   **Suite de Testing:** [Vitest](https://vitest.dev/) + [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) + [jsdom](https://github.com/jsdom/jsdom) para pruebas unitarias automatizadas (`npm run test`).
 *   **Base de Datos y Backend:** [Supabase](https://supabase.com/) (PostgreSQL en tiempo real con políticas RLS de seguridad).
 *   **Enrutamiento y Code Splitting:** [React Router v7](https://reactrouter.com/) + Carga perezosa de rutas (`React.lazy` y `<Suspense>`) para segmentar las vistas del cliente y la administración privada.
-*   **Carga diferida (Lazy Loading):** Los bundles de páginas pesadas (Buscador API, Catálogo, Noticias, Torneos) se cargan de forma diferida, reduciendo el bundle de inicio bajo los 500 kB.
+*   **Carga diferida (Lazy Loading):** Los bundles de páginas pesadas (Catálogo, Noticias, Torneos) se cargan de forma diferida, reduciendo el bundle de inicio bajo los 500 kB.
 *   **Monetización Premium:** Componentes dinámicos de publicidad con integración a **Google AdSense** y auto-colapso inteligente para bloques no rellenados (evita desplazamientos CLS).
 *   **Cargador de Imágenes:** Integración con la API de **ImgBB** con compresión client-side en canvas para fotos reales de las cartas desde dispositivos móviles y escritorio.
 *   **Iconografía:** [Lucide React](https://lucide.dev/) (iconos vectoriales de alto rendimiento).

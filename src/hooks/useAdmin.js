@@ -56,6 +56,7 @@ export function useAdmin() {
           if (row.id === 'tournaments_override') settings.tournaments_override = row.data;
           if (row.id === 'sponsored_ad') settings.sponsored_ad = row.data;
           if (row.id === 'news_sources') settings.news_sources = row.data;
+          if (row.id === 'admin_legacy_decoy') settings.admin_legacy_decoy = row.data;
         });
         
         setAdminSettings(settings);
