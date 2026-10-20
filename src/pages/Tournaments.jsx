@@ -7,6 +7,7 @@ import {
   ExternalLink, 
   HelpCircle 
 } from 'lucide-react';
+import { safeExternalUrl } from '../utils/sanitizeHtml';
 
 export default function Tournaments({
   theme,
@@ -85,9 +86,9 @@ export default function Tournaments({
               </div>
 
               <a
-                href={t.registration_link || "https://instagram.com/cardpoint.cl"}
+                href={safeExternalUrl(t.registration_link) || "https://instagram.com/cardpoint.cl"}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="mt-6 w-full text-center bg-[#0052FF] hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/10 cursor-pointer"
               >
                 <span>{t.registration_link ? 'Inscribirse aquí' : 'Inscribirse por Instagram'}</span>

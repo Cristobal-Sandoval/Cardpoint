@@ -1,4 +1,4 @@
-﻿export const HERO_BANNERS = [
+export const HERO_BANNERS = [
   {
     id: 1,
     type: 'ui',
@@ -9,9 +9,9 @@
     cta: 'Ver stock en venta',
     tab: 'catalog',
     images: [
-      'https://images.pokemontcg.io/swsh12pt5/GG44_hires.png',
-      'https://images.pokemontcg.io/sv4f/234_hires.png',
-      'https://images.pokemontcg.io/sv3pt5/173_hires.png',
+      'https://images.pokemontcg.io/swsh12pt5/GG44_large.png',
+      'https://images.pokemontcg.io/sv4f/234_large.png',
+      'https://images.pokemontcg.io/sv3pt5/173_large.png',
     ],
     bgFrom: '#0052FF',
     bgTo: '#3b82f6',

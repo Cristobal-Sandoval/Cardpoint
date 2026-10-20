@@ -1,6 +1,6 @@
 // CardPoint v1.0.2 - Vercel Rebuild Trigger
 import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useCards } from './hooks/useCards';
 import { useNews } from './hooks/useNews';
 import { useTournaments } from './hooks/useTournaments';
@@ -26,7 +26,8 @@ import {
   Palette,
   Camera,
   Trophy,
-  Cat
+  Cat,
+  Database as DatabaseIcon
 } from 'lucide-react';
 
 import CardpointLogo from './components/CardpointLogo';
@@ -34,12 +35,20 @@ import LeagueBadge from './components/LeagueBadge';
 import GoogleAdSlot from './components/GoogleAdSlot';
 import InstagramIcon from './components/InstagramIcon';
 import { parseNewsDate } from './utils/dateUtils';
+import { escapeHtml, safeExternalUrl } from './utils/sanitizeHtml';
+
+const SAFE_TRACKING_ID = {
+  clarity: /^[a-z0-9]{6,20}$/i,
+  gtm: /^GTM-[A-Z0-9]{4,12}$/,
+  pixel: /^\d{6,20}$/
+};
 
 const Home = lazy(() => import('./pages/Home'));
 const Catalog = lazy(() => import('./pages/Catalog'));
 const News = lazy(() => import('./pages/News'));
 const Tournaments = lazy(() => import('./pages/Tournaments'));
 const HowToBuy = lazy(() => import('./pages/HowToBuy'));
+const DatabaseView = lazy(() => import('./pages/Database'));
 
 const RARITIES = [
   { id: 'Todas', name: 'Todas' },
@@ -212,7 +221,7 @@ const PLACEHOLDER_CARDS = [
     rarity: "Especial Ilustración Rara",
     price: 89990,
     condition: "NM",
-    image: "https://images.pokemontcg.io/sv4f/234_hires.png",
+    image: "https://images.pokemontcg.io/sv4f/234_large.png",
     description: "Impresionante Charizard ex con ilustración especial de Paldean Fates. Estado impecable (Near Mint), ideal para coleccionistas exigentes."
   },
   {
@@ -223,7 +232,7 @@ const PLACEHOLDER_CARDS = [
     rarity: "Especial Ilustración Rara",
     price: 74990,
     condition: "NM",
-    image: "https://images.pokemontcg.io/sv3pt5/173_hires.png",
+    image: "https://images.pokemontcg.io/sv3pt5/173_large.png",
     description: "Pikachu en su versión de arte alternativo de la expansión 151. Centrado ideal y esquinas perfectas."
   },
   {
@@ -234,7 +243,7 @@ const PLACEHOLDER_CARDS = [
     rarity: "Ultra Rara",
     price: 39990,
     condition: "NM",
-    image: "https://images.pokemontcg.io/swsh12pt5/GG44_hires.png",
+    image: "https://images.pokemontcg.io/swsh12pt5/GG44_large.png",
     description: "Espectacular Mewtwo V de Crown Zenith (Galarian Gallery) combatiendo a Charizard. Una de las cartas más dinámicas de la era."
   },
   {
@@ -245,7 +254,7 @@ const PLACEHOLDER_CARDS = [
     rarity: "Especial Ilustración Rara",
     price: 29990,
     condition: "NM",
-    image: "https://images.pokemontcg.io/sv4f/233_hires.png",
+    image: "https://images.pokemontcg.io/sv4f/233_large.png",
     description: "Gardevoir ex Ilustración Especial. Cuenta la bella historia familiar del Pokémon en un entorno hogareño."
   },
   {
@@ -256,7 +265,7 @@ const PLACEHOLDER_CARDS = [
     rarity: "Ultra Rara Secreta",
     price: 49990,
     condition: "NM",
-    image: "https://images.pokemontcg.io/swsh12pt5/GG70_hires.png",
+    image: "https://images.pokemontcg.io/swsh12pt5/GG70_large.png",
     description: "Carta dorada de Arceus VSTAR de la galería de Crown Zenith. Una pieza central de lujo para cualquier coleccionista del TCG."
   }
 ];
@@ -485,13 +494,10 @@ export default function App() {
       setLoadingFullContent(true);
       try {
         const PROXIES = [
-          (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-          (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-          (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-          (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+          (url) => `/api/news-proxy?url=${encodeURIComponent(url)}`
         ];
 
-        const fetchWithTimeout = async (url, ms = 3000) => {
+        const fetchWithTimeout = async (url, ms = 8000) => {
           const controller = new AbortController();
           const id = setTimeout(() => controller.abort(), ms);
           try {
@@ -510,7 +516,7 @@ export default function App() {
         for (const makeUrl of PROXIES) {
           try {
             const proxyUrl = makeUrl(selectedNews.sourceUrl);
-            const res = await fetchWithTimeout(proxyUrl, 3000);
+            const res = await fetchWithTimeout(proxyUrl, 8000);
             if (!res.ok) continue;
 
             const contentType = res.headers.get('content-type') || '';
@@ -603,10 +609,11 @@ export default function App() {
                 }
 
                 if (text.length < 10) return null;
+                const safeText = escapeHtml(text);
                 if (el.tagName && el.tagName.startsWith('H')) {
-                  return `<h3 class="text-lg font-black text-slate-900 dark:text-white mt-6 mb-3">${text}</h3>`;
+                  return `<h3 class="text-lg font-black text-slate-900 dark:text-white mt-6 mb-3">${safeText}</h3>`;
                 }
-                return `<p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">${text}</p>`;
+                return `<p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">${safeText}</p>`;
               })
               .filter(Boolean)
               .join('');
@@ -947,6 +954,7 @@ export default function App() {
   useEffect(() => {
     const clarityId = adminSettings.clarity_id;
     if (!clarityId || clarityId === 'YOUR_CLARITY_ID_HERE') return;
+    if (!SAFE_TRACKING_ID.clarity.test(clarityId)) return;
 
     const scriptId = 'microsoft-clarity-script';
     if (!document.getElementById(scriptId)) {
@@ -968,6 +976,7 @@ export default function App() {
   useEffect(() => {
     const gtmId = adminSettings.gtm_id;
     if (!gtmId || gtmId === 'YOUR_GTM_ID_HERE') return;
+    if (!SAFE_TRACKING_ID.gtm.test(gtmId)) return;
 
     const scriptId = 'google-tag-manager-script';
     if (!document.getElementById(scriptId)) {
@@ -997,6 +1006,7 @@ export default function App() {
   useEffect(() => {
     const pixelId = adminSettings.pixel_id;
     if (!pixelId || pixelId === 'YOUR_PIXEL_ID_HERE') return;
+    if (!SAFE_TRACKING_ID.pixel.test(pixelId)) return;
 
     const scriptId = 'meta-pixel-script';
     if (!document.getElementById(scriptId)) {
@@ -1257,7 +1267,7 @@ export default function App() {
   };
 
   const openInstagramInquiry = () => {
-    window.open(`https://instagram.com/cardpoint.cl`, '_blank');
+    window.open(`https://instagram.com/cardpoint.cl`, '_blank', 'noopener,noreferrer');
   };
 
   const filteredCards = useMemo(() => {
@@ -1342,7 +1352,7 @@ export default function App() {
 
           {currentAd.link && (
             <a
-              href={currentAd.link}
+              href={safeExternalUrl(currentAd.link) || '#'}
               target="_blank"
               rel="noreferrer"
               className="flex flex-shrink-0 px-4 items-center h-full text-[9px] font-extrabold text-[#0052FF] hover:underline gap-0.5"
@@ -1359,28 +1369,35 @@ export default function App() {
           <div className="flex items-center justify-between h-24">
             
             {/* Logo Corporativo */}
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setCurrentTab('home'); setSelectedRarity('Todas'); setSelectedNews(null); }}>
+            <Link
+              to="/"
+              className="flex items-center gap-2 cursor-pointer"
+              aria-label="CardPoint, ir al inicio"
+              onClick={() => { setSelectedRarity('Todas'); setSelectedNews(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            >
               <CardpointLogo className="scale-90 origin-left" showText={true} />
-            </div>
+            </Link>
 
             {/* Menú de Navegación */}
             <nav className="hidden md:flex items-center space-x-1 lg:space-x-2 font-bold text-xs uppercase tracking-wider">
               {[
-                { id: 'home', label: 'Inicio' },
-                { id: 'catalog', label: 'En Stock' },
-                { id: 'news', label: 'Noticias' },
-                { id: 'tournaments', label: 'Torneos' }
+                { id: 'home', label: 'Inicio', to: '/' },
+                { id: 'catalog', label: 'En Stock', to: '/catalog' },
+                { id: 'news', label: 'Noticias', to: '/news' },
+                { id: 'tournaments', label: 'Torneos', to: '/tournaments' },
+                { id: 'database', label: 'Base de datos', to: '/database', mdHidden: true },
+                { id: 'how-to-buy', label: 'Nosotros', to: '/how-to-buy', mdHidden: true }
               ].map((item) => {
                 const isActive = currentTab === item.id && !selectedNews;
                 return (
-                  <button
+                  <Link
                     key={item.id}
+                    to={item.to}
                     onClick={() => {
-                      setCurrentTab(item.id);
                       setSelectedNews(null);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className={`px-3 py-2 rounded-xl transition-all duration-205 flex items-center gap-1.5 cursor-pointer ${
+                    className={`${item.mdHidden ? 'hidden lg:flex' : 'flex'} px-3 py-2 rounded-xl transition-all duration-205 items-center gap-1.5 cursor-pointer ${
                       isActive 
                         ? 'text-[#0052FF] font-black bg-[#0052FF]/10' 
                         : 'text-slate-600 dark:text-slate-300 hover:text-[#0052FF] dark:hover:text-[#0052FF]'
@@ -1388,7 +1405,7 @@ export default function App() {
                     aria-current={isActive ? 'page' : undefined}
                   >
                     {item.label}
-                  </button>
+                  </Link>
                 );
               })}
             </nav>
@@ -1443,22 +1460,23 @@ export default function App() {
       {/* NAVEGACIÓN COMPACTA MÓVIL */}
       <div className={`md:hidden fixed bottom-0 left-0 right-0 z-[45] border-t flex justify-around items-center px-2 py-3 pb-safe transition-colors ${theme === 'dark' ? 'bg-[#0f172a]/95 border-slate-800' : 'bg-white/95 border-slate-100'} backdrop-blur-md shadow-lg`}>
         {[
-          { id: 'home', label: 'Inicio', icon: Sparkles },
-          { id: 'catalog', label: 'Stock', icon: Layers },
-          { id: 'news', label: 'Noticias', icon: BookOpen },
-          { id: 'tournaments', label: 'Torneos', icon: MapPin }
+          { id: 'home', label: 'Inicio', icon: Sparkles, to: '/' },
+          { id: 'catalog', label: 'Stock', icon: Layers, to: '/catalog' },
+          { id: 'news', label: 'Noticias', icon: BookOpen, to: '/news' },
+          { id: 'tournaments', label: 'Torneos', icon: MapPin, to: '/tournaments' },
+          { id: 'database', label: 'Base', icon: DatabaseIcon, to: '/database' }
         ].map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
           return (
-            <button
+            <Link
               key={item.id}
+              to={item.to}
               onClick={() => {
-                setCurrentTab(item.id);
                 setSelectedNews(null);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`flex flex-col items-center gap-1 px-3 transition-all cursor-pointer ${
+              className={`flex flex-col items-center gap-1 px-2 transition-all cursor-pointer ${
                 isActive 
                   ? 'text-[#0052FF] font-bold scale-105' 
                   : 'text-slate-400 dark:text-slate-500 text-xs'
@@ -1467,7 +1485,7 @@ export default function App() {
             >
               <Icon size={18} />
               <span className="text-[10px]">{item.label}</span>
-            </button>
+            </Link>
           );
         })}
       </div>
@@ -1563,6 +1581,24 @@ export default function App() {
 
           {currentTab === 'how-to-buy' && (
             <HowToBuy theme={theme} />
+          )}
+
+          {currentTab === 'database' && (
+            <DatabaseView
+              theme={theme}
+              dbSearch={dbSearch}
+              setDbSearch={setDbSearch}
+              dbCardsList={dbCardsList}
+              dbLoading={dbLoading}
+              dbError={dbError}
+              dbPage={dbPage}
+              setDbPage={setDbPage}
+              setSelectedCardDetail={setSelectedCardDetail}
+              inquiryList={inquiryList}
+              toggleInquiry={toggleInquiry}
+              storeStockCards={dbCards}
+              refetch={() => fetchDBCards(dbSearch, dbPage)}
+            />
           )}
         </Suspense>
 
@@ -2060,11 +2096,28 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex gap-6 font-bold text-slate-600 dark:text-slate-300">
-            <button onClick={() => { setCurrentTab('home'); setSelectedNews(null); }} className="hover:text-[#0052FF] cursor-pointer">Inicio</button>
-            <button onClick={() => { setCurrentTab('catalog'); setSelectedNews(null); }} className="hover:text-[#0052FF] cursor-pointer">En Stock</button>
-            <button onClick={() => { setCurrentTab('how-to-buy'); setSelectedNews(null); }} className="hover:text-[#0052FF] cursor-pointer">Nosotros</button>
-          </div>
+          <nav aria-label="Navegación del pie de página" className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-bold text-slate-600 dark:text-slate-300">
+            {[
+              { label: 'Inicio', to: '/' },
+              { label: 'En Stock', to: '/catalog' },
+              { label: 'Noticias', to: '/news' },
+              { label: 'Torneos', to: '/tournaments' },
+              { label: 'Base de datos', to: '/database' },
+              { label: 'Nosotros', to: '/how-to-buy' }
+            ].map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => {
+                  setSelectedNews(null);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="hover:text-[#0052FF] transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
 
           <div className="flex items-center gap-2">
             <MapPin size={13} className="text-[#0052FF]" />

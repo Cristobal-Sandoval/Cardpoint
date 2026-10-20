@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Sparkles, 
   ChevronRight, 
@@ -167,7 +168,7 @@ export default function Home({
                 /* SLIDE TIPO IMAGEN (Full Bleed con Texto Superpuesto Opcional) */
                 <div 
                   className={`relative w-full h-full ${b.linkUrl && b.linkUrl !== '#' ? 'cursor-pointer' : ''}`}
-                  onClick={() => { if(b.linkUrl && b.linkUrl !== '#') window.open(b.linkUrl, '_blank') }}
+                  onClick={() => { if(b.linkUrl && b.linkUrl !== '#') window.open(b.linkUrl, '_blank', 'noopener,noreferrer') }}
                 >
                   <img 
                     src={b.imageUrl} 
@@ -285,12 +286,12 @@ export default function Home({
             </div>
           </div>
           
-          <button
-            onClick={() => { setCurrentTab('catalog'); }}
+          <Link
+            to="/catalog"
             className="text-sm font-bold text-[#0052FF] hover:text-blue-700 ml-2 cursor-pointer"
           >
             Ver stock completo
-          </button>
+          </Link>
         </div>
 
         {/* Contenedor con flechas flotantes laterales */}
@@ -450,12 +451,13 @@ export default function Home({
               <span className="text-[10px] font-black text-[#0052FF] tracking-widest uppercase">NOTICIAS</span>
               <h3 className="text-2xl font-black text-slate-900 dark:text-white">Últimas novedades</h3>
             </div>
-            <button
-              onClick={() => { setCurrentTab('news'); setSelectedNews(null); }}
+            <Link
+              to="/news"
+              onClick={() => setSelectedNews(null)}
               className="text-xs font-bold text-[#0052FF] hover:text-blue-700 flex items-center gap-0.5 cursor-pointer"
             >
               Ver todas <ChevronRight size={14} />
-            </button>
+            </Link>
           </div>
 
           <div className="space-y-4">
@@ -508,12 +510,12 @@ export default function Home({
               <span className="text-[10px] font-black text-[#0052FF] tracking-widest uppercase">TORNEOS</span>
               <h3 className="text-2xl font-black text-slate-900 dark:text-white">Próximos torneos en Concepción</h3>
             </div>
-            <button
-              onClick={() => setCurrentTab('tournaments')}
+            <Link
+              to="/tournaments"
               className="text-xs font-bold text-[#0052FF] hover:text-blue-700 flex items-center gap-0.5 cursor-pointer"
             >
               Ver todos <ChevronRight size={14} />
-            </button>
+            </Link>
           </div>
 
           <div className="space-y-4">
@@ -596,19 +598,19 @@ export default function Home({
           {/* Stock cards showcase */}
           <div className="flex gap-2 justify-center flex-wrap">
             {(dbCards.filter(c => c.image).slice(0, 4)).map((card, i) => (
-              <div
+              <Link
                 key={card.id || i}
-                onClick={() => { setCurrentTab('catalog'); }}
+                to="/catalog"
                 className="w-12 h-16 sm:w-16 sm:h-20 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 shadow transform hover:scale-105 hover:-translate-y-1 transition-all duration-200 cursor-pointer"
               >
                 <img src={card.image} alt={`Carta Pokémon ${card.name} en vitrina Instagram`} loading="lazy" className="w-full h-full object-cover" />
-              </div>
+              </Link>
             ))}
             {/* Fallback si no hay cartas aún */}
             {dbCards.filter(c => c.image).length === 0 && [
-              "https://images.pokemontcg.io/sv4f/233_hires.png",
-              "https://images.pokemontcg.io/sv3pt5/173_hires.png",
-              "https://images.pokemontcg.io/sv4f/234_hires.png",
+              "https://images.pokemontcg.io/sv4f/233_large.png",
+              "https://images.pokemontcg.io/sv3pt5/173_large.png",
+              "https://images.pokemontcg.io/sv4f/234_large.png",
             ].map((imgUrl, i) => (
               <div key={i} className="w-12 h-16 sm:w-16 sm:h-20 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 shadow">
                 <img src={imgUrl} alt="Carta Pokémon de muestra" loading="lazy" className="w-full h-full object-cover" />

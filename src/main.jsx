@@ -48,9 +48,11 @@ class ErrorBoundary extends Component {
             <div className="text-4xl mb-4">⚠️</div>
             <h1 className="text-lg font-bold text-white mb-2">Algo salió mal</h1>
             <p className="text-xs text-slate-400 mb-4">Ocurrió un error inesperado en la página. Recarga para continuar o vuelve al inicio.</p>
-            <div className="text-[10px] font-mono text-red-400/80 bg-black/40 border border-white/10 rounded-lg p-3 mb-5 break-words max-h-24 overflow-y-auto text-left">
-              {this.state.message || 'Error desconocido'}
-            </div>
+            {import.meta.env.DEV && (
+              <div className="text-[10px] font-mono text-red-400/80 bg-black/40 border border-white/10 rounded-lg p-3 mb-5 break-words max-h-24 overflow-y-auto text-left">
+                {this.state.message || 'Error desconocido'}
+              </div>
+            )}
             <div className="flex gap-3">
               <button onClick={this.handleReload} className="flex-1 py-2.5 rounded-xl bg-[#0052FF] hover:bg-blue-500 text-white text-sm font-semibold transition-all">
                 🔄 Recargar página

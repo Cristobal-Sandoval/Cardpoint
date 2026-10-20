@@ -6,6 +6,7 @@ import {
   ChevronLeft 
 } from 'lucide-react';
 import GoogleAdSlot from '../components/GoogleAdSlot';
+import { sanitizeNewsHtml, safeExternalUrl } from '../utils/sanitizeHtml';
 
 export default function News({
   theme,
@@ -56,7 +57,7 @@ onError={(e) => { e.target.onerror = null; e.target.src = "/og-image.png"; }}
           ) : selectedNews.isExternal ? (
             <div 
               className="prose dark:prose-invert text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800"
-              dangerouslySetInnerHTML={{ __html: selectedNews.content }}
+              dangerouslySetInnerHTML={{ __html: sanitizeNewsHtml(selectedNews.content) }}
             />
           ) : (
             <div className="prose dark:prose-invert text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -72,7 +73,7 @@ onError={(e) => { e.target.onerror = null; e.target.src = "/og-image.png"; }}
           {selectedNews.isExternal && (
             <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end text-xs text-slate-400 dark:text-slate-500">
               <a 
-                href={selectedNews.sourceUrl} 
+                href={safeExternalUrl(selectedNews.sourceUrl) || '#'} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="hover:text-[#0052FF] hover:underline transition-colors font-semibold"
