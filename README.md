@@ -30,6 +30,7 @@ La arquitectura del proyecto está optimizada para la velocidad, la responsivida
 
 ### 📱 2. Panel de Administración y Optimización Móvil (v1.4.0)
 *   **Filtros de cartas:** organización por rareza, tipo, idioma, set, precio y stock.
+*   **Modernización web:** timeouts declarativos, orden y agrupación sin mutar el original, y buscador con Enter seguro para IME.
 *   **Subida Robusta de Fotos en Móviles:** Normalización de archivos e interoperabilidad para selectores de cámara en iOS (Safari/HEIC) y Android, asegurando nombres con marca temporal y cabeceras MIME `image/jpeg` válidas en el envío a ImgBB.
 *   **Compresión por Canvas Previa:** Compresión dinámica a máximo 800px y 85% de calidad previa al envío en todas las vías de carga de fotos reales (carga individual y por lotes).
 *   **Buscador Bilingüe Asistido (Español ↔ Inglés):** Integración con traducción automática de nombres de cartas (Español ➔ Inglés) en caso de no hallar coincidencias directas en la API oficial en inglés (ej. *"Determinación de Lillie"* ➔ *"Lillie's Determination"*), indicando visualmente el término traducido.

@@ -322,19 +322,6 @@ export function useAutoNews(newsSourcesParam) {
         console.warn("useAutoNews: Error leyendo caché:", e);
       }
 
-      const fetchWithTimeout = async (url, ms = 8000) => {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), ms);
-        try {
-          const res = await fetch(url, { signal: controller.signal });
-          clearTimeout(id);
-          return res;
-        } catch (e) {
-          clearTimeout(id);
-          throw e;
-        }
-      };
-
       // --- PARSER PARA EL FEED RSS DE POKÉMON ALPHA ---
       const parsePokemonAlphaRSS = async (items) => {
         // Primera pasada: extraer info básica y detectar items sin imagen
@@ -413,7 +400,7 @@ export function useAutoNews(newsSourcesParam) {
         const feedUrl = "https://pokemonalpha.es/feed/";
         const rssJsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`;
         
-        const res = await fetchWithTimeout(rssJsonUrl, 6000);
+        const res = await fetch(rssJsonUrl, { signal: AbortSignal.timeout(6000) });
         if (res.ok) {
           const json = await res.json();
           if (json.status === 'ok' && json.items && json.items.length > 0) {

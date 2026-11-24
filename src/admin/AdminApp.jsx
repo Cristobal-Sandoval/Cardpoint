@@ -382,21 +382,21 @@ function AdminCards({ toast }) {
 
     switch (filters.sort) {
       case 'price-asc':
-        return [...list].sort((a, b) => getCardPriceValue(a) - getCardPriceValue(b));
+        return list.toSorted((a, b) => getCardPriceValue(a) - getCardPriceValue(b));
       case 'price-desc':
-        return [...list].sort((a, b) => getCardPriceValue(b) - getCardPriceValue(a));
+        return list.toSorted((a, b) => getCardPriceValue(b) - getCardPriceValue(a));
       case 'stock-asc':
-        return [...list].sort((a, b) => getCardStockValue(a) - getCardStockValue(b));
+        return list.toSorted((a, b) => getCardStockValue(a) - getCardStockValue(b));
       case 'stock-desc':
-        return [...list].sort((a, b) => getCardStockValue(b) - getCardStockValue(a));
+        return list.toSorted((a, b) => getCardStockValue(b) - getCardStockValue(a));
       case 'rarity':
-        return [...list].sort((a, b) => {
+        return list.toSorted((a, b) => {
           const ia = RARITIES.indexOf(a.rarity);
           const ib = RARITIES.indexOf(b.rarity);
           return (ia === -1 ? RARITIES.length : ia) - (ib === -1 ? RARITIES.length : ib);
         });
       case 'name-asc':
-        return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es'));
+        return list.toSorted((a, b) => (a.name || '').localeCompare(b.name || '', 'es'));
       default:
         return list;
     }
@@ -487,13 +487,10 @@ function AdminCards({ toast }) {
     if (!card?.name || fixingImageCardId) return;
     setFixingImageCardId(card.id);
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
       const res = await fetch(
         `https://api.pokemontcg.io/v2/cards?q=name:"${card.name}"&pageSize=1`,
-        { signal: controller.signal }
+        { signal: AbortSignal.timeout(10000) }
       );
-      clearTimeout(timeout);
       const data = await res.json();
       const result = data.data?.[0];
       if (result?.images?.large) {
@@ -523,13 +520,10 @@ function AdminCards({ toast }) {
       setFixAllState({...state});
       try {
         const query = `name:"${card.name}"${card.set_code ? ` set.id:"${card.set_code}"` : ''}`;
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 6000);
         const res = await fetch(
           `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}&pageSize=1`,
-          { signal: controller.signal }
+          { signal: AbortSignal.timeout(6000) }
         );
-        clearTimeout(timeout);
         if (res.ok) {
           const data = await res.json();
           const result = data.data?.[0];
@@ -3042,14 +3036,9 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
   };
 
   const fetchWithTimeout = async (url, timeoutMs = 4000) => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const res = await fetch(url, { signal: controller.signal });
-      clearTimeout(timer);
-      return res;
-    } catch (e) {
-      clearTimeout(timer);
+      return await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+    } catch {
       return null;
     }
   };
@@ -3767,9 +3756,15 @@ function BulkImportModal({ onClose, onImportSuccess, toast }) {
                   <input
                     className={inputCls}
                     placeholder="Ej: Charizard ex, Pikachu, Tera Crystal..."
+                    aria-label="Buscar carta en la API Pokémon"
                     value={apiSearchQuery}
                     onChange={e => setApiSearchQuery(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleApiSearch(); } }}
+                    onKeyDown={e => {
+                      if (e.key !== 'Enter') return;
+                      e.preventDefault();
+                      if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+                      handleApiSearch();
+                    }}
                   />
                   <button
                     type="button"

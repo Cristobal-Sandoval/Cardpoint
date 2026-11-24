@@ -12,19 +12,11 @@ if (!import.meta.env.VITE_SUPABASE_ANON_KEY && import.meta.env.DEV) {
 
 // Custom fetch wrapper con timeout de 6 segundos para evitar bloqueos por DNS/IPv6 en conexiones Wi-Fi
 const fetchWithTimeout = async (url, options = {}) => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6000);
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: options.signal || controller.signal,
-    });
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    throw error;
-  }
+  const timeoutSignal = AbortSignal.timeout(6000);
+  const signal = options.signal
+    ? AbortSignal.any([options.signal, timeoutSignal])
+    : timeoutSignal;
+  return fetch(url, { ...options, signal });
 };
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

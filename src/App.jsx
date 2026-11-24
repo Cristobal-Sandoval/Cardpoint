@@ -236,7 +236,7 @@ export default function App() {
   // Carousel uses DB cards sorted by rarity priority
   const carouselSource = useMemo(() => {
     const rawSource = dbCards.length > 0 ? dbCards : PLACEHOLDER_CARDS;
-    const sorted = [...rawSource].sort((a, b) => {
+    const sorted = rawSource.toSorted((a, b) => {
       const normA = normalizeRarityText(a.rarity);
       const normB = normalizeRarityText(b.rarity);
       
@@ -358,26 +358,13 @@ export default function App() {
           (url) => `/api/news-proxy?url=${encodeURIComponent(url)}`
         ];
 
-        const fetchWithTimeout = async (url, ms = 8000) => {
-          const controller = new AbortController();
-          const id = setTimeout(() => controller.abort(), ms);
-          try {
-            const res = await fetch(url, { signal: controller.signal });
-            clearTimeout(id);
-            return res;
-          } catch (e) {
-            clearTimeout(id);
-            throw e;
-          }
-        };
-
         let success = false;
         let html = '';
 
         for (const makeUrl of PROXIES) {
           try {
             const proxyUrl = makeUrl(selectedNews.sourceUrl);
-            const res = await fetchWithTimeout(proxyUrl, 8000);
+            const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
             if (!res.ok) continue;
 
             const contentType = res.headers.get('content-type') || '';

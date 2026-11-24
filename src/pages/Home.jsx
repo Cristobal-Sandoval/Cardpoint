@@ -51,7 +51,7 @@ export default function Home({
     if (dbCards && dbCards.length > 0) {
       const pool = dbCards.filter(c => c.image);
       if (pool.length > 0) {
-        const shuffled = [...pool].sort(() => 0.5 - Math.random());
+        const shuffled = pool.toSorted(() => 0.5 - Math.random());
         setRandomPromoCards([
           shuffled[0], 
           shuffled[1] || shuffled[0], 

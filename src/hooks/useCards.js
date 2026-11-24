@@ -19,11 +19,7 @@ export function useCards() {
 
       let sortedData = []
       if (data && data.length > 0) {
-        const groups = {}
-        data.forEach(card => {
-          if (!groups[card.name]) groups[card.name] = []
-          groups[card.name].push(card)
-        })
+        const groups = Object.groupBy(data, card => card.name)
 
         const sortedGroups = Object.values(groups).sort((groupA, groupB) => {
           const maxPriceA = Math.max(...groupA.map(c => c.price || 0))
