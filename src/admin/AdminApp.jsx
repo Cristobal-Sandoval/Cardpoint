@@ -4,6 +4,7 @@ import { useAutoNews } from '../hooks/useAutoNews';
 import { useAdmin } from '../hooks/useAdmin';
 import { HERO_BANNERS } from '../constants/banners';
 import { parseNewsDate } from '../utils/dateUtils';
+import { getCardSupertype } from '../utils/cardUtils';
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 const Icon = ({ d, size = 20 }) => (
@@ -30,6 +31,7 @@ const IcoChevronLeft  = () => <Icon d="m15 18-6-6 6-6" dSize="16" />;
 const IcoChevronRight = () => <Icon d="m9 18 6-6-6-6" dSize="16" />;
 const IcoUpload       = () => <Icon d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />;
 const IcoCamera       = () => <Icon d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10" />;
+const IcoFilter       = () => <Icon d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" size={14} />;
 const IcoPin         = () => <Icon d="M12 17v5M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.78-3.5A2 2 0 0 1 15 9.24V5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v4.24c0 .43-.14.85-.4 1.2l-2.78 3.5a2 2 0 0 0-.44 1.24z" />;
 const IcoDatabase    = () => (
   <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
@@ -44,6 +46,31 @@ const RARITIES = ['Común', 'Poco Común', 'Rara', 'Doble Rara', 'Ultra Rara', '
 const ERAS = ['Escarlata y Púrpura', 'Espada y Escudo', 'SM - Sol y Luna', 'XY', 'Black & White', 'Otras'];
 const CONDITIONS = ['NM', 'LP', 'MP', 'HP', 'DMG'];
 const LANGUAGES = ['Español', 'Inglés', 'Japonés', 'Otro'];
+
+// ── CARD FILTERS ─────────────────────────────────────────────────────────────
+const CARD_TYPE_OPTIONS = [
+  { value: 'Pokemon', label: 'Pokémon' },
+  { value: 'Entrenadores', label: 'Entrenador' },
+  { value: 'Energias', label: 'Energía' }
+];
+
+const CARD_FILTER_DEFAULTS = {
+  rarity: '',
+  type: '',
+  language: '',
+  set: '',
+  priceMin: '',
+  priceMax: '',
+  stock: '',
+  sort: 'recent'
+};
+
+const filterSelectCls = "w-full bg-[#1a1d26] border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-[#0052FF]/60 transition-all cursor-pointer";
+
+const getCardPriceValue = (card) =>
+  (card.is_offer && card.offer_price ? card.offer_price : card.price) || 0;
+
+const getCardStockValue = (card) => card.stock ?? 1;
 
 // ── RARITY TRANSLATOR ────────────────────────────────────────────────────────
 const translateRarity = (engRarity) => {
@@ -276,22 +303,104 @@ function AdminCards({ toast }) {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [adminSearch, setAdminSearch] = useState('');
+  const [filters, setFilters] = useState(CARD_FILTER_DEFAULTS);
   const itemsPerPage = 10;
 
-  // Reset pagination when searching
-  useEffect(() => {
+  const setFilter = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
     setCurrentPage(1);
-  }, [adminSearch]);
+  };
+  const clearFilters = () => {
+    setFilters(CARD_FILTER_DEFAULTS);
+    setCurrentPage(1);
+  };
+  const handleSearchChange = (value) => {
+    setAdminSearch(value);
+    setCurrentPage(1);
+  };
+
+  const activeFilterCount = useMemo(
+    () => Object.entries(filters).filter(([key, value]) => key !== 'sort' && value !== '').length,
+    [filters]
+  );
+  const hasActiveFilters = activeFilterCount > 0 || filters.sort !== 'recent';
+
+  const rarityOptions = useMemo(() => {
+    const present = new Set(cards.map(c => c.rarity).filter(Boolean));
+    const known = RARITIES.filter(r => present.has(r));
+    const extra = [...present].filter(r => !RARITIES.includes(r)).sort((a, b) => a.localeCompare(b, 'es'));
+    return [...known, ...extra];
+  }, [cards]);
+
+  const languageOptions = useMemo(() => {
+    const present = new Set(cards.map(c => c.idioma || 'Español'));
+    const known = LANGUAGES.filter(l => present.has(l));
+    const extra = [...present].filter(l => !LANGUAGES.includes(l)).sort((a, b) => a.localeCompare(b, 'es'));
+    return [...known, ...extra];
+  }, [cards]);
+
+  const setOptions = useMemo(
+    () => [...new Set(cards.map(c => c.set).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')),
+    [cards]
+  );
+
+  const typeCounts = useMemo(() => {
+    const counts = { Pokemon: 0, Entrenadores: 0, Energias: 0 };
+    cards.forEach(c => {
+      const type = getCardSupertype(c);
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    return counts;
+  }, [cards]);
 
   const filteredCards = useMemo(() => {
-    if (!adminSearch) return cards;
-    const q = adminSearch.toLowerCase();
-    return cards.filter(c => 
-      (c.name || '').toLowerCase().includes(q) ||
-      (c.set || '').toLowerCase().includes(q) ||
-      (c.rarity || '').toLowerCase().includes(q)
-    );
-  }, [cards, adminSearch]);
+    let list = cards;
+
+    if (adminSearch) {
+      const q = adminSearch.toLowerCase();
+      list = list.filter(c => 
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.set || '').toLowerCase().includes(q) ||
+        (c.rarity || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (filters.rarity) list = list.filter(c => (c.rarity || '') === filters.rarity);
+    if (filters.type) list = list.filter(c => getCardSupertype(c) === filters.type);
+    if (filters.language) list = list.filter(c => (c.idioma || 'Español') === filters.language);
+    if (filters.set) list = list.filter(c => (c.set || '') === filters.set);
+
+    const priceMin = parseInt(filters.priceMin, 10);
+    const priceMax = parseInt(filters.priceMax, 10);
+    if (!Number.isNaN(priceMin)) list = list.filter(c => getCardPriceValue(c) >= priceMin);
+    if (!Number.isNaN(priceMax)) list = list.filter(c => getCardPriceValue(c) <= priceMax);
+
+    if (filters.stock === 'available') list = list.filter(c => getCardStockValue(c) > 0);
+    if (filters.stock === 'out') list = list.filter(c => getCardStockValue(c) <= 0);
+    if (filters.stock === 'low') list = list.filter(c => getCardStockValue(c) > 0 && getCardStockValue(c) <= 3);
+    if (filters.stock === 'hidden') list = list.filter(c => !c.in_stock);
+
+    switch (filters.sort) {
+      case 'price-asc':
+        return [...list].sort((a, b) => getCardPriceValue(a) - getCardPriceValue(b));
+      case 'price-desc':
+        return [...list].sort((a, b) => getCardPriceValue(b) - getCardPriceValue(a));
+      case 'stock-asc':
+        return [...list].sort((a, b) => getCardStockValue(a) - getCardStockValue(b));
+      case 'stock-desc':
+        return [...list].sort((a, b) => getCardStockValue(b) - getCardStockValue(a));
+      case 'rarity':
+        return [...list].sort((a, b) => {
+          const ia = RARITIES.indexOf(a.rarity);
+          const ib = RARITIES.indexOf(b.rarity);
+          return (ia === -1 ? RARITIES.length : ia) - (ib === -1 ? RARITIES.length : ib);
+        });
+      case 'name-asc':
+        return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es'));
+      default:
+        return list;
+    }
+  }, [cards, adminSearch, filters]);
 
   const totalPages = Math.ceil(filteredCards.length / itemsPerPage);
   const activePage = Math.min(currentPage, Math.max(1, totalPages));
@@ -514,7 +623,7 @@ function AdminCards({ toast }) {
         <div>
           <h1 className="text-2xl font-bold text-white">Cartas en Stock</h1>
           <p className="text-slate-400 text-sm mt-1">
-            {adminSearch ? `${filteredCards.length} de ` : ''}{cards.length} cartas registradas
+            {adminSearch || activeFilterCount > 0 ? `${filteredCards.length} de ` : ''}{cards.length} cartas registradas
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -523,12 +632,12 @@ function AdminCards({ toast }) {
               type="text"
               placeholder="Buscar por nombre, set..."
               value={adminSearch}
-              onChange={e => setAdminSearch(e.target.value)}
+              onChange={e => handleSearchChange(e.target.value)}
               className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#0052FF] focus:ring-1 focus:ring-[#0052FF] w-full sm:w-64 transition-all"
             />
             {adminSearch && (
               <button 
-                onClick={() => setAdminSearch('')} 
+                onClick={() => handleSearchChange('')} 
                 className="absolute right-3 top-2 text-slate-550 hover:text-white transition-colors text-sm font-black"
               >
                 ✕
@@ -544,6 +653,113 @@ function AdminCards({ toast }) {
           <button onClick={openAdd} className="flex items-center justify-center gap-2 bg-[#0052FF] hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-900/30 whitespace-nowrap">
             <IcoPlus /> Nueva Carta
           </button>
+        </div>
+      </div>
+
+      <div className="bg-white/[0.03] border border-white/8 rounded-2xl p-3 sm:p-4 mb-5">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <IcoFilter />
+            Filtrar cartas
+            {activeFilterCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded-md bg-[#0052FF]/20 text-blue-300 border border-[#0052FF]/30 normal-case tracking-normal">
+                {activeFilterCount} activo{activeFilterCount === 1 ? '' : 's'}
+              </span>
+            )}
+          </div>
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="text-xs font-semibold text-slate-400 hover:text-white transition-colors whitespace-nowrap"
+            >
+              ✕ Limpiar filtros
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-2.5">
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Rareza</label>
+            <select value={filters.rarity} onChange={e => setFilter('rarity', e.target.value)} className={filterSelectCls}>
+              <option value="">Todas</option>
+              {rarityOptions.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tipo</label>
+            <select value={filters.type} onChange={e => setFilter('type', e.target.value)} className={filterSelectCls}>
+              <option value="">Todos</option>
+              {CARD_TYPE_OPTIONS.map(t => (
+                <option key={t.value} value={t.value}>{t.label} ({typeCounts[t.value] || 0})</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Idioma</label>
+            <select value={filters.language} onChange={e => setFilter('language', e.target.value)} className={filterSelectCls}>
+              <option value="">Todos</option>
+              {languageOptions.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Set</label>
+            <select value={filters.set} onChange={e => setFilter('set', e.target.value)} className={filterSelectCls}>
+              <option value="">Todos</option>
+              {setOptions.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+
+          <div className="col-span-2">
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Precio (CLP)</label>
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                min="0"
+                inputMode="numeric"
+                placeholder="Mín"
+                value={filters.priceMin}
+                onChange={e => setFilter('priceMin', e.target.value)}
+                className="w-full min-w-0 bg-[#1a1d26] border border-white/10 rounded-lg px-2 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#0052FF]/60 transition-all"
+              />
+              <span className="text-slate-600 text-xs">–</span>
+              <input
+                type="number"
+                min="0"
+                inputMode="numeric"
+                placeholder="Máx"
+                value={filters.priceMax}
+                onChange={e => setFilter('priceMax', e.target.value)}
+                className="w-full min-w-0 bg-[#1a1d26] border border-white/10 rounded-lg px-2 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#0052FF]/60 transition-all"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Stock</label>
+            <select value={filters.stock} onChange={e => setFilter('stock', e.target.value)} className={filterSelectCls}>
+              <option value="">Todos</option>
+              <option value="available">Con stock</option>
+              <option value="out">Sin stock</option>
+              <option value="low">Stock bajo (≤ 3)</option>
+              <option value="hidden">Ocultas del catálogo</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Ordenar por</label>
+            <select value={filters.sort} onChange={e => setFilter('sort', e.target.value)} className={filterSelectCls}>
+              <option value="recent">Más recientes</option>
+              <option value="price-asc">Precio: menor a mayor</option>
+              <option value="price-desc">Precio: mayor a menor</option>
+              <option value="stock-asc">Stock: menor a mayor</option>
+              <option value="stock-desc">Stock: mayor a menor</option>
+              <option value="rarity">Rareza</option>
+              <option value="name-asc">Nombre (A–Z)</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -623,7 +839,7 @@ function AdminCards({ toast }) {
             </table>
             {filteredCards.length === 0 && (
               <div className="text-center py-16 text-slate-500">
-                {adminSearch ? 'No se encontraron cartas para tu búsqueda.' : 'No hay cartas registradas aún.'}
+                {adminSearch || activeFilterCount > 0 ? 'No hay cartas que coincidan con la búsqueda o los filtros.' : 'No hay cartas registradas aún.'}
               </div>
             )}
           </div>

@@ -49,166 +49,18 @@ const News = lazy(() => import('./pages/News'));
 const Tournaments = lazy(() => import('./pages/Tournaments'));
 const HowToBuy = lazy(() => import('./pages/HowToBuy'));
 
-const RARITIES = [
-  { id: 'Todas', name: 'Todas' },
-  { id: 'Común', name: 'Común' },
-  { id: 'Poco Común', name: 'Poco Común' },
-  { id: 'Rara', name: 'Rara' },
-  { id: 'Doble Rara', name: 'Doble Rara' },
-  { id: 'Ultra Rara', name: 'Ultra Rara' },
-  { id: 'Ilustración Rara', name: 'Ilustración Rara' },
-  { id: 'Especial Ilustración Rara', name: 'Especial Ilustración Rara' },
-  { id: 'Ultra Rara Secreta', name: 'Ultra Rara Secreta' },
-  { id: 'Secreta Dorada', name: 'Secreta Dorada' },
-  { id: 'Hyper Rara', name: 'Hyper Rara' }
-];
-
-const RARITY_PATTERNS = [
-  { priority: 1, result: 'hyper rara' },
-  { priority: 2, result: 'secreta dorada' },
-  { priority: 3, result: 'ultra rara secreta' },
-  { priority: 4, result: 'especial ilustracion rara' },
-  { priority: 5, result: 'ilustracion rara' },
-  { priority: 6, result: 'ultra rara' },
-  { priority: 7, result: 'rara' },
-  { priority: 8, result: 'doble rara' },
-  { priority: 9, result: 'poco comun' },
-  { priority: 10, result: 'comun' }
-];
-
-export const normalizeRarityText = (str) => {
-  if (!str) return '';
-  const clean = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-  
-  const match = RARITY_PATTERNS.find(p => 
-    p.result.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === clean
-  );
-  return match ? match.result : clean;
-};
-
-const TRAINER_EXPLICIT_SET_NUMBERS = new Set([
-  'twm-145', 'twm-155', 'twm-156', 'twm-157', 'twm-160', 'twm-163',
-  'por-076', 'por-76', 'por-084', 'por-84', 'por-085', 'por-85',
-  'pre-103', 'pfl-089', 'pfl-89', 'asc-192', 'meg-119', 'sfa-057', 'sfa-57', 'jtg-146',
-  'sv6-180', 'sv6-181', 'sv6-182', 'sv6-183'
-]);
-
-const TRAINER_ACTION_SUFFIXES = /\b(encouragement|scouting|tenacity|aid|determination|hospitality|orders|vitality|scenario|conviction|ambition|pride|technique|force|invitation|resolve|dedication|intuition|compassion|sincerity)\b/i;
-
-const EXPLICIT_TRAINER_FULL_NAMES = new Set([
-  "judge", "juez", "firebreather", "lana's aid", "lana’s aid", "lillie's determination", "lillie’s determination",
-  "lilies determination", "lillie's full force", "erika's hospitality", "hospitalidad de erika",
-  "boss's orders", "boss’s orders", "órdenes de jefes", "ordenes de jefes", "grand tree", "gran árbol",
-  "gran arbol", "carmine", "carmín", "nemona", "nemonía", "nemonia", "investigación de profesores",
-  "professor's research", "professor’s research", "ultra ball", "nido ball", "nest ball", "super ball",
-  "great ball", "master ball", "caramelo raro", "rare candy", "cuerda huida", "escape rope",
-  "interruptor", "energy switch", "camilla", "super rod", "casco dentado", "capa de valor",
-  "piedra sello", "capturador supremo", "prime catcher", "vasija terrestre", "earthen vessel",
-  "tambor del despertar", "awakening drum", "artazon", "town store", "jamming tower",
-  "neutral center", "dangerous laser", "secret box", "unfair stamp", "sparkling crystal",
-  "hyper aroma", "hiperaroma", "pokégear", "pokegear", "pal pad", "buddy-buddy poffin",
-  "heavy ball", "switch", "exp. share", "leftovers", "choice belt", "rotom phone",
-  "counter catcher", "eerie radar", "counter gain", "gravity stone", "bug catching set",
-  "set de caza de bichos", "iono", "hop", "arven", "penny", "sada", "turo", "crispin",
-  "kieran", "lacey", "drayton", "amarys", "briar", "cynthia", "steven", "marnie", "serena",
-  "rosa", "skyla", "guzma", "colress", "giovanni", "red", "blue", "green", "cyrus", "kukui", "brock"
-]);
-
-export function getCardSupertype(card) {
-  if (!card) return 'Pokemon';
-
-  const name = (card.name || '').trim();
-  const desc = (card.description || '').toLowerCase();
-  const setCode = (card.set_code || card.setCode || '').toLowerCase().trim();
-  const st = (card.supertype || card.card_type || card.category || '').toLowerCase().trim();
-
-  // 1. Explicit DB field
-  if (st === 'trainer' || st === 'entrenador' || st.includes('trainer') || st.includes('entrenador') || st.includes('supporter') || st.includes('item') || st.includes('stadium') || st.includes('tool')) {
-    return 'Entrenadores';
-  }
-  if (st === 'energy' || st === 'energía' || st === 'energia' || st.includes('energy')) {
-    return 'Energias';
-  }
-  if (st === 'pokémon' || st === 'pokemon') {
-    return 'Pokemon';
-  }
-
-  const nameLower = name.toLowerCase();
-
-  // 2. Definitive Pokémon traits (HP > 0, types array, ex/V/VMAX/GX/Tera/Mega suffix)
-  const hasHP = !!card.hp || /\b(hp\s*\d+|\d+\s*hp)\b/i.test(desc) || /\b\d{2,3}\s*hp\b/i.test(name);
-  const isPokemonSuffix = /\b(ex|v|vmax|vstar|gx|radiant|radiante|tera|mega)\b/i.test(name);
-  const isPokemonTypeDesc = /tipo principal:\s*(fuego|agua|planta|rayo|psíquico|psiquico|lucha|oscuridad|metal|dragón|dragon|incoloro|fire|water|grass|lightning|psychic|fighting|darkness|metal|dragon|colorless)/i.test(desc);
-
-  if (isPokemonSuffix || (hasHP && !TRAINER_ACTION_SUFFIXES.test(name)) || isPokemonTypeDesc || (card.types && card.types.length > 0)) {
-    if (!desc.includes('carta entrenador') && !desc.includes('supporter card') && !desc.includes('item card')) {
-      return 'Pokemon';
-    }
-  }
-
-  // 3. Check SetCode-Number Combo (e.g. TWM 155/167, POR 084/088, ASC 192/217)
-  const numberMatch = name.match(/(\d+)\/(\d+)/) || desc.match(/(\d+)\/(\d+)/);
-  if (setCode && numberMatch) {
-    const key = `${setCode}-${numberMatch[1]}`;
-    const keyPadded = `${setCode}-${numberMatch[1].padStart(3, '0')}`;
-    if (TRAINER_EXPLICIT_SET_NUMBERS.has(key) || TRAINER_EXPLICIT_SET_NUMBERS.has(keyPadded)) {
-      return 'Entrenadores';
-    }
-  }
-
-  // 4. ENERGY DETECTION
-  if (/\b(energía|energia|basic energy|special energy|double turbo|jet energy|reversal energy)\b/i.test(name)) {
-    return 'Energias';
-  }
-
-  // 5. TRAINER MATCH
-  if (TRAINER_ACTION_SUFFIXES.test(name)) {
-    return 'Entrenadores';
-  }
-
-  for (const kw of EXPLICIT_TRAINER_FULL_NAMES) {
-    const regex = new RegExp(`\\b${kw.replace(/['']/g, "['']")}\\b`, 'i');
-    if (regex.test(name) || regex.test(desc)) {
-      const isOwnerPokemon = /['’]s\s+(snorlax|kilowattrel|wattrel|bellibolt|dragonair|alakazam|machamp|garchomp|metagross|pikachu|charizard|bulbasaur|squirtle|eevee|meowth|gengar|pidgeot|slowbro|raichu|clefairy|wooloo|dubwool|zoroark)\b/i.test(name);
-      if (isOwnerPokemon) {
-        return 'Pokemon';
-      }
-      return 'Entrenadores';
-    }
-  }
-
-  if (/\b(supporter|item|stadium|tool|partidario|objeto|estadio|herramienta|ace spec|technical machine)\b/i.test(desc)) {
-    return 'Entrenadores';
-  }
-
-  return 'Pokemon';
-}
-
-export const RARITY_PRIORITY = {
-  'hyper rara': 1,
-  'hyper rare': 1,
-  'secreta dorada': 2,
-  'gold': 2,
-  'ultra rara secreta': 3,
-  'secret rare': 3,
-  'shiny rare': 3,
-  'especial ilustracion rara': 4,
-  'special illustration rare': 4,
-  'ilustracion rara': 5,
-  'illustration rare': 5,
-  'ultra rara': 6,
-  'ultra rare': 6,
-  'shiny ultra rare': 6,
-  'rara': 7,
-  'rare': 7,
-  'holo': 7,
-  'doble rara': 8,
-  'double rare': 8,
-  'poco comun': 9,
-  'uncommon': 9,
-  'comun': 10,
-  'common': 10
-};
+export {
+  RARITIES,
+  normalizeRarityText,
+  getCardSupertype,
+  RARITY_PRIORITY
+} from './utils/cardUtils';
+import {
+  RARITIES,
+  normalizeRarityText,
+  getCardSupertype,
+  RARITY_PRIORITY
+} from './utils/cardUtils';
 
 // Tarjetas de marcador de posición (Fallback)
 const PLACEHOLDER_CARDS = [
