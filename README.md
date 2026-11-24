@@ -43,6 +43,7 @@ La arquitectura del proyecto está optimizada para la velocidad, la responsivida
 *   **Protección de Almacenamiento Local:** Envoltura con bloque `try...catch` en `localStorage.setItem` para evitar fallos no capturados por límite de cuota (`QuotaExceededError`).
 *   **Depuración de Política de Seguridad (CSP):** Eliminación de dominios de proxies CORS externos en la cabecera `Content-Security-Policy` de `vercel.json` y adición de la cabecera `Permissions-Policy`.
 *   **Mejoras de Accesibilidad (WCAG/ARIA):** Incorporación de atributos `role="dialog"`, `aria-modal="true"` y etiquetas explícitas `aria-label` en modales y botones de cierre, junto con `aria-hidden="true"` en SVGs decorativos.
+*   **Gitleaks:** escaneo automático de secretos en cada push y pull request.
 
 ### 📦 3. Importador Masivo por Código y Autocompletado (Batch Import Engine)
 *   **Importación Solo por Código:** Permite a los administradores importar un lote de cartas ingresando únicamente el **Código de Set y Número** (ej. `TWMla 123/234`, `PORla 084/088`, `PFLla 089/094`, `MEGla 119/132`), sin necesidad de escribir el nombre de la carta.
